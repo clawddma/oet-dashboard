@@ -714,13 +714,13 @@ function toggleComYear(y,btn){
     CF.years.add(y); btn.classList.add('on');
   }
   updateCfHint();
-  if(activeTab==='com') navigate(activeSection);
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
 }
 
 function setComFilter(key,val){
   CF[key] = (key==='month') ? Number(val) : val;
   updateCfHint();
-  if(activeTab==='com') navigate(activeSection);
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
 }
 
 function clearComFilters(){
@@ -732,7 +732,7 @@ function clearComFilters(){
     if(el) el.value = (id==='cfb-month') ? 0 : '';
   });
   updateCfHint();
-  if(activeTab==='com') navigate(activeSection);
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
 }
 
 function updateCfHint(){
@@ -750,6 +750,20 @@ function updateCfHint(){
   } else {
     hint.style.display='none';
   }
+}
+
+/* Destruye los charts de las secciones comerciales y limpia el caché
+   de 'built', para forzar re-render completo cuando cambia un filtro */
+const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-trend','com-meta'];
+function clearComBuilt(){
+  COM_SECS.forEach(sid=>{
+    const el=document.getElementById(sid);
+    if(el) el.querySelectorAll('canvas').forEach(cv=>{
+      const ch=Chart.getChart(cv);
+      if(ch) ch.destroy();
+    });
+    built.delete(sid);
+  });
 }
 
 // ── Data access helpers (filtered) ───────────────────────────────
@@ -1371,21 +1385,24 @@ function buildComInicio(){
   const pct26=li26.map(v=>(vTotal26?v/vTotal26*100:0));
   const growth2526=li25.map((v,i)=>pctVar(v,li24[i]));
 
+  // Badge dinámico según años activos
+  const _yrBadge = Array.from(CF.years).sort().map(y=>y===2026?'2026 YTD':String(y)).join(' · ');
+  const _yrChartTitle = 'Facturación por Línea de Negocio — '+_yrBadge;
   el.innerHTML=`
-  <div class="sec-title">Análisis Comercial <span class="st-badge">2024 · 2025 · 2026 YTD</span></div>
+  <div class="sec-title">Análisis Comercial <span class="st-badge">${_yrBadge}</span></div>
   <div class="kpis k4">
-    ${kpiCard('Facturación 2024', fv(vTotal24), 'Año base')}
-    ${kpiCard('Facturación 2025', fv(vTotal25), fp(pctVar(vTotal25,vTotal24))+' vs 2024')}
-    ${kpiCard('YTD 2026 (Ene–Feb)', fv(vTotal26), fp(pctVar(vTotal26,COM.v24.reduce((a,b)=>a+b,0)/12*2))+' vs promedio bimensual 2024')}
+    ${CF.years.has(2024)?kpiCard('Facturación 2024', fv(vTotal24), 'Año base'):''}
+    ${CF.years.has(2025)?kpiCard('Facturación 2025', fv(vTotal25), CF.years.has(2024)?fp(pctVar(vTotal25,vTotal24))+' vs 2024':'Año completo'):''}
+    ${CF.years.has(2026)?kpiCard('YTD 2026 (Ene–Feb)', fv(vTotal26), fp(pctVar(vTotal26,COM.v24.reduce((a,b)=>a+b,0)/12*2))+' vs promedio bimensual 2024'):''}
     ${kpiCard('Cirugías 2026 YTD', COM.cirugias.v26.toLocaleString(), 'vs '+COM.cirugias.v25.toLocaleString()+' en 2025 completo')}
   </div>
   <div class="kpis k3" style="margin-bottom:16px">
-    ${kpiCard('Ticket Promedio 2025', fv(Math.round(vTotal25/COM.cirugias.v25)), 'Por cirugía · 2025')}
+    ${CF.years.has(2025)?kpiCard('Ticket Promedio 2025', fv(Math.round(vTotal25/COM.cirugias.v25)), 'Por cirugía · 2025'):''}
     ${kpiCard('LIOs — motor premium', fp(pctVar(COM.v25[2],COM.v24[2])), '2025 vs 2024 · YTD-26: '+fv(COM.v26[2]), COM.v25[2]>COM.v24[2]?'':'red')}
     ${kpiCard('Consultas Médicas', fp(pctVar(COM.v26[3],COM.v25[3]/12*2)), '2026 YTD vs ritmo 2025', COM.v26[3]>COM.v25[3]/12*2?'':'warn')}
   </div>
   <div class="g6040">
-    ${chartCard('ch-com-bar','Facturación por Línea de Negocio — 2024 · 2025 · 2026 YTD','Verde oscuro=2024 · Teal=2025 · Dorado=2026',280,'')}
+    ${chartCard('ch-com-bar',_yrChartTitle,'Verde oscuro=2024 · Teal=2025 · Dorado=2026',280,'')}
     <div class="card">
       <div class="card-hdr"><h3>Mix de Ingresos 2025 vs 2026 YTD</h3><span class="badge teal">% participación</span></div>
       <div class="card-body">
@@ -1396,7 +1413,7 @@ function buildComInicio(){
   </div>
   <div class="gfull">
     <div class="card">
-      <div class="card-hdr"><h3>Detalle por Línea de Negocio</h3><span class="badge teal">2024 · 2025 · 2026 YTD</span></div>
+      <div class="card-hdr"><h3>Detalle por Línea de Negocio</h3><span class="badge teal">${_yrBadge}</span></div>
       <div class="card-body" id="com-tabla-lineas"></div>
     </div>
   </div>`;
@@ -1482,10 +1499,11 @@ function buildComLineas(){
   // Anualizar 2026 YTD (÷2 meses × 12)
   const growth2526_ytd=li26.map((v,i)=>pctVar(v*6, li25[i]/2));
 
+  const _yrBadgeLn = Array.from(CF.years).sort().map(y=>y===2026?'2026 YTD':String(y)).join(' · ');
   el.innerHTML=`
-  <div class="sec-title">Detalle por Línea de Negocio <span class="st-badge">2024 · 2025 · 2026 YTD</span></div>
+  <div class="sec-title">Detalle por Línea de Negocio <span class="st-badge">${_yrBadgeLn}</span></div>
   <div class="g2">
-    ${chartCard('ch-lnl-abs','Facturación por Servicio — 2024 · 2025 · 2026 YTD','miles COP',270,'')}
+    ${chartCard('ch-lnl-abs','Facturación por Servicio — '+_yrBadgeLn,'miles COP',270,'')}
     ${chartCard('ch-lnl-pct','% Crecimiento por Servicio','Azul=24→25 · Dorado=ritmo 2026 vs 2025',270,'')}
   </div>
   <div class="insight">
