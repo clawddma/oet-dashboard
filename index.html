@@ -1401,11 +1401,10 @@ function buildFinAnual(){
 function buildComInicio(){
   const el=document.getElementById('com-inicio');
 
-  // Datos filtrados de D[] — respeta CF.years + CF.months
+  // ── Datos filtrados de D[] — respeta CF.years + CF.months ─────────────────
   const rows=cfD();
   const yrs=Array.from(CF.years).sort();
 
-  // Agrega por año desde D[] — DATOS REALES
   const yrD={};
   yrs.forEach(y=>{
     const yr=rows.filter(r=>r.y===y);
@@ -1418,7 +1417,6 @@ function buildComInicio(){
   });
   const yrsOk=yrs.filter(y=>yrD[y]);
 
-  // Cirugías: suma meses seleccionados (o total anual)
   function sumCir(arr){
     if(CF.months.size===0) return arr.reduce((s,v)=>s+v,0);
     return Array.from(CF.months).reduce((s,m)=>s+(arr[m-1]||0),0);
@@ -1427,26 +1425,37 @@ function buildComInicio(){
   const cir25=CF.years.has(2025)?sumCir(CIR.mes_25):0;
   const cir26=CF.years.has(2026)?sumCir(CIR.mes_26):0;
 
-  // Badges
   const MN=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const mArr=Array.from(CF.months).sort((a,b)=>a-b);
   const mBadge=mArr.length===0?'':mArr.length<=3?mArr.map(m=>MN[m]).join('+'):mArr.length+' meses';
   const _yrBadge=yrs.map(y=>y===2026?'2026 YTD':String(y)).join(' · ');
   const _badge=[_yrBadge,mBadge].filter(Boolean).join(' · ');
 
-  // Doctors
+  const hasFilters=CF.months.size>0||CF.doctors.size>0||CF.years.size<3;
   const visDocList=cfCirujanos();
   const hasDr=CF.doctors.size>0;
   function drBill(c,y){ return y===2024?c.bill24:y===2025?c.bill25:c.bill26; }
   function drCir(c,y){ return y===2024?c.cir24:y===2025?c.cir25:c.cir26; }
 
-  const clr={2024:'rgba(12,48,40,0.75)',2025:'rgba(45,197,171,0.88)',2026:'rgba(255,193,7,0.82)'};
-  const bcl={2024:'rgba(12,48,40,0.95)',2025:'rgba(45,197,171,1)',2026:'rgba(255,193,7,1)'};
+  // ── Datos para gráficas de líneas (anuales desde COM) ─────────────────────
+  const liIdx=cfLineasIdx();
+  const liLabels=liIdx.map(i=>COM.lineas[i]);
+  const li24=liIdx.map(i=>COM.v24[i]);
+  const li25=liIdx.map(i=>COM.v25[i]);
+  const li26=liIdx.map(i=>COM.v26[i]);
+  const vTotal24=li24.reduce((a,b)=>a+b,0);
+  const vTotal25=li25.reduce((a,b)=>a+b,0);
+  const vTotal26=li26.reduce((a,b)=>a+b,0);
+  const pct26=li26.map(v=>(vTotal26?v/vTotal26*100:0));
+  const growth2526=li25.map((v,i)=>pctVar(v,li24[i]));
 
   el.innerHTML=`
   <div class="sec-title">Análisis Comercial
     <span class="st-badge">${_badge}</span>
   </div>
+
+  ${hasFilters?`
+  <!-- KPIs filtrados (datos reales de D[]) -->
   <div class="kpis k3" style="margin-bottom:8px">
     ${yrsOk.map((y,i)=>{
       const d=yrD[y];
@@ -1472,51 +1481,113 @@ function buildComInicio(){
         return kpiCard(c.name.replace(/^Dr[a]?\. /,''),bStr,cStr,'');
       }).join('')}
     </div>
-    <div style="font-size:10px;color:#607d76;margin-top:6px">
-      ℹ️ Facturación por médico es anual · KPIs de arriba = total clínica para el período filtrado
-    </div>
+    <div style="font-size:10px;color:#607d76;margin-top:6px">ℹ️ Facturación por médico disponible en forma anual</div>
+  </div>`:''}`:`
+  <!-- Vista anual completa (sin filtros) -->
+  <div class="kpis k4">
+    ${kpiCard('Facturación 2024', fv(vTotal24), 'Año base')}
+    ${kpiCard('Facturación 2025', fv(vTotal25), fp(pctVar(vTotal25,vTotal24))+' vs 2024')}
+    ${kpiCard('YTD 2026 (Ene–Feb)', fv(vTotal26), fp(pctVar(vTotal26,vTotal24/12*2))+' vs promedio bimensual 2024')}
+    ${kpiCard('Cirugías 2026 YTD', COM.cirugias.v26.toLocaleString(), 'vs '+COM.cirugias.v25.toLocaleString()+' en 2025 completo')}
+  </div>
+  <div class="kpis k3" style="margin-bottom:16px">
+    ${kpiCard('Ticket Promedio 2025', fv(Math.round(vTotal25/COM.cirugias.v25)), 'Por cirugía · 2025')}
+    ${kpiCard('LIOs — motor premium', fp(pctVar(COM.v25[2],COM.v24[2])), '2025 vs 2024 · YTD-26: '+fv(COM.v26[2]), COM.v25[2]>COM.v24[2]?'':'red')}
+    ${kpiCard('Consultas Médicas', fp(pctVar(COM.v26[3],COM.v25[3]/12*2)), '2026 YTD vs ritmo 2025', COM.v26[3]>COM.v25[3]/12*2?'':'warn')}
+  </div>`}
+
+  <!-- Gráficas por línea de negocio (datos anuales) -->
+  ${hasFilters?`<div class="insight" style="padding:5px 12px;margin-bottom:8px;font-size:10.5px;color:#607d76">
+    ℹ️ Las gráficas de abajo muestran datos <strong>anuales por línea de negocio</strong>.
+    Los KPIs de arriba corresponden al período filtrado (${_badge}).
   </div>`:''}
-  <div class="g2">
-    ${chartCard('ch-com-bar','Facturación & Costo'+(mBadge?' — '+mBadge:''),'por año',220,'')}
-    ${chartCard('ch-com-ebitda','EBITDA'+(mBadge?' — '+mBadge:''),'por año',220,'')}
+  <div class="g6040">
+    ${chartCard('ch-com-bar','Facturación por Línea de Negocio'+(hasFilters?' — anual':'— 2024 · 2025 · 2026 YTD'),'Verde oscuro=2024 · Teal=2025 · Dorado=2026',280,'')}
+    <div class="card">
+      <div class="card-hdr"><h3>Mix de Ingresos 2025 vs 2026 YTD</h3><span class="badge teal">% participación</span></div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:180px"><canvas id="ch-com-pie"></canvas></div>
+        <div class="chart-wrap" style="height:100px"><canvas id="ch-com-pie26"></canvas></div>
+      </div>
+    </div>
   </div>
   <div class="gfull">
-    ${chartCard('ch-com-margin','Márgenes (%)'+(mBadge?' — '+mBadge:''),'Bruto · EBITDA',180,'')}
-  </div>
-  <div class="insight">
-    📊 <strong>${_badge}</strong>
-    ${yrsOk.map(y=>`<br>${y===2026?'2026 YTD':y}: ${fv(yrD[y].ing)} ing · ${fv(yrD[y].cost)} costo · EBITDA ${fv(yrD[y].ebitda)} (${yrD[y].mep.toFixed(1)}%)`).join('')}
-    ${mBadge?'<br><span style="color:#607d76;font-size:10.5px">Desglose por línea → sección <strong>Líneas</strong></span>':''}
+    <div class="card">
+      <div class="card-hdr"><h3>Detalle por Línea de Negocio</h3><span class="badge teal">2024 · 2025 · 2026 YTD</span></div>
+      <div class="card-body" id="com-tabla-lineas"></div>
+    </div>
   </div>`;
 
-  mkChart('ch-com-bar',{type:'bar',
-    data:{labels:yrsOk.map(y=>y===2026?'2026 YTD':String(y)),datasets:[
-      {label:'Ingresos',data:yrsOk.map(y=>yrD[y].ing),
-       backgroundColor:yrsOk.map(y=>clr[y]),borderColor:yrsOk.map(y=>bcl[y]),borderWidth:1,borderRadius:3},
-      {label:'Costo',data:yrsOk.map(y=>yrD[y].cost),
-       backgroundColor:yrsOk.map(y=>clr[y].replace(/,\s*[\d.]+\)$/,',0.35)')),borderRadius:3}
-    ]},
-    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-      scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}
+  // Bar chart líneas — años seleccionados
+  const _bar_ds=[];
+  if(CF.years.has(2024)) _bar_ds.push({label:'2024',    data:li24, backgroundColor:'rgba(12,48,40,0.75)',  borderRadius:2, borderColor:'rgba(12,48,40,0.95)',  borderWidth:1});
+  if(CF.years.has(2025)) _bar_ds.push({label:'2025',    data:li25, backgroundColor:'rgba(45,197,171,0.88)',borderRadius:2, borderColor:'rgba(45,197,171,1)',    borderWidth:1});
+  if(CF.years.has(2026)) _bar_ds.push({label:'2026 YTD',data:li26, backgroundColor:'rgba(255,193,7,0.82)', borderRadius:2, borderColor:'rgba(255,193,7,1)',   borderWidth:1});
+  mkChart('ch-com-bar',{type:'bar',data:{labels:liLabels,datasets:_bar_ds},
+    options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,padding:12,font:{size:11}}}},
+      scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+
+  // Doughnut 2025
+  new Chart(document.getElementById('ch-com-pie'),{
+    type:'doughnut',
+    data:{labels:liLabels,datasets:[{
+      data:li25.map(v=>vTotal25?+(v/vTotal25*100).toFixed(1):0),
+      backgroundColor:['#2dc5ab','#1a8a7a','#144838','#3dd6bf','#5ee0cc','#a8c4be'],
+      borderWidth:2,borderColor:'#fff'
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{title:{display:true,text:'Mix 2025',font:{size:11},color:'#607d76'},
+        legend:{position:'right',labels:{font:{size:10},boxWidth:10,padding:6}}}}
   });
-  mkChart('ch-com-ebitda',{type:'bar',
-    data:{labels:yrsOk.map(y=>y===2026?'2026 YTD':String(y)),datasets:[
-      {label:'EBITDA',data:yrsOk.map(y=>yrD[y].ebitda),
-       backgroundColor:yrsOk.map(y=>yrD[y].ebitda>=0?'rgba(45,197,171,0.85)':'rgba(239,83,80,0.8)'),borderRadius:3}
-    ]},
-    options:{plugins:{legend:{display:false}},
-      scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}
+
+  // Doughnut 2026 YTD
+  new Chart(document.getElementById('ch-com-pie26'),{
+    type:'doughnut',
+    data:{labels:liLabels,datasets:[{
+      data:pct26.map(v=>+v.toFixed(1)),
+      backgroundColor:['#2dc5ab','#1a8a7a','#144838','#3dd6bf','#5ee0cc','#a8c4be'],
+      borderWidth:2,borderColor:'#fff'
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{title:{display:true,text:'Mix 2026 YTD',font:{size:11},color:'#b8860b'},
+        legend:{display:false}}}
   });
-  mkChart('ch-com-margin',{type:'bar',
-    data:{labels:yrsOk.map(y=>y===2026?'2026 YTD':String(y)),datasets:[
-      {label:'Mg Bruto%',data:yrsOk.map(y=>+yrD[y].mbp.toFixed(1)),
-       backgroundColor:'rgba(45,197,171,0.5)',borderRadius:2},
-      {label:'EBITDA%',data:yrsOk.map(y=>+yrD[y].mep.toFixed(1)),
-       backgroundColor:yrsOk.map(y=>yrD[y].mep>=0?'rgba(26,138,122,0.8)':'rgba(239,83,80,0.75)'),borderRadius:2}
-    ]},
-    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-      scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}
-  });
+
+  // Tabla líneas
+  document.getElementById('com-tabla-lineas').innerHTML=`
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr>
+      <th style="text-align:left">Línea de Negocio</th>
+      ${CF.years.has(2024)?'<th>2024</th>':''}
+      ${CF.years.has(2025)?'<th>2025</th>':''}
+      ${CF.years.has(2024)&&CF.years.has(2025)?'<th>Δ% 24→25</th>':''}
+      ${CF.years.has(2026)?'<th>2026 YTD</th>':''}
+      ${CF.years.has(2026)?'<th>% Mix 2026</th>':''}
+    </tr></thead>
+    <tbody>
+    ${liLabels.map((l,ii)=>`<tr>
+      <td style="font-weight:500">${l}</td>
+      ${CF.years.has(2024)?`<td>${fv(li24[ii])}</td>`:''}
+      ${CF.years.has(2025)?`<td style="font-weight:600">${fv(li25[ii])}</td>`:''}
+      ${CF.years.has(2024)&&CF.years.has(2025)?`<td class="${tdCls(growth2526[ii])}">${fp(growth2526[ii])}</td>`:''}
+      ${CF.years.has(2026)?`<td style="color:#b8860b;font-weight:600">${fv(li26[ii])}</td>`:''}
+      ${CF.years.has(2026)?`<td style="color:#b8860b">${pct26[ii].toFixed(1)}%</td>`:''}
+    </tr>`).join('')}
+    </tbody>
+    <tfoot><tr class="tot">
+      <td>TOTAL</td>
+      ${CF.years.has(2024)?`<td>${fv(vTotal24)}</td>`:''}
+      ${CF.years.has(2025)?`<td>${fv(vTotal25)}</td>`:''}
+      ${CF.years.has(2024)&&CF.years.has(2025)?`<td class="pos">${fp(pctVar(vTotal25,vTotal24))}</td>`:''}
+      ${CF.years.has(2026)?`<td style="color:#b8860b;font-weight:600">${fv(vTotal26)}</td>`:''}
+      ${CF.years.has(2026)?`<td style="color:#b8860b">100%</td>`:''}
+    </tr></tfoot>
+  </table></div>
+  <div class="insight">
+    ⭐ <strong>LIOs Premium</strong> siguen siendo el motor: ${fv(li26[2])} en solo Ene–Feb 2026.
+    <strong>Derechos de Sala</strong> (cirugías) encabezan el mix con ${pct26[0].toFixed(0)}% del YTD 2026.
+    ${hasFilters?'Los KPIs de arriba reflejan el período filtrado ('+_badge+').':'El ritmo 2026 apunta a superar 2025 si se mantiene la cadencia mensual.'}
+  </div>`;
 }
 
 function buildComLineas(){
