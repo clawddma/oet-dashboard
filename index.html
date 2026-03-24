@@ -321,7 +321,7 @@ a{text-decoration:none;color:inherit;}
 }
 #com-filter-bar.visible{ display:flex; }
 /* Offset content when filter bar is visible */
-#content.has-filter-bar{ padding-top:46px; }
+#content.has-filter-bar{ padding-top:90px; }
 @media(max-width:1023px){ #com-filter-bar{ left:170px; } }
 @media(max-width:767px){  #com-filter-bar{ left:0; top:calc(var(--hdr-h) + var(--snav-h)); } }
 .cfb-group{ display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
@@ -346,6 +346,8 @@ a{text-decoration:none;color:inherit;}
 .cfb-select:focus{ outline:none; border-color:#2dc5ab; }
 .cfb-select option{ background:#0c3028; color:#cce8e2; }
 .cfb-div{ width:1px; height:22px; background:rgba(45,197,171,0.18); flex-shrink:0; }
+.cfb-month-pill{ padding:2px 7px !important; font-size:10px !important; min-width:32px; text-align:center; }
+.cfb-doc-pill{ max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px !important; }
 .cfb-clear{
   background:transparent; border:1px solid rgba(239,83,80,0.45); color:#ef9090;
   border-radius:6px; padding:3px 10px; font-size:11px; cursor:pointer;
@@ -419,28 +421,22 @@ a{text-decoration:none;color:inherit;}
     <div class="cfb-div"></div>
     <div class="cfb-group">
       <span class="cfb-lbl">Mes</span>
-      <select class="cfb-select" id="cfb-month" onchange="setComFilter('month',+this.value)">
-        <option value="0">Todos los meses</option>
-        <option value="1">Enero</option>
-        <option value="2">Febrero</option>
-        <option value="3">Marzo</option>
-        <option value="4">Abril</option>
-        <option value="5">Mayo</option>
-        <option value="6">Junio</option>
-        <option value="7">Julio</option>
-        <option value="8">Agosto</option>
-        <option value="9">Septiembre</option>
-        <option value="10">Octubre</option>
-        <option value="11">Noviembre</option>
-        <option value="12">Diciembre</option>
-      </select>
+      <button class="cfb-pill cfb-month-pill" data-m="1"  onclick="toggleComMonth(1,this)">Ene</button>
+      <button class="cfb-pill cfb-month-pill" data-m="2"  onclick="toggleComMonth(2,this)">Feb</button>
+      <button class="cfb-pill cfb-month-pill" data-m="3"  onclick="toggleComMonth(3,this)">Mar</button>
+      <button class="cfb-pill cfb-month-pill" data-m="4"  onclick="toggleComMonth(4,this)">Abr</button>
+      <button class="cfb-pill cfb-month-pill" data-m="5"  onclick="toggleComMonth(5,this)">May</button>
+      <button class="cfb-pill cfb-month-pill" data-m="6"  onclick="toggleComMonth(6,this)">Jun</button>
+      <button class="cfb-pill cfb-month-pill" data-m="7"  onclick="toggleComMonth(7,this)">Jul</button>
+      <button class="cfb-pill cfb-month-pill" data-m="8"  onclick="toggleComMonth(8,this)">Ago</button>
+      <button class="cfb-pill cfb-month-pill" data-m="9"  onclick="toggleComMonth(9,this)">Sep</button>
+      <button class="cfb-pill cfb-month-pill" data-m="10" onclick="toggleComMonth(10,this)">Oct</button>
+      <button class="cfb-pill cfb-month-pill" data-m="11" onclick="toggleComMonth(11,this)">Nov</button>
+      <button class="cfb-pill cfb-month-pill" data-m="12" onclick="toggleComMonth(12,this)">Dic</button>
     </div>
     <div class="cfb-div"></div>
-    <div class="cfb-group">
-      <span class="cfb-lbl">Médico / Cirujano</span>
-      <select class="cfb-select" id="cfb-doctor" onchange="setComFilter('doctor',this.value)">
-        <option value="">Todos los médicos</option>
-      </select>
+    <div class="cfb-group" id="cfb-doctors-group">
+      <span class="cfb-lbl">Médico</span>
     </div>
     <div class="cfb-div"></div>
     <div class="cfb-group">
@@ -456,17 +452,7 @@ a{text-decoration:none;color:inherit;}
         <option value="">Todas las líneas</option>
       </select>
     </div>
-    <div class="cfb-div"></div>
-    <div class="cfb-group">
-      <span class="cfb-lbl">Entidad <span class="cfb-badge-info">Próx.</span></span>
-      <select class="cfb-select" disabled>
-        <option>Todas las entidades</option>
-        <option>Particular</option>
-        <option>EPS / Seguro</option>
-        <option>Convenio</option>
-      </select>
-    </div>
-    <button class="cfb-clear" onclick="clearComFilters()">✕ Limpiar filtros</button>
+    <button class="cfb-clear" onclick="clearComFilters()">✕ Limpiar</button>
     <div id="cfb-hint" class="cfb-active-hint" style="display:none"></div>
   </div>
   <aside id="sidebar"></aside>
@@ -681,18 +667,24 @@ function barClrs(vals){ return vals.map(v=>v>=0?'rgba(45,197,171,0.8)':'rgba(239
 //  COMMERCIAL FILTERS STATE & HELPERS
 // ════════════════════════════════════════
 const CF = {
-  years: new Set([2024,2025,2026]),
-  month: 0,      // 0 = todos los meses
-  doctor: '',    // '' = todos
-  tipo: '',      // '' = todos
-  linea: '',     // '' = todas
+  years:   new Set([2024,2025,2026]),
+  months:  new Set(),  // empty = todos; Set de {1..12}
+  doctors: new Set(),  // empty = todos
+  tipo: '',
+  linea: '',
 };
 
 function initComFilters(){
-  const ds=document.getElementById('cfb-doctor');
+  const dg=document.getElementById('cfb-doctors-group');
   CIR.cirujanos.forEach(c=>{
-    const o=document.createElement('option');
-    o.value=c.name; o.textContent=c.name; ds.appendChild(o);
+    const short=c.name.replace(/^Dr[a]?\. /,'').trim().split(' ').slice(0,3).join(' ');
+    const btn=document.createElement('button');
+    btn.className='cfb-pill cfb-doc-pill';
+    btn.dataset.doctor=c.name;
+    btn.textContent=short;
+    btn.title=c.name;
+    btn.addEventListener('click',()=>toggleComDoctor(c.name,btn));
+    dg.appendChild(btn);
   });
   const ts=document.getElementById('cfb-tipo');
   CIR.tipos.forEach(t=>{
@@ -704,6 +696,10 @@ function initComFilters(){
     const o=document.createElement('option');
     o.value=l; o.textContent=l; ls.appendChild(o);
   });
+  const bar=document.getElementById('com-filter-bar');
+  if(bar && window.ResizeObserver){
+    new ResizeObserver(()=>updateFilterBarHeight()).observe(bar);
+  }
 }
 
 function toggleComYear(y,btn){
@@ -718,30 +714,41 @@ function toggleComYear(y,btn){
 }
 
 function setComFilter(key,val){
-  CF[key] = (key==='month') ? Number(val) : val;
+  CF[key]=val;
   updateCfHint();
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
 }
 
 function clearComFilters(){
   CF.years=new Set([2024,2025,2026]);
-  CF.month=0; CF.doctor=''; CF.tipo=''; CF.linea='';
-  document.querySelectorAll('.cfb-pill').forEach(p=>p.classList.add('on'));
-  ['cfb-month','cfb-doctor','cfb-tipo','cfb-linea'].forEach(id=>{
+  CF.months=new Set();
+  CF.doctors=new Set();
+  CF.tipo=''; CF.linea='';
+  document.querySelectorAll('[data-year]').forEach(p=>p.classList.add('on'));
+  document.querySelectorAll('.cfb-month-pill').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.cfb-doc-pill').forEach(p=>p.classList.remove('on'));
+  ['cfb-tipo','cfb-linea'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.value = (id==='cfb-month') ? 0 : '';
+    if(el) el.value='';
   });
   updateCfHint();
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
 }
 
 function updateCfHint(){
+  const MN=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const hints=[];
-  if(CF.years.size<3) hints.push(Array.from(CF.years).join(', '));
-  if(CF.month>0) hints.push(['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][CF.month]);
-  if(CF.doctor) hints.push(CF.doctor.replace(/^Dr[a]?\. /,'').split(' ').slice(0,2).join(' '));
-  if(CF.tipo)   hints.push(CF.tipo.split(' ')[0]);
-  if(CF.linea)  hints.push(CF.linea.split(' ')[0]);
+  if(CF.years.size<3) hints.push(Array.from(CF.years).sort().map(y=>y===2026?"YTD'26":String(y)).join('+'));
+  if(CF.months.size>0){
+    const ma=Array.from(CF.months).sort((a,b)=>a-b).map(m=>MN[m]);
+    hints.push(ma.length<=3?ma.join('+'):ma.length+' meses');
+  }
+  if(CF.doctors.size>0){
+    const da=Array.from(CF.doctors).map(d=>d.replace(/^Dr[a]?\. /,'').split(/[\s.]/)[0]);
+    hints.push(da.length<=2?da.join('+'):da.length+' médicos');
+  }
+  if(CF.tipo)  hints.push(CF.tipo.split(' ')[0]);
+  if(CF.linea) hints.push(CF.linea.split(' ')[0]);
   const hint=document.getElementById('cfb-hint');
   if(!hint) return;
   if(hints.length){
@@ -752,6 +759,28 @@ function updateCfHint(){
   }
 }
 
+function toggleComMonth(m,btn){
+  if(CF.months.has(m)){ CF.months.delete(m); btn.classList.remove('on'); }
+  else { CF.months.add(m); btn.classList.add('on'); }
+  updateCfHint();
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+}
+function toggleComDoctor(name,btn){
+  if(CF.doctors.has(name)){ CF.doctors.delete(name); btn.classList.remove('on'); }
+  else { CF.doctors.add(name); btn.classList.add('on'); }
+  updateCfHint();
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+}
+function updateFilterBarHeight(){
+  const bar=document.getElementById('com-filter-bar');
+  const content=document.getElementById('content');
+  if(!bar||!content) return;
+  if(bar.classList.contains('visible')){
+    content.style.paddingTop=bar.offsetHeight+'px';
+  } else {
+    content.style.paddingTop='';
+  }
+}
 /* Destruye los charts de las secciones comerciales y limpia el caché
    de 'built', para forzar re-render completo cuando cambia un filtro */
 const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-trend','com-meta'];
@@ -768,27 +797,28 @@ function clearComBuilt(){
 
 // ── Data access helpers (filtered) ───────────────────────────────
 // Devuelve registros de D filtrados por año y (opcionalmente) mes
+// D[] filtrado por años Y meses seleccionados
 function cfD(){
-  return D.filter(d=>CF.years.has(d.y)&&(CF.month===0||d.m===CF.month));
+  return D.filter(d=>{
+    if(!CF.years.has(d.y)) return false;
+    if(CF.months.size>0 && !CF.months.has(d.m)) return false;
+    return true;
+  });
 }
-// Como yr() pero con filtro de mes
 function cfYr(y){
-  return D.filter(d=>d.y===y&&(CF.month===0||d.m===CF.month));
+  return D.filter(d=>d.y===y&&(CF.months.size===0||CF.months.has(d.m)));
 }
-// Indices de líneas de negocio visibles
 function cfLineasIdx(){
   if(!CF.linea) return COM.lineas.map((_,i)=>i);
   return COM.lineas.map((l,i)=>l===CF.linea?i:-1).filter(i=>i>=0);
 }
-// Índices de tipos de procedimiento visibles
 function cfTiposIdx(){
   if(!CF.tipo) return CIR.tipos.map((_,i)=>i);
   return CIR.tipos.map((t,i)=>t===CF.tipo?i:-1).filter(i=>i>=0);
 }
-// Lista de cirujanos filtrada
 function cfCirujanos(){
-  if(!CF.doctor) return CIR.cirujanos;
-  return CIR.cirujanos.filter(c=>c.name===CF.doctor);
+  if(CF.doctors.size===0) return CIR.cirujanos;
+  return CIR.cirujanos.filter(c=>CF.doctors.has(c.name));
 }
 // Genera datasets de año para un gráfico horizontal de barras
 function cfYearDatasets(idxFn, fieldMap){
@@ -1370,236 +1400,130 @@ function buildFinAnual(){
 // ════════════════════════════════════════
 function buildComInicio(){
   const el=document.getElementById('com-inicio');
-  const MNS=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const mLbl = CF.month>0 ? MNS[CF.month] : null;
 
-  // ── Data prep ─────────────────────────────────────────────────────────────
-  const liIdx=cfLineasIdx();
-  const liLabels=liIdx.map(i=>COM.lineas[i]);
-  const li24=liIdx.map(i=>COM.v24[i]);
-  const li25=liIdx.map(i=>COM.v25[i]);
-  const li26=liIdx.map(i=>COM.v26[i]);
+  // Datos filtrados de D[] — respeta CF.years + CF.months
+  const rows=cfD();
+  const yrs=Array.from(CF.years).sort();
 
-  // Monthly entries from D (used when month filter active)
-  const d24m = mLbl ? D.find(d=>d.y===2024&&d.m===CF.month)||null : null;
-  const d25m = mLbl ? D.find(d=>d.y===2025&&d.m===CF.month)||null : null;
-  const d26m = mLbl ? D.find(d=>d.y===2026&&d.m===CF.month)||null : null;
+  // Agrega por año desde D[] — DATOS REALES
+  const yrD={};
+  yrs.forEach(y=>{
+    const yr=rows.filter(r=>r.y===y);
+    if(!yr.length){ yrD[y]=null; return; }
+    const ing=yr.reduce((s,r)=>s+r.ing,0);
+    const cost=yr.reduce((s,r)=>s+r.cost,0);
+    const ebitda=yr.reduce((s,r)=>s+r.ebitda,0);
+    const ub=yr.reduce((s,r)=>s+r.ub,0);
+    yrD[y]={ing,cost,ebitda,ub,mbp:ing?ub/ing*100:0,mep:ing?ebitda/ing*100:0,n:yr.length};
+  });
+  const yrsOk=yrs.filter(y=>yrD[y]);
 
-  // Totals — monthly or annual depending on filter
-  const vTotal24 = mLbl ? (d24m?d24m.ing:0) : li24.reduce((a,b)=>a+b,0);
-  const vTotal25 = mLbl ? (d25m?d25m.ing:0) : li25.reduce((a,b)=>a+b,0);
-  const vTotal26 = mLbl ? (d26m?d26m.ing:0) : li26.reduce((a,b)=>a+b,0);
+  // Cirugías: suma meses seleccionados (o total anual)
+  function sumCir(arr){
+    if(CF.months.size===0) return arr.reduce((s,v)=>s+v,0);
+    return Array.from(CF.months).reduce((s,m)=>s+(arr[m-1]||0),0);
+  }
+  const cir24=CF.years.has(2024)?sumCir(CIR.mes_24):0;
+  const cir25=CF.years.has(2025)?sumCir(CIR.mes_25):0;
+  const cir26=CF.years.has(2026)?sumCir(CIR.mes_26):0;
 
-  // Surgery counts
-  const cir24 = mLbl ? (CIR.mes_24[CF.month-1]||0) : COM.cirugias.v24;
-  const cir25 = mLbl ? (CIR.mes_25[CF.month-1]||0) : COM.cirugias.v25;
-  const cir26 = mLbl ? (CIR.mes_26[CF.month-1]||0) : COM.cirugias.v26;
+  // Badges
+  const MN=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const mArr=Array.from(CF.months).sort((a,b)=>a-b);
+  const mBadge=mArr.length===0?'':mArr.length<=3?mArr.map(m=>MN[m]).join('+'):mArr.length+' meses';
+  const _yrBadge=yrs.map(y=>y===2026?'2026 YTD':String(y)).join(' · ');
+  const _badge=[_yrBadge,mBadge].filter(Boolean).join(' · ');
 
-  const pct26=li26.map(v=>(vTotal26?v/vTotal26*100:0));
-  const growth2526=li25.map((v,i)=>pctVar(v,li24[i]));
-  const _yrBadge=Array.from(CF.years).sort().map(y=>y===2026?'2026 YTD':String(y)).join(' · ');
+  // Doctors
+  const visDocList=cfCirujanos();
+  const hasDr=CF.doctors.size>0;
+  function drBill(c,y){ return y===2024?c.bill24:y===2025?c.bill25:c.bill26; }
+  function drCir(c,y){ return y===2024?c.cir24:y===2025?c.cir25:c.cir26; }
 
-  // ── HTML: branch on month filter ──────────────────────────────────────────
-  if(mLbl){
-    // ── MONTHLY VIEW ──────────────────────────────────────────────────────
-    const monthEntries=[
-      {y:2024,d:d24m,lbl:mLbl+'-24',clr:'rgba(12,48,40,0.75)',bc:'rgba(12,48,40,0.95)'},
-      {y:2025,d:d25m,lbl:mLbl+'-25',clr:'rgba(45,197,171,0.88)',bc:'rgba(45,197,171,1)'},
-      {y:2026,d:d26m,lbl:mLbl+'-26',clr:'rgba(255,193,7,0.82)',bc:'rgba(255,193,7,1)'},
-    ].filter(e=>CF.years.has(e.y)&&e.d);
+  const clr={2024:'rgba(12,48,40,0.75)',2025:'rgba(45,197,171,0.88)',2026:'rgba(255,193,7,0.82)'};
+  const bcl={2024:'rgba(12,48,40,0.95)',2025:'rgba(45,197,171,1)',2026:'rgba(255,193,7,1)'};
 
-    el.innerHTML=`
-    <div class="sec-title">Análisis Comercial
-      <span class="st-badge">${mLbl} · ${_yrBadge}</span>
-    </div>
-    <div class="kpis k3" style="margin-bottom:8px">
-      ${monthEntries.map(e=>{
-        const prev=monthEntries.find(x=>x.y===e.y-1);
-        return kpiCard(
-          'Facturación '+e.lbl,
-          fv(e.d.ing),
-          (prev?fp(pctVar(e.d.ing,prev.d.ing))+' vs '+prev.lbl+' · ':'')+
-          'EBITDA: '+fv(e.d.ebitda),
-          e.d.ebitda>=0?'':'warn'
-        );
+  el.innerHTML=`
+  <div class="sec-title">Análisis Comercial
+    <span class="st-badge">${_badge}</span>
+  </div>
+  <div class="kpis k3" style="margin-bottom:8px">
+    ${yrsOk.map((y,i)=>{
+      const d=yrD[y];
+      const prev=i>0?yrD[yrsOk[i-1]]:null;
+      const sub=(prev?fp(pctVar(d.ing,prev.ing))+' vs '+yrsOk[i-1]+' · ':'')+
+        'EBITDA: '+fv(d.ebitda)+' ('+d.mep.toFixed(1)+'%)';
+      return kpiCard('Facturación '+(y===2026?'2026 YTD':String(y))+(mBadge?' · '+mBadge:''),
+        fv(d.ing),sub,d.ebitda>=0?'':'warn');
+    }).join('')}
+  </div>
+  <div class="kpis k3" style="margin-bottom:${hasDr?8:16}px">
+    ${CF.years.has(2024)&&cir24>0?kpiCard('Cirugías 2024'+(mBadge?' · '+mBadge:''),cir24.toLocaleString(),'D.Sala'):''}
+    ${CF.years.has(2025)&&cir25>0?kpiCard('Cirugías 2025'+(mBadge?' · '+mBadge:''),cir25.toLocaleString(),fp(pctVar(cir25,cir24))+' vs 2024'):''}
+    ${CF.years.has(2026)&&cir26>0?kpiCard('Cirugías 2026'+(mBadge?' · '+mBadge:''),cir26.toLocaleString(),fp(pctVar(cir26,cir25))+' vs 2025'):''}
+  </div>
+  ${hasDr?`
+  <div class="insight" style="margin-bottom:12px;padding:10px 14px">
+    <div style="font-size:11px;font-weight:700;color:#2dc5ab;margin-bottom:8px">Médicos seleccionados</div>
+    <div class="kpis k3">
+      ${visDocList.map(c=>{
+        const bStr=yrsOk.map(y=>(y===2026?'YTD':y)+': '+fv(drBill(c,y))).join(' · ');
+        const cStr=yrsOk.map(y=>drCir(c,y)+' cir.'+y).join(' · ');
+        return kpiCard(c.name.replace(/^Dr[a]?\. /,''),bStr,cStr,'');
       }).join('')}
     </div>
-    <div class="kpis k3" style="margin-bottom:16px">
-      ${CF.years.has(2024)&&cir24>0?kpiCard('Cirugías '+mLbl+'-24',cir24.toLocaleString(),'D.Sala ese mes'):''}
-      ${CF.years.has(2025)&&cir25>0?kpiCard('Cirugías '+mLbl+'-25',cir25.toLocaleString(),fp(pctVar(cir25,cir24))+' vs '+mLbl+'-24'):''}
-      ${CF.years.has(2026)&&cir26>0?kpiCard('Cirugías '+mLbl+'-26',cir26.toLocaleString(),fp(pctVar(cir26,cir25))+' vs '+mLbl+'-25'):''}
+    <div style="font-size:10px;color:#607d76;margin-top:6px">
+      ℹ️ Facturación por médico es anual · KPIs de arriba = total clínica para el período filtrado
     </div>
-    <div class="g2">
-      ${chartCard('ch-com-bar','Facturación & Costo — '+mLbl+' · Interanual','',220,'')}
-      ${chartCard('ch-com-ebitda','EBITDA '+mLbl+' por Año','',220,'')}
-    </div>
-    <div class="gfull">
-      ${chartCard('ch-com-margin','Márgenes '+mLbl+' (%)','Bruto · EBITDA · Neto',180,'')}
-    </div>
-    <div class="insight">
-      📅 <strong>${mLbl} — comparativa interanual.</strong>
-      ${d25m?'<br>2025: Ingresos '+fv(d25m.ing)+
-        ' | Costo '+fv(d25m.cost)+
-        ' | EBITDA '+fv(d25m.ebitda)+' ('+d25m.mep.toFixed(1)+'%)':''
-      }
-      ${d26m?'<br>2026: Ingresos '+fv(d26m.ing)+
-        ' | Costo '+fv(d26m.cost)+
-        ' | EBITDA '+fv(d26m.ebitda)+' ('+d26m.mep.toFixed(1)+'%)':''
-      }
-      <br><span style="color:#607d76;font-size:11px">
-        ℹ️ El desglose por línea de negocio está disponible en vista anual.
-        Para la curva mensual completa → sección <strong>Tendencia</strong>.
-      </span>
-    </div>`;
+  </div>`:''}
+  <div class="g2">
+    ${chartCard('ch-com-bar','Facturación & Costo'+(mBadge?' — '+mBadge:''),'por año',220,'')}
+    ${chartCard('ch-com-ebitda','EBITDA'+(mBadge?' — '+mBadge:''),'por año',220,'')}
+  </div>
+  <div class="gfull">
+    ${chartCard('ch-com-margin','Márgenes (%)'+(mBadge?' — '+mBadge:''),'Bruto · EBITDA',180,'')}
+  </div>
+  <div class="insight">
+    📊 <strong>${_badge}</strong>
+    ${yrsOk.map(y=>`<br>${y===2026?'2026 YTD':y}: ${fv(yrD[y].ing)} ing · ${fv(yrD[y].cost)} costo · EBITDA ${fv(yrD[y].ebitda)} (${yrD[y].mep.toFixed(1)}%)`).join('')}
+    ${mBadge?'<br><span style="color:#607d76;font-size:10.5px">Desglose por línea → sección <strong>Líneas</strong></span>':''}
+  </div>`;
 
-    // Ingresos + Costo grouped bars
-    mkChart('ch-com-bar',{type:'bar',
-      data:{labels:monthEntries.map(e=>String(e.y)),datasets:[
-        {label:'Ingresos',
-         data:monthEntries.map(e=>e.d.ing),
-         backgroundColor:monthEntries.map(e=>e.clr),
-         borderColor:monthEntries.map(e=>e.bc),borderWidth:1,borderRadius:3},
-        {label:'Costo Total',
-         data:monthEntries.map(e=>e.d.cost),
-         backgroundColor:monthEntries.map(e=>e.clr.replace(/,\s*[\d.]+\)$/,',0.35)')),
-         borderRadius:3}
-      ]},
-      options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-        scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}
-    });
-
-    // EBITDA bar (green/red by sign)
-    mkChart('ch-com-ebitda',{type:'bar',
-      data:{labels:monthEntries.map(e=>String(e.y)),datasets:[
-        {label:'EBITDA',
-         data:monthEntries.map(e=>e.d.ebitda),
-         backgroundColor:monthEntries.map(e=>e.d.ebitda>=0?'rgba(45,197,171,0.85)':'rgba(239,83,80,0.8)'),
-         borderRadius:3}
-      ]},
-      options:{plugins:{legend:{display:false}},
-        scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}
-    });
-
-    // Margin % grouped bars
-    mkChart('ch-com-margin',{type:'bar',
-      data:{labels:monthEntries.map(e=>String(e.y)),datasets:[
-        {label:'Mg Bruto%', data:monthEntries.map(e=>+e.d.mbp.toFixed(1)),
-         backgroundColor:'rgba(45,197,171,0.5)',borderRadius:2},
-        {label:'EBITDA%',   data:monthEntries.map(e=>+e.d.mep.toFixed(1)),
-         backgroundColor:monthEntries.map(e=>e.d.mep>=0?'rgba(26,138,122,0.8)':'rgba(239,83,80,0.75)'),
-         borderRadius:2},
-        {label:'Mg Neto%',  data:monthEntries.map(e=>+e.d.mnp.toFixed(1)),
-         backgroundColor:monthEntries.map(e=>e.d.mnp>=0?'rgba(12,48,40,0.75)':'rgba(239,83,80,0.5)'),
-         borderRadius:2}
-      ]},
-      options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-        scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}
-    });
-
-  } else {
-    // ── ANNUAL VIEW (original) ─────────────────────────────────────────────
-    const _yrChartTitle='Facturación por Línea de Negocio — '+_yrBadge;
-    el.innerHTML=`
-    <div class="sec-title">Análisis Comercial <span class="st-badge">${_yrBadge}</span></div>
-    <div class="kpis k4">
-      ${CF.years.has(2024)?kpiCard('Facturación 2024',fv(vTotal24),'Año base'):''}
-      ${CF.years.has(2025)?kpiCard('Facturación 2025',fv(vTotal25),CF.years.has(2024)?fp(pctVar(vTotal25,vTotal24))+' vs 2024':'Año completo'):''}
-      ${CF.years.has(2026)?kpiCard('YTD 2026 (Ene–Feb)',fv(vTotal26),fp(pctVar(vTotal26,COM.v24.reduce((a,b)=>a+b,0)/12*2))+' vs promedio bimensual 2024'):''}
-      ${kpiCard('Cirugías 2026 YTD',COM.cirugias.v26.toLocaleString(),'vs '+COM.cirugias.v25.toLocaleString()+' en 2025 completo')}
-    </div>
-    <div class="kpis k3" style="margin-bottom:16px">
-      ${CF.years.has(2025)?kpiCard('Ticket Promedio 2025',fv(Math.round(vTotal25/COM.cirugias.v25)),'Por cirugía · 2025'):''}
-      ${kpiCard('LIOs — motor premium',fp(pctVar(COM.v25[2],COM.v24[2])),'2025 vs 2024 · YTD-26: '+fv(COM.v26[2]),COM.v25[2]>COM.v24[2]?'':'red')}
-      ${kpiCard('Consultas Médicas',fp(pctVar(COM.v26[3],COM.v25[3]/12*2)),'2026 YTD vs ritmo 2025',COM.v26[3]>COM.v25[3]/12*2?'':'warn')}
-    </div>
-    <div class="g6040">
-      ${chartCard('ch-com-bar',_yrChartTitle,'Verde oscuro=2024 · Teal=2025 · Dorado=2026',280,'')}
-      <div class="card">
-        <div class="card-hdr"><h3>Mix de Ingresos 2025 vs 2026 YTD</h3><span class="badge teal">% participación</span></div>
-        <div class="card-body">
-          <div class="chart-wrap" style="height:180px"><canvas id="ch-com-pie"></canvas></div>
-          <div class="chart-wrap" style="height:100px"><canvas id="ch-com-pie26"></canvas></div>
-        </div>
-      </div>
-    </div>
-    <div class="gfull">
-      <div class="card">
-        <div class="card-hdr"><h3>Detalle por Línea de Negocio</h3><span class="badge teal">${_yrBadge}</span></div>
-        <div class="card-body" id="com-tabla-lineas"></div>
-      </div>
-    </div>`;
-
-    // Bar chart
-    const _bar_ds=[];
-    if(CF.years.has(2024)) _bar_ds.push({label:'2024',    data:li24,backgroundColor:'rgba(12,48,40,0.75)', borderRadius:2,borderColor:'rgba(12,48,40,0.95)', borderWidth:1});
-    if(CF.years.has(2025)) _bar_ds.push({label:'2025',    data:li25,backgroundColor:'rgba(45,197,171,0.88)',borderRadius:2,borderColor:'rgba(45,197,171,1)',   borderWidth:1});
-    if(CF.years.has(2026)) _bar_ds.push({label:'2026 YTD',data:li26,backgroundColor:'rgba(255,193,7,0.82)', borderRadius:2,borderColor:'rgba(255,193,7,1)',    borderWidth:1});
-    mkChart('ch-com-bar',{type:'bar',data:{labels:liLabels,datasets:_bar_ds},
-      options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,padding:12,font:{size:11}}}},
-        scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
-
-    // Doughnuts
-    const _pie_clrs=['#2dc5ab','#1a8a7a','#144838','#3dd6bf','#5ee0cc','#a8c4be'];
-    const _pie25_data=li25.map((v,i)=>(vTotal25?+(v/vTotal25*100).toFixed(1):0));
-    if(CF.years.has(2025)){
-      new Chart(document.getElementById('ch-com-pie'),{
-        type:'doughnut',
-        data:{labels:liLabels,datasets:[{data:_pie25_data,backgroundColor:liIdx.map(i=>_pie_clrs[i%_pie_clrs.length]),borderWidth:2,borderColor:'#fff'}]},
-        options:{responsive:true,maintainAspectRatio:false,
-          plugins:{title:{display:true,text:'Mix 2025',font:{size:11},color:'#607d76'},
-            legend:{position:'right',labels:{font:{size:10},boxWidth:10,padding:6}}}}
-      });
-    }
-    if(CF.years.has(2026)){
-      new Chart(document.getElementById('ch-com-pie26'),{
-        type:'doughnut',
-        data:{labels:liLabels,datasets:[{data:pct26.map(v=>+v.toFixed(1)),backgroundColor:liIdx.map(i=>_pie_clrs[i%_pie_clrs.length]),borderWidth:2,borderColor:'#fff'}]},
-        options:{responsive:true,maintainAspectRatio:false,
-          plugins:{title:{display:true,text:'Mix 2026 YTD',font:{size:11},color:'#b8860b'},
-            legend:{display:false}}}
-      });
-    }
-
-    // Table
-    const _yr_ths=(CF.years.has(2024)?'<th>2024</th>':'')+
-      (CF.years.has(2025)?'<th>2025</th>':'')+
-      (CF.years.has(2024)&&CF.years.has(2025)?'<th>Δ% 24→25</th>':'')+
-      (CF.years.has(2026)?'<th>2026 YTD</th><th>% Mix 2026</th>':'');
-    document.getElementById('com-tabla-lineas').innerHTML=`
-    <div class="tbl-wrap"><table class="tbl">
-      <thead><tr>
-        <th style="text-align:left">Línea de Negocio</th>
-        ${_yr_ths}
-      </tr></thead>
-      <tbody>
-      ${liLabels.map((l,fi)=>`<tr>
-        <td style="font-weight:500">${l}</td>
-        ${CF.years.has(2024)?`<td>${fv(li24[fi])}</td>`:''}
-        ${CF.years.has(2025)?`<td style="font-weight:600">${fv(li25[fi])}</td>`:''}
-        ${CF.years.has(2024)&&CF.years.has(2025)?`<td class="${tdCls(growth2526[fi])}">${fp(growth2526[fi])}</td>`:''}
-        ${CF.years.has(2026)?`<td style="color:#b8860b;font-weight:600">${fv(li26[fi])}</td><td style="color:#b8860b">${pct26[fi].toFixed(1)}%</td>`:''}
-      </tr>`).join('')}
-      </tbody>
-      <tfoot><tr class="tot">
-        <td>TOTAL</td>
-        ${CF.years.has(2024)?`<td>${fv(vTotal24)}</td>`:''}
-        ${CF.years.has(2025)?`<td>${fv(vTotal25)}</td>`:''}
-        ${CF.years.has(2024)&&CF.years.has(2025)?`<td class="pos">${fp(pctVar(vTotal25,vTotal24))}</td>`:''}
-        ${CF.years.has(2026)?`<td style="color:#b8860b;font-weight:600">${fv(vTotal26)}</td><td style="color:#b8860b">100%</td>`:''}
-      </tr></tfoot>
-    </table></div>
-    <div class="insight">
-      ⭐ <strong>LIOs Premium</strong> siguen siendo el motor: ${fv(COM.v26[2])} en solo Ene–Feb 2026.
-      <strong>Derechos de Sala</strong> (cirugías) encabezan el mix con ${pct26[0].toFixed(0)}% del YTD 2026.
-      El ritmo 2026 apunta a superar 2025 si se mantiene la cadencia mensual.
-    </div>`;
-  }
+  mkChart('ch-com-bar',{type:'bar',
+    data:{labels:yrsOk.map(y=>y===2026?'2026 YTD':String(y)),datasets:[
+      {label:'Ingresos',data:yrsOk.map(y=>yrD[y].ing),
+       backgroundColor:yrsOk.map(y=>clr[y]),borderColor:yrsOk.map(y=>bcl[y]),borderWidth:1,borderRadius:3},
+      {label:'Costo',data:yrsOk.map(y=>yrD[y].cost),
+       backgroundColor:yrsOk.map(y=>clr[y].replace(/,\s*[\d.]+\)$/,',0.35)')),borderRadius:3}
+    ]},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}
+  });
+  mkChart('ch-com-ebitda',{type:'bar',
+    data:{labels:yrsOk.map(y=>y===2026?'2026 YTD':String(y)),datasets:[
+      {label:'EBITDA',data:yrsOk.map(y=>yrD[y].ebitda),
+       backgroundColor:yrsOk.map(y=>yrD[y].ebitda>=0?'rgba(45,197,171,0.85)':'rgba(239,83,80,0.8)'),borderRadius:3}
+    ]},
+    options:{plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}
+  });
+  mkChart('ch-com-margin',{type:'bar',
+    data:{labels:yrsOk.map(y=>y===2026?'2026 YTD':String(y)),datasets:[
+      {label:'Mg Bruto%',data:yrsOk.map(y=>+yrD[y].mbp.toFixed(1)),
+       backgroundColor:'rgba(45,197,171,0.5)',borderRadius:2},
+      {label:'EBITDA%',data:yrsOk.map(y=>+yrD[y].mep.toFixed(1)),
+       backgroundColor:yrsOk.map(y=>yrD[y].mep>=0?'rgba(26,138,122,0.8)':'rgba(239,83,80,0.75)'),borderRadius:2}
+    ]},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}
+  });
 }
 
 function buildComLineas(){
   const el=document.getElementById('com-lineas');
   const MNS=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const mLbl=CF.month>0?MNS[CF.month]:null;
+  const mArr2=Array.from(CF.months).sort((a,b)=>a-b);
+  const mLbl=mArr2.length===0?null:mArr2.length<=3?mArr2.map(m=>MNS[m]).join('+'):mArr2.length+' meses';
 
   // ── Data prep ─────────────────────────────────────────────────────────────
   const liIdx=cfLineasIdx();
@@ -1974,9 +1898,10 @@ function buildComCirujanos(){
   const tipoTot26=tiIdx.reduce((s,i)=>s+CIR.tipos_v26[i],0);
 
   // Monthly surgery counts (total, not per surgeon — only total available)
-  const cir24m = mLbl ? (CIR.mes_24[CF.month-1]||0) : null;
-  const cir25m = mLbl ? (CIR.mes_25[CF.month-1]||0) : null;
-  const cir26m = mLbl ? (CIR.mes_26[CF.month-1]||0) : null;
+  function sumCirM(arr){ return mArr2.reduce((s,m)=>s+(arr[m-1]||0),0); }
+  const cir24m=mLbl?sumCirM(CIR.mes_24):null;
+  const cir25m=mLbl?sumCirM(CIR.mes_25):null;
+  const cir26m=mLbl?sumCirM(CIR.mes_26):null;
 
   const C24='rgba(12,48,40,0.75)',B24='rgba(12,48,40,0.95)';
   const C25='rgba(45,197,171,0.88)',B25='rgba(45,197,171,1)';
@@ -2079,7 +2004,7 @@ function buildComCirujanos(){
         label:String(y),
         data:mesData[y].map(v=>v||null),
         backgroundColor:mesData[y].map((v,mi)=>
-          mi===CF.month-1
+          mArr2.includes(mi+1)
             ? (y===2026?'rgba(255,193,7,1)':'rgba(45,197,171,1)')
             : mesClrs[mesYrs.indexOf(y)]
         ),borderRadius:2
