@@ -312,11 +312,18 @@ a{text-decoration:none;color:inherit;}
   flex-wrap:wrap;
   gap:7px 10px;
   align-items:center;
-  position:sticky;
+  /* Fixed: sits below header, right of sidebar */
+  position:fixed;
   top:var(--hdr-h);
-  z-index:88;
+  left:200px;
+  right:0;
+  z-index:95;
 }
 #com-filter-bar.visible{ display:flex; }
+/* Offset content when filter bar is visible */
+#content.has-filter-bar{ padding-top:46px; }
+@media(max-width:1023px){ #com-filter-bar{ left:170px; } }
+@media(max-width:767px){  #com-filter-bar{ left:0; top:calc(var(--hdr-h) + var(--snav-h)); } }
 .cfb-group{ display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
 .cfb-lbl{
   color:rgba(45,197,171,0.65); font-size:9.5px; font-weight:700;
@@ -2328,9 +2335,11 @@ function switchTab(tab){
   document.querySelectorAll('.bnav-btn').forEach(b=>{
     b.classList.toggle('active',b.dataset.tab===tab);
   });
-  // Show/hide commercial filter bar
+  // Show/hide commercial filter bar + offset content
   const fb=document.getElementById('com-filter-bar');
   if(fb) fb.classList.toggle('visible', tab==='com');
+  const ct=document.getElementById('content');
+  if(ct) ct.classList.toggle('has-filter-bar', tab==='com');
   buildSidebar(tab);
   navigate(activeSection);
 }
