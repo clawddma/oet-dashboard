@@ -1797,7 +1797,9 @@ function buildComTrend(){
       backgroundColor:cmpClrs[cmpYrs.indexOf(y)],borderRadius:2
     });
   });
-  mkChart('ch-trn-cmp',{type:'bar',data:{labels:mns_labels,datasets:cmpDs}});
+  mkChart('ch-trn-cmp',{type:'bar',data:{labels:mns_labels,datasets:cmpDs},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
 }
 
 function buildComMeta(){
