@@ -1810,6 +1810,9 @@ function buildComMeta(){
   const pctMeta=(ytd26ing/COM.meta26*100).toFixed(1);
   el.innerHTML=`
   <div class="sec-title">Meta 2026 <span class="st-badge">$23.5B (+52.9% est.)</span></div>
+  ${CF.months.size>0?`<div style="padding:10px 14px;margin-bottom:10px;background:rgba(255,152,0,0.12);border-left:4px solid #ff9800;border-radius:6px;">
+    <strong style="color:#e65100;font-size:12px">⚠️ Esta sección muestra el progreso real hacia la meta anual — no se filtra por mes.</strong>
+  </div>`:''}
   <div class="kpis k3">
     ${kpiCard('Meta 2026', fv(COM.meta26), '+52.9% estimado vs 2025')}
     ${kpiCard('YTD 2026 (Ene-Feb)', fv(ytd26ing), pctMeta+'% de la meta anual alcanzado')}
