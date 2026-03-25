@@ -1498,12 +1498,12 @@ function buildComInicio(){
   </div>`}
 
   <!-- Gráficas por línea de negocio (datos anuales) -->
-  ${hasFilters?`<div class="insight" style="padding:5px 12px;margin-bottom:8px;font-size:10.5px;color:#607d76">
-    ℹ️ Las gráficas de abajo muestran datos <strong>anuales por línea de negocio</strong>.
-    Los KPIs de arriba corresponden al período filtrado (${_badge}).
-  </div>`:''}
+  ${CF.months.size>0?`<div style="padding:14px 16px;margin-bottom:12px;background:rgba(255,152,0,0.12);border-left:4px solid #ff9800;border-radius:6px;">
+    <strong style="color:#e65100;font-size:13px">⚠️ Filtro de mes activo: ${_badge}</strong><br>
+    <span style="font-size:12px;color:#607d76;margin-top:4px;display:block">El desglose por línea de negocio solo existe a nivel anual. Quita el filtro de mes para verlo.</span>
+  </div>`:`
   <div class="g6040">
-    ${chartCard('ch-com-bar','Facturación por Línea de Negocio'+(hasFilters?' — anual':'— 2024 · 2025 · 2026 YTD'),'Verde oscuro=2024 · Teal=2025 · Dorado=2026',280,'')}
+    ${chartCard('ch-com-bar','Facturación por Línea de Negocio — 2024 · 2025 · 2026 YTD','Verde oscuro=2024 · Teal=2025 · Dorado=2026',280,'')}
     <div class="card">
       <div class="card-hdr"><h3>Mix de Ingresos 2025 vs 2026 YTD</h3><span class="badge teal">% participación</span></div>
       <div class="card-body">
@@ -1517,9 +1517,10 @@ function buildComInicio(){
       <div class="card-hdr"><h3>Detalle por Línea de Negocio</h3><span class="badge teal">2024 · 2025 · 2026 YTD</span></div>
       <div class="card-body" id="com-tabla-lineas"></div>
     </div>
-  </div>`;
+  </div>`}`;
 
-  // Bar chart líneas — años seleccionados
+  // Bar chart líneas — solo cuando NO hay filtro de mes
+  if(CF.months.size===0){
   const _bar_ds=[];
   if(CF.years.has(2024)) _bar_ds.push({label:'2024',    data:li24, backgroundColor:'rgba(12,48,40,0.75)',  borderRadius:2, borderColor:'rgba(12,48,40,0.95)',  borderWidth:1});
   if(CF.years.has(2025)) _bar_ds.push({label:'2025',    data:li25, backgroundColor:'rgba(45,197,171,0.88)',borderRadius:2, borderColor:'rgba(45,197,171,1)',    borderWidth:1});
@@ -1587,8 +1588,9 @@ function buildComInicio(){
   <div class="insight">
     ⭐ <strong>LIOs Premium</strong> siguen siendo el motor: ${fv(li26[2])} en solo Ene–Feb 2026.
     <strong>Derechos de Sala</strong> (cirugías) encabezan el mix con ${pct26[0].toFixed(0)}% del YTD 2026.
-    ${hasFilters?'Los KPIs de arriba reflejan el período filtrado ('+_badge+').':'El ritmo 2026 apunta a superar 2025 si se mantiene la cadencia mensual.'}
+    El ritmo 2026 apunta a superar 2025 si se mantiene la cadencia mensual.
   </div>`;
+  } // end if(CF.months.size===0)
 }
 
 function buildComLineas(){
