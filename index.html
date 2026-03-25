@@ -492,21 +492,22 @@ const D = [
   {p:'Feb-26',f:'2026-02',y:2026,m:2,ing:1538191.36,cost:697032.06,ub:841159.3,mbp:54.7,ga:504972.43,go:360624.79,da:0,uo:336186.87,mop:21.9,oInc:19611.63,oGas:42851.12,un:274770.02,mnp:17.9,ebitda:322390.2,mep:21}
 ];
 
-// Datos Comerciales — Fuente: Archivo de Facturación real
+/* ==OET_DATA_START== */
+// Datos Comerciales — Fuente: Archivo de Facturación real (auto-sync via Apps Script)
 const COM = {
   lineas: ['D.Sala (Cirugías)','Honorarios Cirujano','LIOs ★','Consultas Médicas','Exámenes Diagnóstico','Medicamentos'],
-  v24: [3911600,2419600,1763900,794100,534800,207400],
-  v25: [5682700,3663700,3129000,910900,780300,363400],
-  v26: [1183400,632500, 459400, 162700,126800, 72400],   // Ene+Feb 2026 (YTD)
+  v24: [3911600,2419600,1763900,794100,534800,207400], /* AUTO */
+  v25: [5682700,3663700,3129000,910900,780300,363400], /* AUTO */
+  v26: [1183400,632500,459400,162700,126800,72400],   // Ene+Feb 2026 (YTD) /* AUTO */
   pct25: [37.0,23.8,20.4,5.9,5.1,2.4],
-  cirugias: {v24:2956, v25:3921, v26:748, pct:32.7},
+  cirugias: {v24:2956, v25:3921, v26:748, pct:32.7}, /* AUTO */
   pacientes: {v24:8884, v25:10122, pct:13.9},
   meta26: 23500000
 };
 
 // Datos Cirujanos — Fuente: Facturación real por médico (miles de COP)
 const CIR = {
-  // Por Facturación (ingresos que genera cada médico)
+  // Por Facturación (ingresos que genera cada médico) — actualización manual
   cirujanos:[
     {name:'Dr. M.A. Jaramillo N.', bill24:2860270, bill25:4023202, bill26:486789, cir24:402, cir25:487, cir26:59,  esp:'Catarata · LIO Premium'},
     {name:'Dr. Jon K. Balparda',   bill24:1390723, bill25:1763682, bill26:361690, cir24:915, cir25:864, cir26:150, esp:'Alta volumen · Catarata'},
@@ -519,17 +520,18 @@ const CIR = {
     {name:'Dr. J.C. Gil Muñoz',    bill24:240660,  bill25:400000,  bill26:35470,  cir24:132, cir25:212, cir26:23,  esp:'Catarata'},
     {name:'Dra. C. Sardi Correa',  bill24:231334,  bill25:338196,  bill26:65238,  cir24:12,  cir25:18,  cir26:4,   esp:'Refractiva'},
   ],
-  // Por tipo de procedimiento (facturación, miles COP)
+  // Por tipo de procedimiento (facturación, miles COP) — actualización manual
   tipos:['Catarata (Facoemulsif.)','LIOs Premium','PRK (Refractiva)','LASIK (Refractiva)','Vitrectomía','Blefaroplastia','LIO Fáquico','Crosslinking','Otros'],
   tipos_v24:[2955500,1318200,1052500,1034000,128800,165800,162300,108100,282200],
   tipos_v25:[4834400,2130700,1303400,1129800,331200,319500,235500,149800,766500],
   tipos_v26:[767100, 316800, 322500, 184300, 115800,150500,31700, 27600, 121000],
-  // Cirugías mensuales (conteo real de Derechos de Sala)
+  // Cirugías mensuales (conteo real de Derechos de Sala) — auto-sync
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
-  mes_24:[163,208,225,237,254,224,233,291,244,246,299,332],  // total=2956
-  mes_25:[254,272,330,325,324,255,362,387,201,405,365,441],  // total=3921
-  mes_26:[375,373,0,0,0,0,0,0,0,0,0,0],                     // total=748 (Ene+Feb 2026)
+  mes_24:[163,208,225,237,254,224,233,291,244,246,299,332],  // total=2956 /* AUTO */
+  mes_25:[254,272,330,325,324,255,362,387,201,405,365,441],  // total=3921 /* AUTO */
+  mes_26:[375,373,0,0,0,0,0,0,0,0,0,0],                     // total=748 (Ene+Feb 2026) /* AUTO */
 };
+/* ==OET_DATA_END== */
 
 // Balance Sheet Snapshots (miles de COP) — Fuente: EEFF Feb 2026
 const BSS = {
