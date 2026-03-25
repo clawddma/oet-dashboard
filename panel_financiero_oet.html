@@ -1613,9 +1613,12 @@ function buildComLineas(){
       const ms=mArr2.length>0?mArr2:[1,2,3,4,5,6,7,8,9,10,11,12];
       const rows=D.filter(d=>d.y===y&&ms.includes(d.m));
       if(!rows.length) return null;
-      return {ing:rows.reduce((s,r)=>s+r.ing,0),cost:rows.reduce((s,r)=>s+r.cost,0),
-              ebitda:rows.reduce((s,r)=>s+r.ebitda,0),ub:rows.reduce((s,r)=>s+r.ub,0),
-              ga:rows.reduce((s,r)=>s+(r.ga||0),0)};
+      const ing=rows.reduce((s,r)=>s+r.ing,0);
+      const cost=rows.reduce((s,r)=>s+r.cost,0);
+      const ub=rows.reduce((s,r)=>s+r.ub,0);
+      const ebitda=rows.reduce((s,r)=>s+r.ebitda,0);
+      const ga=rows.reduce((s,r)=>s+(r.ga||0),0);
+      return {ing,cost,ub,ebitda,ga,mbp:ing?ub/ing*100:0,mep:ing?ebitda/ing*100:0};
     }
     const d24m=aggMonthD(2024);
     const d25m=aggMonthD(2025);
