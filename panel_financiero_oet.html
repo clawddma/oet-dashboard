@@ -2011,51 +2011,50 @@ function buildComCirujanos(){
     ${CF.years.has(2025)&&cir25m>0?kpiCard('Cirugías '+mLbl+'-25',cir25m.toLocaleString(),fp(pctVar(cir25m,cir24m||0))+' vs '+mLbl+'-24'):''}
     ${CF.years.has(2026)&&cir26m>0?kpiCard('Cirugías '+mLbl+'-26',cir26m.toLocaleString(),fp(pctVar(cir26m,cir25m||0))+' vs '+mLbl+'-25'):''}
   </div>
-  <div class="insight" style="margin-bottom:12px">
-    📅 <strong>Cifras de facturación por médico son anuales.</strong>
-    La clínica no tiene el desglose mensual de facturación por cirujano disponible en este dashboard.
-    Las barras de facturación abajo corresponden al año completo (o YTD 2026).
-    Las cirugías arriba sí corresponden al mes ${mLbl}.
+  <div style="padding:14px 16px;margin-bottom:12px;background:rgba(255,152,0,0.12);border-left:4px solid #ff9800;border-radius:6px;">
+    <strong style="color:#e65100;font-size:13px">⚠️ Filtro de mes activo: ${mLbl}</strong><br>
+    <span style="font-size:12px;color:#607d76;margin-top:4px;display:block">La facturación por médico solo existe a nivel anual. Las cirugías arriba corresponden al mes ${mLbl}.</span>
   </div>`:''}
-  <div class="kpis k3" style="margin-bottom:16px">
+  ${mLbl?'':`<div class="kpis k3" style="margin-bottom:16px">
     ${kpiCard('Cirujano #1 Facturación','Dr. M.A. Jaramillo N.',fv(topBill.bill25)+' · 2025 (+'+fp(pctVar(topBill.bill25,topBill.bill24)).replace('+','')+' vs 2024)')}
     ${kpiCard('Cirujano #1 Volumen','Dr. Jon K. Balparda',topVol.cir25.toLocaleString()+' cirugías · 2025')}
     ${kpiCard('Procedimiento #1','Catarata',(CIR.tipos_v25[0]/tipoTot25*100).toFixed(0)+'% de facturación — '+fv(CIR.tipos_v25[0])+' en 2025')}
-  </div>
-  <div class="gfull">${chartCard('ch-cir-bill','Facturación por Cirujano (anual)','ordenado por 2025',270,'')}</div>
+  </div>`}
+${mLbl?'':`<div class="gfull">${chartCard('ch-cir-bill','Facturación por Cirujano (anual)','ordenado por 2025',270,'')}</div>
   <div class="g2">
     ${chartCard('ch-cir-vol','Cirugías por Médico (anual)','conteo D.Sala',240,'')}
     ${chartCard('ch-cir-tipos','Facturación por Tipo de Procedimiento','anual',240,'')}
-  </div>
+  </div>`}
   ${mLbl?`<div class="gfull">${chartCard('ch-cir-mes','Cirugías Mensuales — Todas las clínicas','resalta '+mLbl,200,'')}</div>`:''}
   <div class="tbl-wrap" style="margin-top:16px"><table class="tbl">
     <thead><tr>
       <th style="text-align:left">Cirujano</th>
-      ${CF.years.has(2024)?'<th>Fact.2024</th>':''}
+      ${!mLbl&&CF.years.has(2024)?'<th>Fact.2024</th>':''}
       ${CF.years.has(2024)?'<th>Cir.2024</th>':''}
-      ${CF.years.has(2025)?'<th>Fact.2025</th>':''}
+      ${!mLbl&&CF.years.has(2025)?'<th>Fact.2025</th>':''}
       ${CF.years.has(2025)?'<th>Cir.2025</th>':''}
-      ${CF.years.has(2024)&&CF.years.has(2025)?'<th>Δ%</th>':''}
-      ${CF.years.has(2026)?'<th>Fact.2026 YTD</th>':''}
+      ${!mLbl&&CF.years.has(2024)&&CF.years.has(2025)?'<th>Δ%</th>':''}
+      ${!mLbl&&CF.years.has(2026)?'<th>Fact.2026 YTD</th>':''}
       ${CF.years.has(2026)?'<th>Cir.2026</th>':''}
       <th style="text-align:left">Especialidad</th>
     </tr></thead>
     <tbody>
     ${visCirc.map(c=>`<tr>
       <td style="font-weight:500">${c.name}</td>
-      ${CF.years.has(2024)?`<td>${fv(c.bill24)}</td>`:''}`+
+      ${!mLbl&&CF.years.has(2024)?`<td>${fv(c.bill24)}</td>`:''}`+
       `${CF.years.has(2024)?`<td>${c.cir24}</td>`:''}`+
-      `${CF.years.has(2025)?`<td style="font-weight:600">${fv(c.bill25)}</td>`:''}`+
+      `${!mLbl&&CF.years.has(2025)?`<td style="font-weight:600">${fv(c.bill25)}</td>`:''}`+
       `${CF.years.has(2025)?`<td>${c.cir25}</td>`:''}`+
-      `${CF.years.has(2024)&&CF.years.has(2025)?`<td class="${tdCls(pctVar(c.bill25,c.bill24))}">${fp(pctVar(c.bill25,c.bill24))}</td>`:''}`+
-      `${CF.years.has(2026)?`<td style="color:#b8860b;font-weight:600">${fv(c.bill26)}</td>`:''}`+
+      `${!mLbl&&CF.years.has(2024)&&CF.years.has(2025)?`<td class="${tdCls(pctVar(c.bill25,c.bill24))}">${fp(pctVar(c.bill25,c.bill24))}</td>`:''}`+
+      `${!mLbl&&CF.years.has(2026)?`<td style="color:#b8860b;font-weight:600">${fv(c.bill26)}</td>`:''}`+
       `${CF.years.has(2026)?`<td style="color:#b8860b">${c.cir26}</td>`:''}`+
       `<td style="color:#607d76;font-size:11px">${c.esp}</td>
     </tr>`).join('')}
     </tbody>
   </table></div>`;
 
-  // Facturación bar
+  // Facturación bar — solo sin filtro de mes
+  if(!mLbl){
   const billSort=[...visCirc].sort((a,b)=>b.bill25-a.bill25);
   const _bill_ds=[];
   if(CF.years.has(2024)) _bill_ds.push({label:'2024',    data:billSort.map(c=>c.bill24),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:2});
@@ -2065,7 +2064,7 @@ function buildComCirujanos(){
     options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
       scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:9}}}}}});
 
-  // Volume bar
+  // Volume bar — solo sin filtro de mes
   const cirSort=[...visCirc].sort((a,b)=>b.cir25-a.cir25);
   {
     const ds=[];
@@ -2087,6 +2086,7 @@ function buildComCirujanos(){
   })()},
   options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
     scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:9}}}}}});
+  } // end if(!mLbl) — annual charts
 
   // Monthly surgery chart (when month filter active)
   if(mLbl){
