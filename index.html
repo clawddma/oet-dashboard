@@ -2053,6 +2053,12 @@ function buildComCirujanos(){
   const tipoTot25=tiIdx.reduce((s,i)=>s+CIR.tipos_v25[i],0);
   const tipoTot26=tiIdx.reduce((s,i)=>s+CIR.tipos_v26[i],0);
 
+  // drBill/drCir use filtered monthly data (scoped to buildComCirujanos)
+  const _cdr24=cfDoctorYear(2024), _cdr25=cfDoctorYear(2025), _cdr26=cfDoctorYear(2026);
+  function _cdrLookup(list,name){ return list.find(d=>d.name===name)||{bill:0,cir:0}; }
+  function drBill(c,y){ return y===2024?_cdrLookup(_cdr24,c.name).bill:y===2025?_cdrLookup(_cdr25,c.name).bill:_cdrLookup(_cdr26,c.name).bill; }
+  function drCir(c,y){ return y===2024?_cdrLookup(_cdr24,c.name).cir:y===2025?_cdrLookup(_cdr25,c.name).cir:_cdrLookup(_cdr26,c.name).cir; }
+
   // Monthly surgery counts (total, not per surgeon — only total available)
   function sumCirM(arr){ return mArr2.reduce((s,m)=>s+(arr[m-1]||0),0); }
   const cir24m=mLbl?sumCirM(CIR.mes_24):null;
@@ -2554,4 +2560,3 @@ switchTab('fin'); // Start on Financiero
 </script>
 </body>
 </html>
-<!-- deploy 1774439764 -->
