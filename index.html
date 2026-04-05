@@ -531,7 +531,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 18:35) /* AUTO */
+  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 17:54) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -1800,68 +1800,165 @@ function buildComLineas(){
 
 function buildComTrend(){
   const el=document.getElementById('com-trend');
-  // ── Apply year + month filters ─────────────────────────────────
-  const filtD=cfD(); // Filtered D: respects CF.years and CF.months
   const mns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const mArr2t=CF.months.size>0?Array.from(CF.months).sort((a,b)=>a-b):[1,2,3,4,5,6,7,8,9,10,11,12];
-  const _title = CF.months.size>0
-    ? 'Facturación — '+mArr2t.map(m=>mns[m-1]).join('+')+' (años seleccionados)'
-    : 'Facturación Mensual — '+(CF.years.size===3?'26 meses':'años seleccionados');
-  // Build cumulative data only for months requested
-  const _months = mArr2t;
-  let c24=0,c25=0;
-  const cum24_data = _months.map(m=>{ const d=D.find(x=>x.y===2024&&x.m===m); if(d){c24+=d.ing;}return +c24.toFixed(0); });
-  const cum25_data = _months.map(m=>{ const d=D.find(x=>x.y===2025&&x.m===m); if(d){c25+=d.ing;}return +c25.toFixed(0); });
-  const mns_labels = CF.months.size>0 ? mArr2t.map(m=>mns[m-1]) : mns;
+  const mns_labels=mArr2t.map(m=>mns[m-1]);
 
-  el.innerHTML=`
-  <div class="sec-title">Tendencia Mensual de Facturación</div>
-  <div class="gfull">${chartCard('ch-trn-main',_title,'',260,'')}</div>
-  <div class="g2">
-    ${CF.years.size>1?chartCard('ch-trn-cum','Facturación Acumulada: '+Array.from(CF.years).join(' vs '),'',230,''):'<div class="card"><div class="card-body" style="color:#607d76;font-size:12px;padding:20px">Selecciona 2+ años para ver acumulado</div></div>'}
-    ${chartCard('ch-trn-cmp','Comparativo Mensual por Año','',230,'')}
-  </div>`;
+  // Último mes disponible de 2026
+  const last26=Math.max(...D.filter(d=>d.y===2026).map(d=>d.m));
 
-  // Main trend chart — filtered
-  mkChart('ch-trn-main',{type:'bar',data:{labels:filtD.map(d=>d.p),datasets:[
-    {label:'Ingresos',data:filtD.map(d=>d.ing),
-     backgroundColor:filtD.map(d=>d.y===2024?'rgba(45,197,171,0.6)':d.y===2025?'rgba(45,197,171,0.85)':'rgba(26,138,122,0.9)'),
-     borderRadius:2}
-  ]},options:{plugins:{legend:{display:false}},
-    scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
-
-  // Cumulative (only when multiple years)
-  if(CF.years.size>1){
-    const cumDs=[];
-    const clrsCum=['rgba(45,197,171,0.55)','#2dc5ab','rgba(255,193,7,0.9)'];
-    const clrIdx=[2024,2025,2026];
-    Array.from(CF.years).sort().forEach((y,ki)=>{
-      let cum=0;
-      const data=_months.map(m=>{
-        const d=D.find(x=>x.y===y&&x.m===m); if(d)cum+=d.ing; return +cum.toFixed(0);
-      });
-      cumDs.push({label:String(y),data,borderColor:clrsCum[clrIdx.indexOf(y)],
-        pointRadius:3,borderWidth:2,borderDash:y===2024?[4,3]:[]});
+  // Suma acumulada — para 2026 devuelve null en meses futuros (evita línea plana)
+  function cumSum(year,months){
+    let c=0;
+    return months.map(m=>{
+      if(year===2026&&m>last26) return null;
+      const d=D.find(x=>x.y===year&&x.m===m);
+      if(d) c+=d.ing;
+      return +c.toFixed(0);
     });
-    mkChart('ch-trn-cum',{type:'line',data:{labels:mns_labels,datasets:cumDs},
-    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-      scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
   }
 
-  // Comparativo mensual por año
-  const cmpDs=[];
-  const cmpClrs=['rgba(45,197,171,0.45)','rgba(45,197,171,0.9)','rgba(255,193,7,0.85)'];
-  const cmpYrs=[2024,2025,2026];
-  Array.from(CF.years).sort().forEach((y,ki)=>{
-    cmpDs.push({
-      label:String(y),
-      data:_months.map(m=>{ const d=D.find(x=>x.y===y&&x.m===m); return d?d.ing:null; }),
-      backgroundColor:cmpClrs[cmpYrs.indexOf(y)],borderRadius:2
+  // Crecimiento YoY por mes (%)
+  function yoyGrowth(y1,y2,months){
+    return months.map(m=>{
+      const d1=D.find(x=>x.y===y1&&x.m===m);
+      const d2=D.find(x=>x.y===y2&&x.m===m);
+      if(!d1||!d2||d1.ing===0) return null;
+      return +((d2.ing/d1.ing-1)*100).toFixed(1);
     });
+  }
+
+  // Trayectoria lineal hacia la meta 2026
+  const metaCum=mArr2t.map(m=>Math.round(COM.meta26/12*m));
+
+  // KPIs resumen
+  const ytd26t=D.filter(d=>d.y===2026).reduce((s,d)=>s+d.ing,0);
+  const ytd25t=D.filter(d=>d.y===2025&&d.m<=last26).reduce((s,d)=>s+d.ing,0);
+  const ytd24t=D.filter(d=>d.y===2024&&d.m<=last26).reduce((s,d)=>s+d.ing,0);
+  const pct26vs25=ytd25t>0?((ytd26t/ytd25t-1)*100).toFixed(1):'—';
+  const bestMes26=D.filter(d=>d.y===2026).sort((a,b)=>b.ing-a.ing)[0];
+
+  el.innerHTML=`
+  <div class="sec-title">Tendencia de Facturación <span class="st-badge">YTD Ene–${mns[last26-1]} 2026</span></div>
+  <div class="kpis k3">
+    ${kpiCard('Facturado YTD 2026',fv(ytd26t),'+'+pct26vs25+'% vs mismo período 2025',parseFloat(pct26vs25)>=0?'':'red')}
+    ${kpiCard('Mejor mes 2026',bestMes26?bestMes26.p:'—',bestMes26?fv(bestMes26.ing):'')}
+    ${kpiCard('Promedio mensual 2026',fv(ytd26t/last26),'vs '+fv(ytd25t/last26)+' prom. 2025 (mismo tramo)')}
+  </div>
+  <div class="gfull">${chartCard('ch-trn-cum','Facturación Acumulada: 2024 · 2025 · 2026 + Meta','En miles de COP — 2026 muestra hasta '+mns[last26-1],310,'')}</div>
+  <div class="g2">
+    ${chartCard('ch-trn-main','Facturación Mensual por Año','En miles de COP',240,'')}
+    ${chartCard('ch-trn-cmp','Crecimiento Mensual YoY (%)','2025 vs 2024 · 2026 vs 2025',240,'')}
+  </div>`;
+
+  // ── Gráfica acumulada — área con relleno, estilo analítico ────────────
+  const cumDs=[];
+  if(CF.years.has(2024)) cumDs.push({
+    label:'2024',
+    data:cumSum(2024,mArr2t),
+    borderColor:'rgba(45,197,171,0.45)',
+    backgroundColor:'rgba(45,197,171,0.05)',
+    borderWidth:2,borderDash:[5,4],fill:true,tension:0.4,
+    pointRadius:3,pointBackgroundColor:'rgba(45,197,171,0.5)',pointHoverRadius:5,
+    spanGaps:false
   });
-  mkChart('ch-trn-cmp',{type:'bar',data:{labels:mns_labels,datasets:cmpDs},
-    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-      scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
+  if(CF.years.has(2025)) cumDs.push({
+    label:'2025',
+    data:cumSum(2025,mArr2t),
+    borderColor:'#2dc5ab',
+    backgroundColor:'rgba(45,197,171,0.13)',
+    borderWidth:2.5,fill:true,tension:0.4,
+    pointRadius:3,pointBackgroundColor:'#2dc5ab',pointHoverRadius:5,
+    spanGaps:false
+  });
+  if(CF.years.has(2026)){
+    cumDs.push({
+      label:'2026 (real)',
+      data:cumSum(2026,mArr2t),
+      borderColor:'#ffc107',
+      backgroundColor:'rgba(255,193,7,0.10)',
+      borderWidth:3,fill:true,tension:0.4,
+      pointRadius:(ctx)=>ctx.dataIndex===last26-1?8:3,
+      pointBackgroundColor:'#ffc107',pointHoverRadius:6,
+      spanGaps:false  // línea se detiene en el último mes real — no se extiende plana
+    });
+    cumDs.push({
+      label:'Meta 2026 ($23.5B)',
+      data:metaCum,
+      borderColor:'rgba(255,138,0,0.6)',
+      backgroundColor:'transparent',
+      borderWidth:1.5,borderDash:[8,5],fill:false,tension:0,
+      pointRadius:0,pointHoverRadius:4,
+    });
+  }
+  mkChart('ch-trn-cum',{type:'line',data:{labels:mns_labels,datasets:cumDs},options:{
+    responsive:true,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{position:'top',labels:{boxWidth:14,font:{size:11},padding:16,usePointStyle:true}},
+      tooltip:{callbacks:{
+        label:ctx=>' '+ctx.dataset.label+': '+(ctx.raw!=null?fv(ctx.raw):'sin datos')
+      }}
+    },
+    scales:{
+      y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'},border:{dash:[3,3]}},
+      x:{ticks:{font:{size:10}},grid:{display:false}}
+    }
+  }});
+
+  // ── Barras mensuales por año ───────────────────────────────────────
+  const barDs=[];
+  if(CF.years.has(2024)) barDs.push({label:'2024',borderRadius:3,
+    data:mArr2t.map(m=>{const d=D.find(x=>x.y===2024&&x.m===m);return d?d.ing:null;}),
+    backgroundColor:'rgba(45,197,171,0.38)',borderColor:'rgba(45,197,171,0.65)',borderWidth:1});
+  if(CF.years.has(2025)) barDs.push({label:'2025',borderRadius:3,
+    data:mArr2t.map(m=>{const d=D.find(x=>x.y===2025&&x.m===m);return d?d.ing:null;}),
+    backgroundColor:'rgba(45,197,171,0.82)',borderColor:'#2dc5ab',borderWidth:1});
+  if(CF.years.has(2026)) barDs.push({label:'2026',borderRadius:3,
+    data:mArr2t.map(m=>{const d=D.find(x=>x.y===2026&&x.m===m);return d?d.ing:null;}),
+    backgroundColor:'rgba(255,193,7,0.85)',borderColor:'#ffc107',borderWidth:1});
+  mkChart('ch-trn-main',{type:'bar',data:{labels:mns_labels,datasets:barDs},options:{
+    plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:14}}},
+    scales:{
+      y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},
+      x:{ticks:{font:{size:10}},grid:{display:false}}
+    }
+  }});
+
+  // ── Crecimiento YoY (%) — línea ───────────────────────────────────
+  const growDs=[];
+  if(CF.years.has(2024)&&CF.years.has(2025)) growDs.push({
+    label:'2025 vs 2024',
+    data:yoyGrowth(2024,2025,mArr2t),
+    borderColor:'#2dc5ab',backgroundColor:'rgba(45,197,171,0.10)',
+    borderWidth:2,fill:true,tension:0.4,
+    pointRadius:3,pointBackgroundColor:'#2dc5ab',pointHoverRadius:5,spanGaps:false
+  });
+  if(CF.years.has(2025)&&CF.years.has(2026)) growDs.push({
+    label:'2026 vs 2025',
+    data:yoyGrowth(2025,2026,mArr2t),
+    borderColor:'#ffc107',backgroundColor:'rgba(255,193,7,0.10)',
+    borderWidth:2.5,fill:true,tension:0.4,
+    pointRadius:3,pointBackgroundColor:'#ffc107',pointHoverRadius:5,spanGaps:false
+  });
+  // Línea de referencia 0%
+  growDs.push({label:'Neutro (0%)',data:mArr2t.map(()=>0),
+    borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[3,3],
+    pointRadius:0,fill:false});
+  mkChart('ch-trn-cmp',{type:'line',data:{labels:mns_labels,datasets:growDs},options:{
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:14,usePointStyle:true}},
+      tooltip:{callbacks:{
+        label:ctx=>' '+ctx.dataset.label+': '+(ctx.raw!=null?(ctx.raw>0?'+':'')+ctx.raw+'%':'sin datos')
+      }}
+    },
+    scales:{
+      y:{ticks:{callback:v=>(v>0?'+':'')+v+'%',font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'},
+         border:{dash:[3,3]}},
+      x:{ticks:{font:{size:10}},grid:{display:false}}
+    }
+  }});
 }
 
 function buildComMeta(){
