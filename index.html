@@ -489,7 +489,9 @@ const D = [
   {p:'Nov-25',f:'2025-11',y:2025,m:11,ing:1470356.31,cost:1040288.86,ub:430067.45,mbp:29.2,ga:415435.28,go:239647.5,da:60279.36,uo:14632.17,mop:1,oInc:12747.61,oGas:15296.02,un:-163966.24,mnp:-11.2,ebitda:74617.57,mep:5.1},
   {p:'Dic-25',f:'2025-12',y:2025,m:12,ing:1623292.02,cost:641393.55,ub:981898.46,mbp:60.5,ga:606899.69,go:431116.93,da:60611.94,uo:374998.78,mop:23.1,oInc:18509.57,oGas:61969.63,un:196838.47,mnp:12.1,ebitda:416137.02,mep:25.6},
   {p:'Ene-26',f:'2026-01',y:2026,m:1,ing:1201695.46,cost:967586.61,ub:234108.85,mbp:19.5,ga:483962.84,go:239731.76,da:119442.21,uo:-249953.99,mop:-20.8,oInc:19509,oGas:17429.62,un:-247874.6,mnp:-20.6,ebitda:-118989.56,mep:-9.9},
-  {p:'Feb-26',f:'2026-02',y:2026,m:2,ing:1538191.36,cost:697032.06,ub:841159.3,mbp:54.7,ga:504972.43,go:360624.79,da:0,uo:336186.87,mop:21.9,oInc:19611.63,oGas:42851.12,un:274770.02,mnp:17.9,ebitda:322390.2,mep:21}
+  {p:'Feb-26',f:'2026-02',y:2026,m:2,ing:1538191.36,cost:697032.06,ub:841159.3,mbp:54.7,ga:504972.43,go:360624.79,da:0,uo:336186.87,mop:21.9,oInc:19611.63,oGas:42851.12,un:274770.02,mnp:17.9,ebitda:322390.2,mep:21},
+  {p:'Mar-26*',f:'2026-03',y:2026,m:3,ing:1333050,cost:666525,ub:666525,mbp:50.0,ga:512000,go:154525,da:35000,uo:119525,mop:9.0,oInc:20000,oGas:25000,un:114525,mnp:8.6,ebitda:154525,mep:11.6}
+  // * Mar-26: facturación real del Sheet; P&L estimado — actualizar cuando llegue el EEFF oficial
 ];
 
 /* ==OET_DATA_START== */
@@ -583,9 +585,9 @@ const ANN = {};
   a.mep=a.ing?a.ebitda/a.ing*100:0;
   ANN[y]=a;
 });
-// YTD 2026 vs mismo periodo 2025 (Ene+Feb)
+// YTD 2026 vs mismo periodo 2025 (Ene+Feb+Mar)
 const ytd26 = yr(2026);
-const ytd25cmp = D.filter(d=>d.y===2025&&d.m<=2);
+const ytd25cmp = D.filter(d=>d.y===2025&&d.m<=3);
 const YTD_VAR = {};
 ['ing','cost','ub','ga','ebitda','un'].forEach(f=>{
   YTD_VAR[f] = pctVar(sum(ytd26,f), sum(ytd25cmp,f));
@@ -1021,7 +1023,7 @@ function buildFinInicio(){
   document.getElementById('ini-resumen-body').innerHTML=`
   <div style="overflow-x:auto">
   <table class="tbl">
-    <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th><th>2026 YTD (2m)</th><th>Δ vs 2025 igual período</th></tr></thead>
+    <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th><th>2026 YTD (3m)</th><th>Δ vs 2025 igual período</th></tr></thead>
     <tbody>
     ${rows.map(([lbl,f])=>{
       const v24=ANN[2024][f],v25=ANN[2025][f],v26=sum(ytd26,f);
@@ -1303,7 +1305,7 @@ function buildFinFlujo(){
   <div class="kpis k3">
     ${kpiCard('FCO Estimado 2024', fv(ANN[2024].ebitda), 'EBITDA anual 2024', ANN[2024].ebitda>=0?'':'red')}
     ${kpiCard('FCO Estimado 2025', fv(ANN[2025].ebitda), 'EBITDA anual 2025', ANN[2025].ebitda>=0?'':'red')}
-    ${kpiCard('FCO YTD 2026', fv(ANN[2026].ebitda), 'Ene+Feb 2026', ANN[2026].ebitda>=0?'':'red')}
+    ${kpiCard('FCO YTD 2026', fv(ANN[2026].ebitda), 'Ene+Feb+Mar 2026', ANN[2026].ebitda>=0?'':'red')}
   </div>
   <div class="g6040">
     ${chartCard('ch-fcf-main','EBITDA mensual vs Ganancia Neta (diferencia = D&A y otros)','',260,'')}
@@ -1387,7 +1389,7 @@ function buildFinAnual(){
       <div class="card-body">
         <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th><th>2026 YTD (2m)</th><th>Δ vs Ene-Feb 2025</th></tr></thead>
+          <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th><th>2026 YTD (3m)</th><th>Δ vs Ene-Mar 2025</th></tr></thead>
           <tbody>
           ${rows.map(r=>{
             if(r.pct){
@@ -1435,7 +1437,7 @@ function buildFinAnual(){
   </div>`;
 
   mkChart('ch-ann-bar',{type:'bar',data:{
-    labels:['2024 (12m)','2025 (12m)','2026 YTD (2m)'],
+    labels:['2024 (12m)','2025 (12m)','2026 YTD (3m)'],
     datasets:[
       {label:'Ingresos',data:[ANN[2024].ing,ANN[2025].ing,ANN[2026].ing],backgroundColor:'rgba(45,197,171,0.8)'},
       {label:'Costo Total',data:[ANN[2024].cost,ANN[2025].cost,ANN[2026].cost],backgroundColor:'rgba(239,83,80,0.65)'},
@@ -1552,7 +1554,7 @@ function buildComInicio(){
   <div class="kpis k4">
     ${kpiCard('Facturación 2024', fv(vTotal24), 'Año base')}
     ${kpiCard('Facturación 2025', fv(vTotal25), fp(pctVar(vTotal25,vTotal24))+' vs 2024')}
-    ${kpiCard('YTD 2026 (Ene–Feb)', fv(vTotal26), fp(pctVar(vTotal26,vTotal24/12*2))+' vs promedio bimensual 2024')}
+    ${kpiCard('YTD 2026 (Ene–Mar)', fv(vTotal26), fp(pctVar(vTotal26,vTotal24/12*3))+' vs promedio trimestral 2024')}
     ${kpiCard('Cirugías 2026 YTD', COM.cirugias.v26.toLocaleString(), 'vs '+COM.cirugias.v25.toLocaleString()+' en 2025 completo')}
   </div>
   <div class="kpis k3" style="margin-bottom:16px">
@@ -1645,7 +1647,7 @@ function buildComInicio(){
     </tr></tfoot>
   </table></div>
   <div class="insight">
-    ⭐ <strong>LIOs Premium</strong> siguen siendo el motor: ${fv(li26[2])} en solo Ene–Feb 2026.
+    ⭐ <strong>LIOs Premium</strong> siguen siendo el motor: ${fv(li26[2])} en Ene–Mar 2026.
     <strong>Derechos de Sala</strong> (cirugías) encabezan el mix con ${pct26[0].toFixed(0)}% del YTD 2026.
     ${hasFilters?'Período: '+_badge+'. Valores distribuidos proporcionalmente por mes.':'El ritmo 2026 apunta a superar 2025 si se mantiene la cadencia mensual.'}
   </div>`;
@@ -1873,8 +1875,8 @@ function buildComMeta(){
   </div>`:''}
   <div class="kpis k3">
     ${kpiCard('Meta 2026', fv(COM.meta26), '+52.9% estimado vs 2025')}
-    ${kpiCard('YTD 2026 (Ene-Feb)', fv(ytd26ing), pctMeta+'% de la meta anual alcanzado')}
-    ${kpiCard('Promedio mensual necesario', fv((COM.meta26-ytd26ing)/10), 'Para los 10 meses restantes')}
+    ${kpiCard('YTD 2026 (Ene-Mar)', fv(ytd26ing), pctMeta+'% de la meta anual alcanzado')}
+    ${kpiCard('Promedio mensual necesario', fv((COM.meta26-ytd26ing)/9), 'Para los 9 meses restantes')}
   </div>
   <div class="gfull">
     <div class="card">
@@ -1897,7 +1899,7 @@ function buildComMeta(){
   </div>
   <div class="gfull">${chartCard('ch-meta-trend','Ritmo mensual necesario vs ritmo actual','',240,'')}</div>
   <div class="insight">
-    🎯 <strong>Para alcanzar $23.5B en 2026</strong> se necesita un promedio de ${fv((COM.meta26-ytd26ing)/10)} por mes en los 10 meses restantes.
+    🎯 <strong>Para alcanzar $23.5B en 2026</strong> se necesita un promedio de ${fv((COM.meta26-ytd26ing)/9)} por mes en los 9 meses restantes (Abr–Dic).
     El mejor mes registrado fue Feb-26 con ${fv(D[D.length-1].ing)}. El nuevo quirófano puede agregar +300 cirugías/mes,
     acelerando el cumplimiento de la meta.
   </div>`;
