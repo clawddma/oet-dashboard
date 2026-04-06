@@ -1678,104 +1678,77 @@ function buildComLineas(){
   const _yrBadgeLn=Array.from(CF.years).sort().map(y=>y===2026?'2026 YTD':String(y)).join(' · ');
 
   if(mLbl){
-    // ── MONTHLY VIEW — show monthly totals from D, note annual line limitation
-    function aggMonthD(y){
+    // ── MONTHLY VIEW — solo datos de facturación por servicio (Google Sheets) ─
+    // aggMonthIng: suma SOLO el campo ing de D[] (facturación real). SIN costos.
+    function aggMonthIng(y){
       const ms=mArr2.length>0?mArr2:[1,2,3,4,5,6,7,8,9,10,11,12];
       const rows=D.filter(d=>d.y===y&&ms.includes(d.m));
       if(!rows.length) return null;
-      const ing=rows.reduce((s,r)=>s+r.ing,0);
-      const cost=rows.reduce((s,r)=>s+r.cost,0);
-      const ub=rows.reduce((s,r)=>s+r.ub,0);
-      const ebitda=rows.reduce((s,r)=>s+r.ebitda,0);
-      const ga=rows.reduce((s,r)=>s+(r.ga||0),0);
-      return {ing,cost,ub,ebitda,ga,mbp:ing?ub/ing*100:0,mep:ing?ebitda/ing*100:0};
+      return rows.reduce((s,r)=>s+r.ing,0);
     }
-    const d24m=aggMonthD(2024);
-    const d25m=aggMonthD(2025);
-    const d26m=aggMonthD(2026);
-    const entries=[
-      {y:2024,d:d24m},{y:2025,d:d25m},{y:2026,d:d26m}
-    ].filter(e=>CF.years.has(e.y)&&e.d);
+    const ing24m=aggMonthIng(2024);
+    const ing25m=aggMonthIng(2025);
+    const ing26m=aggMonthIng(2026);
     const mnsAll=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-    // ── Calcular composición del peso para la explicación de texto ──────────
-    const _refEntry = entries.find(e=>e.y===2026)||entries[entries.length-1];
-    const _refIng   = _refEntry ? _refEntry.d.ing : 1;
-    const _pCMV     = _refEntry ? Math.round(_refEntry.d.cost/_refIng*100) : 0;
-    const _pGA      = _refEntry ? Math.round(_refEntry.d.ga/_refIng*100)   : 0;
-    const _pUO      = _refEntry ? Math.round((_refEntry.d.ing-_refEntry.d.cost-_refEntry.d.ga)/_refIng*100) : 0;
+    // Totales por línea para el mes seleccionado
+    const liT24=li24, liT25=li25, liT26=li26;
+    const liTotal26=liT26.reduce((a,b)=>a+b,0);
+    const liTotal25=liT25.reduce((a,b)=>a+b,0);
 
     el.innerHTML=`
-    <div class="sec-title">Detalle por Línea de Negocio
-      <span class="st-badge">${mLbl} · ${_yrBadgeLn}</span>
+    <div class="sec-title">Facturación por Servicio — ${mLbl}
+      <span class="st-badge">${_yrBadgeLn}</span>
     </div>
     <div class="kpis k3" style="margin-bottom:8px">
-      ${entries.map(e=>{
-        const prev=entries.find(x=>x.y===e.y-1);
-        return kpiCard(
-          'Ingresos '+mLbl+'-'+e.y,
-          fv(e.d.ing),
-          (prev?fp(pctVar(e.d.ing,prev.d.ing))+' vs '+mLbl+'-'+prev.y+' · ':'')+
-          'CMV: '+fv(e.d.cost)+' · G&A: '+fv(e.d.ga)
-        );
-      }).join('')}
+      ${CF.years.has(2024)&&ing24m?kpiCard('Ingresos 2024 · '+mLbl,fv(ing24m),'Facturación del mes'):''}
+      ${CF.years.has(2025)&&ing25m?kpiCard('Ingresos 2025 · '+mLbl,fv(ing25m),ing24m?fp(pctVar(ing25m,ing24m))+' vs 2024':'Facturación del mes'):''}
+      ${CF.years.has(2026)&&ing26m?kpiCard('Ingresos 2026 · '+mLbl,fv(ing26m),ing25m?fp(pctVar(ing26m,ing25m))+' vs 2025':'Facturación del mes'):''}
     </div>
-    <div class="insight" style="margin-bottom:12px">
-      📊 <strong>¿Cómo se distribuye cada peso que entra en ${mLbl}?</strong><br>
-      ${_refEntry?`De cada $100 de ingresos en ${_refEntry.y}: <strong style="color:#ef5350">$${_pCMV} son costos médicos (CMV)</strong>, <strong style="color:#ff9800">$${_pGA} van a gastos administrativos (G&A)</strong>, y <strong style="color:#2dc5ab">quedan $${_pUO} de Utilidad Operativa</strong>.`:''}
-      <br><span style="color:#607d76;font-size:11px">ℹ️ Valores distribuidos proporcionalmente según facturación mensual total.</span>
-    </div>
-    <div class="gfull">${chartCard('ch-lnl-month-bar','Composición del Ingreso — '+mLbl,'CMV · G&A · Utilidad Operativa por año',260,'')}</div>
+    <div class="gfull">${chartCard('ch-lnl-month-bar','Facturación por Servicio — '+mLbl,'Comparativo interanual por línea',280,'')}</div>
     <div class="g2">
-      ${chartCard('ch-lnl-month-mg','Márgenes — '+mLbl,'Mg.Bruto % y EBITDA % por año',230,'','showZL')}
-      ${chartCard('ch-lnl-month-all','Contexto anual — Ingresos por mes','Mes seleccionado resaltado',230,'')}
+      ${chartCard('ch-lnl-month-mix','Mix de Servicios — '+mLbl,'% participación por línea',240,'')}
+      ${chartCard('ch-lnl-month-all','Ingresos mensuales — contexto anual','Mes seleccionado resaltado',240,'')}
+    </div>
+    <div class="insight">
+      📅 <strong>Período: ${mLbl}.</strong>
+      ${liTotal26>0?'Líderes en '+mLbl+'-2026: <strong>'+liLabels[liT26.indexOf(Math.max(...liT26))]+'</strong> ('
+        +fv(Math.max(...liT26))+') · <strong>'+liLabels.sort((a,b)=>liT26[liLabels.indexOf(b)]-liT26[liLabels.indexOf(a)])[1]+'</strong> ('
+        +fv(liT26.slice().sort((a,b)=>b-a)[1])+').':''}
+      <br><span style="font-size:10px;color:#607d76">ℹ️ Fuente: facturación real del Google Sheet. El análisis de costos y márgenes se incorpora cuando se comparten los estados financieros del mes.</span>
     </div>`;
 
-    // ── Stacked composition bar con línea de ingresos totales ────────────────
-    const _cmpColors={CMV:'rgba(239,83,80,0.82)',GA:'rgba(255,152,0,0.82)',UO:'rgba(45,197,171,0.85)'};
+    // ── Facturación por servicio — comparativo interanual para el mes ────────
+    const _svcDs=[];
+    if(CF.years.has(2024)&&liT24.some(v=>v>0))
+      _svcDs.push({label:'2024',data:liT24,backgroundColor:'rgba(12,48,40,0.75)',borderRadius:2,borderColor:'rgba(12,48,40,0.95)',borderWidth:1});
+    if(CF.years.has(2025)&&liT25.some(v=>v>0))
+      _svcDs.push({label:'2025',data:liT25,backgroundColor:'rgba(45,197,171,0.88)',borderRadius:2,borderColor:'rgba(45,197,171,1)',borderWidth:1});
+    if(CF.years.has(2026)&&liT26.some(v=>v>0))
+      _svcDs.push({label:'2026',data:liT26,backgroundColor:'rgba(255,193,7,0.85)',borderRadius:2,borderColor:'rgba(255,193,7,1)',borderWidth:1});
     mkChart('ch-lnl-month-bar',{type:'bar',
-      data:{labels:entries.map(e=>String(e.y)),datasets:[
-        {label:'CMV (Costos Médicos)',data:entries.map(e=>e.d.cost),
-         backgroundColor:_cmpColors.CMV,borderRadius:0,stack:'comp'},
-        {label:'G&A (Gastos Adm.)',data:entries.map(e=>e.d.ga||0),
-         backgroundColor:_cmpColors.GA,borderRadius:0,stack:'comp'},
-        {label:'Utilidad Operativa',data:entries.map(e=>Math.max(0,e.d.ing-e.d.cost-(e.d.ga||0))),
-         backgroundColor:_cmpColors.UO,borderRadius:3,stack:'comp'},
-        {label:'Ingresos Totales',data:entries.map(e=>e.d.ing),
-         type:'line',borderColor:'rgba(12,48,40,0.9)',backgroundColor:'transparent',
-         borderWidth:2.5,pointRadius:5,pointBackgroundColor:'rgba(12,48,40,0.9)',tension:0.3,order:0}
-      ]},
-      options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
-        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fv(ctx.parsed.y)}}},
-        scales:{y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:10}}},
-                x:{stacked:true,ticks:{font:{size:10}}}}}
+      data:{labels:liLabels,datasets:_svcDs},
+      options:{indexAxis:'y',
+        plugins:{legend:{position:'top',labels:{boxWidth:12,padding:10,font:{size:11}}},
+          tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fv(ctx.parsed.x)}}},
+        scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:10}}}}}
     });
 
-    // ── Márgenes: Mg Bruto % y EBITDA % agrupados ────────────────────────────
-    const _mgEl=document.getElementById('ch-lnl-month-mg');
-    if(_mgEl){
-      const _mgParent=_mgEl.closest('.card');
-      if(_mgParent){
-        const _zl=_mgParent.querySelector('.zero-legend');
-        if(!_zl){
-          const _zDiv=document.createElement('div');
-          _zDiv.className='zero-legend'; _zDiv.textContent='Línea $0 — límite ganancia/pérdida';
-          _mgParent.querySelector('.card-body').appendChild(_zDiv);
-        }
-      }
-    }
-    mkChart('ch-lnl-month-mg',{type:'bar',
-      data:{labels:entries.map(e=>String(e.y)),datasets:[
-        {label:'Margen Bruto %',data:entries.map(e=>+e.d.mbp.toFixed(1)),
-         backgroundColor:entries.map(e=>e.d.mbp>=0?'rgba(45,197,171,0.85)':'rgba(239,83,80,0.85)'),borderRadius:3},
-        {label:'EBITDA %',data:entries.map(e=>+e.d.mep.toFixed(1)),
-         backgroundColor:entries.map(e=>e.d.mep>=0?'rgba(12,48,40,0.75)':'rgba(239,83,80,0.55)'),borderRadius:3}
-      ]},
-      options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
-        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+'%'}}},
-        scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}},
-          grid:{color:ctx=>ctx.tick.value===0?'rgba(239,83,80,0.6)':'rgba(0,0,0,0.06)'},
-          border:{dash:ctx=>ctx.tick.value===0?[4,3]:[]}}}}
+    // ── Mix de servicios — % participación para el mes seleccionado ──────────
+    const _mixRef=liT26.some(v=>v>0)?liT26:(liT25.some(v=>v>0)?liT25:liT24);
+    const _mixTotal=_mixRef.reduce((a,b)=>a+b,0);
+    const _mixYear=liT26.some(v=>v>0)?'2026':(liT25.some(v=>v>0)?'2025':'2024');
+    new Chart(document.getElementById('ch-lnl-month-mix'),{
+      type:'doughnut',
+      data:{labels:liLabels,datasets:[{
+        data:_mixRef.map(v=>_mixTotal?+(v/_mixTotal*100).toFixed(1):0),
+        backgroundColor:['#2dc5ab','#1a8a7a','#144838','#3dd6bf','#5ee0cc','#a8c4be'],
+        borderWidth:2,borderColor:'#fff'
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{title:{display:true,text:'Mix '+_mixYear+' · '+mLbl,font:{size:11},color:'#607d76'},
+          legend:{position:'right',labels:{font:{size:10},boxWidth:10,padding:6}},
+          tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed.toFixed(1)+'%'}}}}
     });
 
     // ── Contexto anual: todos los meses resaltando el seleccionado ───────────
