@@ -490,8 +490,8 @@ const D = [
   {p:'Dic-25',f:'2025-12',y:2025,m:12,ing:1623292.02,cost:641393.55,ub:981898.46,mbp:60.5,ga:606899.69,go:431116.93,da:60611.94,uo:374998.78,mop:23.1,oInc:18509.57,oGas:61969.63,un:196838.47,mnp:12.1,ebitda:416137.02,mep:25.6},
   {p:'Ene-26',f:'2026-01',y:2026,m:1,ing:1201695.46,cost:967586.61,ub:234108.85,mbp:19.5,ga:483962.84,go:239731.76,da:119442.21,uo:-249953.99,mop:-20.8,oInc:19509,oGas:17429.62,un:-247874.6,mnp:-20.6,ebitda:-118989.56,mep:-9.9},
   {p:'Feb-26',f:'2026-02',y:2026,m:2,ing:1538191.36,cost:697032.06,ub:841159.3,mbp:54.7,ga:504972.43,go:360624.79,da:0,uo:336186.87,mop:21.9,oInc:19611.63,oGas:42851.12,un:274770.02,mnp:17.9,ebitda:322390.2,mep:21},
-  {p:'Mar-26*',f:'2026-03',y:2026,m:3,ing:1333050,cost:666525,ub:666525,mbp:50.0,ga:512000,go:154525,da:35000,uo:119525,mop:9.0,oInc:20000,oGas:25000,un:114525,mnp:8.6,ebitda:154525,mep:11.6}
-  // * Mar-26: facturación real del Sheet; P&L estimado — actualizar cuando llegue el EEFF oficial
+  {p:'Mar-26',f:'2026-03',y:2026,m:3,ing:1333050,eeffPending:true}
+  // Mar-26: ing = facturación real del Sheet. P&L pendiente de EEFF oficial del contador (~12-15 Abr)
 ];
 
 /* ==OET_DATA_START== */
@@ -531,7 +531,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 19:30) /* AUTO */
+  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 17:54) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -560,6 +560,11 @@ const avg = (arr,f) => sum(arr,f)/arr.length;
 const yr = y => D.filter(d=>d.y===y);
 const lbl = d => D.map(r=>r.p);
 
+// ── Separación COMERCIAL vs CONTABLE ──────────────────────────────────────
+// hasEEFF(d) = true solo cuando el mes tiene estados financieros oficiales.
+// eeffPending:true en D[] = solo hay facturación real (ing), sin P&L aún.
+const hasEEFF = d => !d.eeffPending;
+
 // Formato dinámico
 function fv(v, decimals=1){
   const s = v<0?'-':'';
@@ -574,23 +579,32 @@ function tdCls(v){ return v>=0?'pos':'neg'; }
 function pctVar(a,b){ return b ? ((a-b)/Math.abs(b)*100) : 0; }
 
 // Anual aggregates
+// ing = todos los meses (facturación real siempre disponible)
+// P&L (cost/ga/uo/ebitda/…) = SOLO meses con EEFF oficial del contador
 const ANN = {};
 [2024,2025,2026].forEach(y=>{
-  const d=yr(y);
-  const a={n:d.length};
-  ['ing','cost','ub','ga','go','da','uo','oInc','oGas','un','ebitda'].forEach(f=>a[f]=sum(d,f));
-  a.mbp=a.ing?a.ub/a.ing*100:0;
-  a.mop=a.ing?a.uo/a.ing*100:0;
-  a.mnp=a.ing?a.un/a.ing*100:0;
-  a.mep=a.ing?a.ebitda/a.ing*100:0;
+  const dAll=yr(y), dEEFF=dAll.filter(hasEEFF);
+  const a={n:dAll.length, nEEFF:dEEFF.length};
+  a.ing=sum(dAll,'ing');
+  const ingRef=sum(dEEFF,'ing'); // base para márgenes (solo meses EEFF)
+  ['cost','ub','ga','go','da','uo','oInc','oGas','un','ebitda'].forEach(f=>a[f]=sum(dEEFF,f));
+  a.mbp=ingRef?a.ub/ingRef*100:0;
+  a.mop=ingRef?a.uo/ingRef*100:0;
+  a.mnp=ingRef?a.un/ingRef*100:0;
+  a.mep=ingRef?a.ebitda/ingRef*100:0;
   ANN[y]=a;
 });
-// YTD 2026 vs mismo periodo 2025 (Ene+Feb+Mar)
-const ytd26 = yr(2026);
-const ytd25cmp = D.filter(d=>d.y===2025&&d.m<=3);
+
+// YTD 2026: ing = 3 meses reales; P&L = solo meses con EEFF confirmado (Ene+Feb)
+const ytd26      = yr(2026);
+const ytd26_eeff = ytd26.filter(hasEEFF);
+const _lem26     = ytd26_eeff.length ? Math.max(...ytd26_eeff.map(d=>d.m)) : 0;
+const ytd25cmp_ing = D.filter(d=>d.y===2025&&d.m<=3);
+const ytd25cmp     = D.filter(d=>d.y===2025&&d.m<=_lem26);
 const YTD_VAR = {};
-['ing','cost','ub','ga','ebitda','un'].forEach(f=>{
-  YTD_VAR[f] = pctVar(sum(ytd26,f), sum(ytd25cmp,f));
+YTD_VAR.ing = pctVar(sum(ytd26,'ing'), sum(ytd25cmp_ing,'ing'));
+['cost','ub','ga','ebitda','un'].forEach(f=>{
+  YTD_VAR[f] = _lem26 ? pctVar(sum(ytd26_eeff,f), sum(ytd25cmp,f)) : 0;
 });
 
 // ── Monthly distribution: Lines, Doctors, Procedures ──────────────────────
@@ -961,20 +975,23 @@ function chartCard(id, title, badge, height=240, extraBody='', showZeroLine=fals
 // ════════════════════════════════════════
 function buildFinInicio(){
   const el=document.getElementById('fin-inicio');
-  const last=D[D.length-1];
+  const lastEEFF = D.filter(hasEEFF).at(-1) || D[D.length-2]; // último mes con EEFF oficial
+  const last = D[D.length-1]; // último mes calendario (puede estar pendiente)
   const a25=ANN[2025], a24=ANN[2024];
   const var25_24_ing = pctVar(a25.ing,a24.ing);
   const var25_24_ebitda = pctVar(a25.ebitda,a24.ebitda);
   const ytdIng26 = sum(ytd26,'ing');
-  const ytdEbitda26 = sum(ytd26,'ebitda');
+  const ytdEbitda26 = sum(ytd26_eeff,'ebitda'); // solo EEFF confirmados
 
   el.innerHTML = `
-  <div class="sec-title">Vista General <span class="st-badge">Ene 2024 – Feb 2026</span></div>
+  <div class="sec-title">Vista General — Estados Financieros Oficiales
+    <span class="st-badge">EEFF: Ene 2024 – ${lastEEFF.p} · Facturación hasta ${last.p}</span>
+  </div>
   <div class="kpis k4">
     ${kpiCard('Facturación 2025', fv(a25.ing), fp(var25_24_ing)+' vs 2024')}
     ${kpiCard('EBITDA 2025', fv(a25.ebitda), 'Margen: '+a25.mep.toFixed(1)+'%', a25.ebitda>=0?'':'red')}
     ${kpiCard('Ganancia Neta 2025', fv(a25.un), 'Margen neto: '+a25.mnp.toFixed(1)+'%', a25.un>=0?'':'red')}
-    ${kpiCard('Último mes ('+last.p+')', fv(last.ing), 'EBITDA: '+fv(last.ebitda))}
+    ${kpiCard('Último EEFF ('+lastEEFF.p+')', fv(lastEEFF.ing), 'EBITDA: '+fv(lastEEFF.ebitda||0))}
   </div>
   <div class="g6040">
     ${chartCard('ch-ini-main','Ingresos Mensuales y Ganancia Neta','26 meses',250,'')}
@@ -988,31 +1005,40 @@ function buildFinInicio(){
     ${chartCard('ch-ini-mg','Márgenes Clave por Mes (%)','',200,'')}
   </div>`;
 
+  // Helpers: devuelve null para meses sin EEFF (evita mostrar cifras inventadas)
+  const _pnl = (d,f) => d.eeffPending ? null : (d[f]??null);
+
   // Chart: Ingresos + Ganancia Neta
   mkChart('ch-ini-main',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
     {label:'Ingresos',data:D.map(d=>d.ing),backgroundColor:'rgba(45,197,171,0.65)',order:2},
-    {label:'Costo Total',data:D.map(d=>d.cost),backgroundColor:'rgba(239,83,80,0.45)',order:2},
-    {type:'line',label:'Ganancia Neta',data:D.map(d=>d.un),borderColor:'#1a3028',
-     backgroundColor:'transparent',pointRadius:3,borderWidth:2,order:1}
+    {label:'Costo Total',data:D.map(d=>_pnl(d,'cost')),backgroundColor:'rgba(239,83,80,0.45)',order:2},
+    {type:'line',label:'Ganancia Neta',data:D.map(d=>_pnl(d,'un')),borderColor:'#1a3028',
+     backgroundColor:'transparent',pointRadius:3,borderWidth:2,order:1,spanGaps:false}
   ]}});
 
   // Chart: EBITDA
   mkChart('ch-ini-ebitda',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'EBITDA',data:D.map(d=>d.ebitda),backgroundColor:barClrs(D.map(d=>d.ebitda))}
+    {label:'EBITDA',data:D.map(d=>_pnl(d,'ebitda')),backgroundColor:barClrs(D.filter(hasEEFF).map(d=>d.ebitda)
+      .concat(D.filter(d=>d.eeffPending).map(()=>0)))}
   ]}});
 
   // Chart: Márgenes
   mkChart('ch-ini-mg',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Mg Bruto%',data:D.map(d=>d.mbp),borderColor:'#2dc5ab',pointRadius:2,borderWidth:1.5,isPct:true},
-    {label:'Mg EBITDA%',data:D.map(d=>d.mep),borderColor:'#1a8a7a',pointRadius:2,borderWidth:1.5,isPct:true},
-    {label:'Mg Neto%',data:D.map(d=>d.mnp),borderColor:'#ff9800',pointRadius:2,borderWidth:1.5,isPct:true}
+    {label:'Mg Bruto%',data:D.map(d=>_pnl(d,'mbp')),borderColor:'#2dc5ab',pointRadius:2,borderWidth:1.5,isPct:true,spanGaps:false},
+    {label:'Mg EBITDA%',data:D.map(d=>_pnl(d,'mep')),borderColor:'#1a8a7a',pointRadius:2,borderWidth:1.5,isPct:true,spanGaps:false},
+    {label:'Mg Neto%',data:D.map(d=>_pnl(d,'mnp')),borderColor:'#ff9800',pointRadius:2,borderWidth:1.5,isPct:true,spanGaps:false}
   ]},options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 
   // Resumen ejecutivo table
+  // ING: compara 3 meses reales 2026 vs 3 meses 2025
+  // P&L: solo compara los meses con EEFF confirmado (ytd26_eeff vs ytd25cmp)
   const ytdVar = (f) => {
-    const v26=sum(ytd26,f), v25c=sum(ytd25cmp,f);
+    const isIng = f==='ing';
+    const v26 = isIng ? sum(ytd26,'ing') : sum(ytd26_eeff,f);
+    const v25c = isIng ? sum(ytd25cmp_ing,'ing') : sum(ytd25cmp,f);
     return v25c ? ((v26-v25c)/Math.abs(v25c)*100).toFixed(1) : '—';
   };
+  const _eeffLabel = _lem26 ? `Ene–${['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][_lem26]}-26` : 'Sin EEFF';
   const rows=[
     ['Facturación (Ingresos)','ing'],
     ['Costo Total','cost'],
@@ -1023,13 +1049,17 @@ function buildFinInicio(){
   document.getElementById('ini-resumen-body').innerHTML=`
   <div style="overflow-x:auto">
   <table class="tbl">
-    <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th><th>2026 YTD (3m)</th><th>Δ vs 2025 igual período</th></tr></thead>
+    <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th>
+      <th>2026 (3m ingresos · ${_eeffLabel} P&amp;L)</th><th>Δ vs 2025 igual período</th></tr></thead>
     <tbody>
     ${rows.map(([lbl,f])=>{
-      const v24=ANN[2024][f],v25=ANN[2025][f],v26=sum(ytd26,f);
-      const d2524=pctVar(v25,v24),d26=parseFloat(ytdVar(f));
+      const isIng=f==='ing';
+      const v24=ANN[2024][f], v25=ANN[2025][f];
+      const v26=isIng?sum(ytd26,'ing'):sum(ytd26_eeff,f);
+      const d2524=pctVar(v25,v24), d26=parseFloat(ytdVar(f));
+      const pendNote=!isIng&&_lem26<3?' *':'';
       return `<tr>
-        <td>${lbl}</td>
+        <td>${lbl}${pendNote}</td>
         <td>${fv(v24)}</td>
         <td>${fv(v25)}</td>
         <td class="${tdCls(d2524)}">${fp(d2524)}</td>
@@ -1043,6 +1073,7 @@ function buildFinInicio(){
     <strong>📌 Lectura rápida:</strong> En 2025 la facturación creció <strong>${fp(pctVar(ANN[2025].ing,ANN[2024].ing))}</strong> vs 2024.
     El EBITDA fue <strong>${fv(ANN[2025].ebitda)}</strong> (${ANN[2025].mep.toFixed(1)}% margen).
     Los meses críticos fueron <strong>Sep, Oct, Nov 2025</strong> donde los costos superaron los ingresos.
+    ${_lem26<3?`<br><span style="font-size:10px;color:#9e7b00">⚠️ * P&amp;L 2026: cifras de costos/gastos/márgenes disponibles solo hasta ${_eeffLabel}. El EEFF de Mar-26 se incorporará al recibir el cierre oficial del contador.</span>`:''}
   </div>`;
 }
 
@@ -1069,27 +1100,31 @@ function buildFinPnl(){
     </div>
   </div>`;
 
+  // null para meses sin EEFF oficial — evita mostrar cifras inexistentes
+  const _pnlF = (d,f) => d.eeffPending ? null : (d[f]??null);
+
   mkChart('ch-pnl-main',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Costo Médico/Directo',data:D.map(d=>d.cost),backgroundColor:'rgba(239,83,80,0.80)',
+    {label:'Costo Médico/Directo',data:D.map(d=>_pnlF(d,'cost')),backgroundColor:'rgba(239,83,80,0.80)',
      stack:'costos',borderRadius:2,order:2},
-    {label:'Gasto Administrativo',data:D.map(d=>d.ga),backgroundColor:'rgba(255,152,0,0.70)',
+    {label:'Gasto Administrativo',data:D.map(d=>_pnlF(d,'ga')),backgroundColor:'rgba(255,152,0,0.70)',
      stack:'costos',borderRadius:2,order:2},
     {type:'line',label:'▶ Ingresos',data:D.map(d=>d.ing),borderColor:'#2dc5ab',
      backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#2dc5ab',borderWidth:2.5,order:1}
   ]}});
 
   mkChart('ch-pnl-gastos',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Gastos Adm.',data:D.map(d=>d.ga),backgroundColor:'rgba(45,197,171,0.6)',stack:'g'},
-    {label:'Gastos Operac.',data:D.map(d=>d.go),backgroundColor:'rgba(26,138,122,0.5)',stack:'g'},
+    {label:'Gastos Adm.',data:D.map(d=>_pnlF(d,'ga')),backgroundColor:'rgba(45,197,171,0.6)',stack:'g'},
+    {label:'Gastos Operac.',data:D.map(d=>_pnlF(d,'go')),backgroundColor:'rgba(26,138,122,0.5)',stack:'g'},
     {type:'line',label:'▶ Ingresos',data:D.map(d=>d.ing),borderColor:'#ff9800',
      borderDash:[5,3],backgroundColor:'transparent',pointRadius:2,borderWidth:2}
   ]},options:{plugins:{tooltip:{callbacks:{label:c=>c.dataset.label===undefined?'':
     ' '+c.dataset.label+': '+fv(c.parsed.y)}}}}});
 
   mkChart('ch-pnl-un',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Ganancia Operativa',data:D.map(d=>d.uo),backgroundColor:barClrs(D.map(d=>d.uo))},
-    {type:'line',label:'Ganancia Neta',data:D.map(d=>d.un),borderColor:'#1a3028',
-     backgroundColor:'transparent',pointRadius:3,borderWidth:2}
+    {label:'Ganancia Operativa',data:D.map(d=>_pnlF(d,'uo')),
+     backgroundColor:D.map(d=>d.eeffPending?'rgba(180,180,180,0.25)':(d.uo>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)'))},
+    {type:'line',label:'Ganancia Neta',data:D.map(d=>_pnlF(d,'un')),borderColor:'#1a3028',
+     backgroundColor:'transparent',pointRadius:3,borderWidth:2,spanGaps:false}
   ]}});
 
   // Tabla P&L completa (todos los meses)
@@ -1118,9 +1153,14 @@ function buildFinPnl(){
     let yrRow='';
     years.forEach(y=>{
       D.filter(d=>d.y===y).forEach(d=>{
+        // Meses sin EEFF oficial: mostrar facturación real, ocultar P&L
+        if(d.eeffPending && r.f!=='ing'){
+          yrRow+=`<td style="color:#9e9e9e;font-style:italic;font-size:10px">Pdte.</td>`;
+          return;
+        }
         const v=d[r.f];
-        if(r.pct) yrRow+=`<td class="${v>=0?'pos':'neg'}">${v.toFixed(1)}%</td>`;
-        else yrRow+=`<td class="${v<0&&!r.b?'neg':''}" style="font-weight:${r.b?700:400}">${fv(v)}</td>`;
+        if(r.pct) yrRow+=`<td class="${v>=0?'pos':'neg'}">${(v||0).toFixed(1)}%</td>`;
+        else yrRow+=`<td class="${v<0&&!r.b?'neg':''}" style="font-weight:${r.b?700:400}">${fv(v||0)}</td>`;
       });
     });
     tableHtml+=`<tr class="${r.cls}"><td style="font-weight:${r.b?700:400}">${r.lbl}</td>${yrRow}</tr>`;
@@ -1142,9 +1182,13 @@ function buildFinPnl(){
     let yrRow='';
     years.forEach(y=>{
       D.filter(d=>d.y===y).forEach(d=>{
+        if(d.eeffPending && r.f!=='ing'){
+          yrRow+=`<td style="color:#9e9e9e;font-style:italic;font-size:10px;text-align:center" title="EEFF pendiente del contador">Pdte.</td>`;
+          return;
+        }
         const v=d[r.f];
-        if(r.pct) yrRow+=`<td class="${v>=0?'pos':'neg'}">${v.toFixed(1)}%</td>`;
-        else yrRow+=`<td class="${v<0?'neg':''}" style="font-weight:${r.b?700:400}">${fv(v)}</td>`;
+        if(r.pct) yrRow+=`<td class="${v>=0?'pos':'neg'}">${(v||0).toFixed(1)}%</td>`;
+        else yrRow+=`<td class="${v<0?'neg':''}" style="font-weight:${r.b?700:400}">${fv(v||0)}</td>`;
       });
     });
     tableHtml2+=`<tr class="${r.cls}"><td style="font-weight:${r.b?700:400}">${r.lbl}</td>${yrRow}</tr>`;
@@ -1179,19 +1223,22 @@ function buildFinEbitda(){
     Sin los 3 meses negativos (Jun, Sep, Oct), el EBITDA hubiera sido <strong>${fv(ANN[2025].ebitda+147893.92+447648.26+130804.32)}</strong>.
   </div>`;
 
+  const _pE = (d,f) => d.eeffPending ? null : (d[f]??null);
+
   mkChart('ch-ebitda-full',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'EBITDA',data:D.map(d=>d.ebitda),backgroundColor:barClrs(D.map(d=>d.ebitda)),
-     borderColor:D.map(d=>d.ebitda>=0?'rgba(45,197,171,1)':'rgba(239,83,80,1)'),borderWidth:1},
-    {type:'line',label:'Margen EBITDA %',data:D.map(d=>d.mep),
+    {label:'EBITDA',data:D.map(d=>_pE(d,'ebitda')),
+     backgroundColor:D.map(d=>d.eeffPending?'rgba(180,180,180,0.2)':(d.ebitda>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)')),
+     borderColor:D.map(d=>d.eeffPending?'transparent':(d.ebitda>=0?'rgba(45,197,171,1)':'rgba(239,83,80,1)')),borderWidth:1},
+    {type:'line',label:'Margen EBITDA %',data:D.map(d=>_pE(d,'mep')),
      borderColor:'#1a3028',backgroundColor:'transparent',pointRadius:3,borderWidth:2,
-     yAxisID:'y2',isPct:true}
+     yAxisID:'y2',isPct:true,spanGaps:false}
   ]},options:{scales:{y2:{position:'right',ticks:{callback:v=>v+'%',font:{size:10}},grid:{display:false}}}}});
 
   mkChart('ch-ebitda-vs',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'EBITDA',data:D.map(d=>d.ebitda),borderColor:'#2dc5ab',
-     backgroundColor:'rgba(45,197,171,0.08)',fill:true,pointRadius:2,borderWidth:2},
-    {label:'Ganancia Neta',data:D.map(d=>d.un),borderColor:'#ff9800',
-     backgroundColor:'transparent',pointRadius:2,borderWidth:2}
+    {label:'EBITDA',data:D.map(d=>_pE(d,'ebitda')),borderColor:'#2dc5ab',
+     backgroundColor:'rgba(45,197,171,0.08)',fill:true,pointRadius:2,borderWidth:2,spanGaps:false},
+    {label:'Ganancia Neta',data:D.map(d=>_pE(d,'un')),borderColor:'#ff9800',
+     backgroundColor:'transparent',pointRadius:2,borderWidth:2,spanGaps:false}
   ]}});
 
   // Cumulative EBITDA 2024 vs 2025
@@ -1325,10 +1372,12 @@ function buildFinFlujo(){
     <strong>Acción inmediata:</strong> cobrar CxC atrasada → ve al módulo <strong>Balance/Liquidez</strong> para proyección de caja.
   </div>`;
 
+  const _pF = (d,f) => d.eeffPending ? null : (d[f]??null);
   mkChart('ch-fcf-main',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'EBITDA (FCO proxy)',data:D.map(d=>d.ebitda),backgroundColor:barClrs(D.map(d=>d.ebitda)),order:2},
-    {type:'line',label:'Ganancia Neta',data:D.map(d=>d.un),borderColor:'#1a3028',
-     backgroundColor:'transparent',pointRadius:3,borderWidth:2,order:1}
+    {label:'EBITDA (FCO proxy)',data:D.map(d=>_pF(d,'ebitda')),
+     backgroundColor:D.map(d=>d.eeffPending?'rgba(180,180,180,0.2)':(d.ebitda>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)')),order:2},
+    {type:'line',label:'Ganancia Neta',data:D.map(d=>_pF(d,'un')),borderColor:'#1a3028',
+     backgroundColor:'transparent',pointRadius:3,borderWidth:2,order:1,spanGaps:false}
   ]}});
 
   mkChart('ch-fcf-acum',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
