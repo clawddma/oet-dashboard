@@ -531,7 +531,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 19:00) /* AUTO */
+  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 17:54) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -1522,19 +1522,23 @@ function buildComInicio(){
   </div>
 
   ${hasFilters?`
-  <!-- KPIs filtrados (datos reales de D[]) -->
-  <div class="kpis k3" style="margin-bottom:8px">
+  <!-- KPIs filtrados — solo facturación comercial, sin mezclar P&L -->
+  <div class="kpis k3" style="margin-bottom:4px">
     ${yrsOk.map((y,i)=>{
       const d=yrD[y];
       const prev=i>0?yrD[yrsOk[i-1]]:null;
-      const sub=(prev?fp(pctVar(d.ing,prev.ing))+' vs '+yrsOk[i-1]+' · ':'')+
-        'CMV: '+fv(d.cost)+' · G&A: '+fv(d.ga)+' · EBITDA: '+fv(d.ebitda)+'('+d.mep.toFixed(1)+'%)';
-      return kpiCard('Facturación '+(y===2026?'2026 YTD':String(y))+(mBadge?' · '+mBadge:''),
-        fv(d.ing),sub,d.ebitda>=0?'':'warn');
+      const varLabel=prev?fp(pctVar(d.ing,prev.ing))+' vs '+mLbl+'-'+yrsOk[i-1]:'Facturación del mes';
+      return kpiCard('Ingresos '+(y===2026?'2026':''+y)+' · '+mLbl,
+        fv(d.ing), varLabel);
     }).join('')}
   </div>
+  <div style="background:#f0faf7;border-left:3px solid #2dc5ab;padding:8px 12px;border-radius:4px;margin-bottom:10px;font-size:11px;color:#607d76">
+    ℹ️ <strong>Esta sección muestra ingresos por servicio (facturación real del Google Sheet).</strong>
+    El análisis de costos (CMV, G&A) y márgenes está disponible en la pestaña <strong>EEFF</strong>.
+    ${CF.years.has(2026)?'<br>⚠️ Datos de P&amp;L de marzo 2026 aún pendientes de estados financieros de cierre.':''}
+  </div>
   <div class="kpis k3" style="margin-bottom:${hasDr?8:16}px">
-    ${CF.years.has(2024)&&cir24>0?kpiCard('Cirugías 2024'+(mBadge?' · '+mBadge:''),cir24.toLocaleString(),'D.Sala'):''}
+    ${CF.years.has(2024)&&cir24>0?kpiCard('Cirugías 2024'+(mBadge?' · '+mBadge:''),cir24.toLocaleString(),'Derechos de Sala'):''}
     ${CF.years.has(2025)&&cir25>0?kpiCard('Cirugías 2025'+(mBadge?' · '+mBadge:''),cir25.toLocaleString(),fp(pctVar(cir25,cir24))+' vs 2024'):''}
     ${CF.years.has(2026)&&cir26>0?kpiCard('Cirugías 2026'+(mBadge?' · '+mBadge:''),cir26.toLocaleString(),fp(pctVar(cir26,cir25))+' vs 2025'):''}
   </div>
@@ -1647,9 +1651,12 @@ function buildComInicio(){
     </tr></tfoot>
   </table></div>
   <div class="insight">
-    ⭐ <strong>LIOs Premium</strong> siguen siendo el motor: ${fv(li26[2])} en Ene–Mar 2026.
-    <strong>Derechos de Sala</strong> (cirugías) encabezan el mix con ${pct26[0].toFixed(0)}% del YTD 2026.
-    ${hasFilters?'Período: '+_badge+'. Valores distribuidos proporcionalmente por mes.':'El ritmo 2026 apunta a superar 2025 si se mantiene la cadencia mensual.'}
+    ⭐ <strong>LIOs Premium</strong> — motor de mayor margen: ${fv(li26[2])} en Ene–Mar 2026.
+    <strong>Derechos de Sala</strong> lidera en volumen: ${pct26[0].toFixed(0)}% del mix YTD 2026.<br>
+    ${hasFilters
+      ? '📅 Período: '+_badge+'. Los valores por línea son proporcionales a la facturación mensual total — <em>no incluyen costos ni gastos</em>.'
+      : '📈 Al ritmo actual, 2026 supera el promedio trimestral 2024. Para análisis de rentabilidad por línea, ver pestaña <strong>EEFF</strong>.'}
+    ${CF.years.has(2026)?'<br><span style="font-size:10px;color:#9e7b00">⚠️ Datos de cierre de P&amp;L de marzo 2026 pendientes de confirmación en estados financieros.</span>':''}
   </div>`;
 }
 
