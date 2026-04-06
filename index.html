@@ -531,7 +531,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 20:00) /* AUTO */
+  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 17:54) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -595,15 +595,17 @@ const ANN = {};
   ANN[y]=a;
 });
 
-// YTD 2026: ing = 3 meses reales; P&L = solo meses con EEFF confirmado (Ene+Feb)
-const ytd26      = yr(2026);
-const ytd26_eeff = ytd26.filter(hasEEFF);
+// ── Regla: Tab Financiero/EEFF = solo datos del cierre contable oficial ──────
+// ytd26     = todos los meses 2026 (solo para uso en Tab Comercial: distribución proporcional)
+// ytd26_eeff= meses 2026 con EEFF oficial del contador (Tab Financiero: ing, costos, márgenes)
+// ytd25cmp  = mismos meses de 2025, para comparación EEFF apples-to-apples
+const ytd26      = yr(2026);               // uso comercial (GSheets)
+const ytd26_eeff = ytd26.filter(hasEEFF); // uso financiero (EEFF oficial)
 const _lem26     = ytd26_eeff.length ? Math.max(...ytd26_eeff.map(d=>d.m)) : 0;
-const ytd25cmp_ing = D.filter(d=>d.y===2025&&d.m<=3);
-const ytd25cmp     = D.filter(d=>d.y===2025&&d.m<=_lem26);
+const ytd25cmp   = D.filter(d=>d.y===2025&&d.m<=_lem26); // mismo período 2025 para EEFF
 const YTD_VAR = {};
-YTD_VAR.ing = pctVar(sum(ytd26,'ing'), sum(ytd25cmp_ing,'ing'));
-['cost','ub','ga','ebitda','un'].forEach(f=>{
+// Todas las variaciones financieras usan solo EEFF confirmado (incluyendo ing)
+['ing','cost','ub','ga','ebitda','un'].forEach(f=>{
   YTD_VAR[f] = _lem26 ? pctVar(sum(ytd26_eeff,f), sum(ytd25cmp,f)) : 0;
 });
 
@@ -980,7 +982,7 @@ function buildFinInicio(){
   const a25=ANN[2025], a24=ANN[2024];
   const var25_24_ing = pctVar(a25.ing,a24.ing);
   const var25_24_ebitda = pctVar(a25.ebitda,a24.ebitda);
-  const ytdIng26 = sum(ytd26,'ing');
+  const ytdIng26 = sum(ytd26_eeff,'ing'); // solo ingresos de meses con EEFF oficial
   const ytdEbitda26 = sum(ytd26_eeff,'ebitda'); // solo EEFF confirmados
 
   el.innerHTML = `
@@ -1008,9 +1010,9 @@ function buildFinInicio(){
   // Helpers: devuelve null para meses sin EEFF (evita mostrar cifras inventadas)
   const _pnl = (d,f) => d.eeffPending ? null : (d[f]??null);
 
-  // Chart: Ingresos + Ganancia Neta
+  // Chart: Ingresos + Ganancia Neta  (solo EEFF oficial — ing también null si mes pendiente)
   mkChart('ch-ini-main',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Ingresos',data:D.map(d=>d.ing),backgroundColor:'rgba(45,197,171,0.65)',order:2},
+    {label:'Ingresos',data:D.map(d=>_pnl(d,'ing')),backgroundColor:'rgba(45,197,171,0.65)',order:2},
     {label:'Costo Total',data:D.map(d=>_pnl(d,'cost')),backgroundColor:'rgba(239,83,80,0.45)',order:2},
     {type:'line',label:'Ganancia Neta',data:D.map(d=>_pnl(d,'un')),borderColor:'#1a3028',
      backgroundColor:'transparent',pointRadius:3,borderWidth:2,order:1,spanGaps:false}
@@ -1033,9 +1035,8 @@ function buildFinInicio(){
   // ING: compara 3 meses reales 2026 vs 3 meses 2025
   // P&L: solo compara los meses con EEFF confirmado (ytd26_eeff vs ytd25cmp)
   const ytdVar = (f) => {
-    const isIng = f==='ing';
-    const v26 = isIng ? sum(ytd26,'ing') : sum(ytd26_eeff,f);
-    const v25c = isIng ? sum(ytd25cmp_ing,'ing') : sum(ytd25cmp,f);
+    const v26 = sum(ytd26_eeff,f);
+    const v25c = sum(ytd25cmp,f);
     return v25c ? ((v26-v25c)/Math.abs(v25c)*100).toFixed(1) : '—';
   };
   const _eeffLabel = _lem26 ? `Ene–${['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][_lem26]}-26` : 'Sin EEFF';
@@ -1050,14 +1051,13 @@ function buildFinInicio(){
   <div style="overflow-x:auto">
   <table class="tbl">
     <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th>
-      <th>2026 (3m ingresos · ${_eeffLabel} P&amp;L)</th><th>Δ vs 2025 igual período</th></tr></thead>
+      <th>2026 (${_eeffLabel || 'Sin EEFF oficial'})</th><th>Δ vs 2025 igual período</th></tr></thead>
     <tbody>
     ${rows.map(([lbl,f])=>{
-      const isIng=f==='ing';
       const v24=ANN[2024][f], v25=ANN[2025][f];
-      const v26=isIng?sum(ytd26,'ing'):sum(ytd26_eeff,f);
+      const v26=sum(ytd26_eeff,f);
       const d2524=pctVar(v25,v24), d26=parseFloat(ytdVar(f));
-      const pendNote=!isIng&&_lem26<3?' *':'';
+      const pendNote=_lem26<3?' *':'';
       return `<tr>
         <td>${lbl}${pendNote}</td>
         <td>${fv(v24)}</td>
@@ -1108,14 +1108,14 @@ function buildFinPnl(){
      stack:'costos',borderRadius:2,order:2},
     {label:'Gasto Administrativo',data:D.map(d=>_pnlF(d,'ga')),backgroundColor:'rgba(255,152,0,0.70)',
      stack:'costos',borderRadius:2,order:2},
-    {type:'line',label:'▶ Ingresos',data:D.map(d=>d.ing),borderColor:'#2dc5ab',
-     backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#2dc5ab',borderWidth:2.5,order:1}
+    {type:'line',label:'▶ Ingresos',data:D.map(d=>_pnlF(d,'ing')),borderColor:'#2dc5ab',
+     backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#2dc5ab',borderWidth:2.5,order:1,spanGaps:false}
   ]}});
 
   mkChart('ch-pnl-gastos',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
     {label:'Gastos Adm.',data:D.map(d=>_pnlF(d,'ga')),backgroundColor:'rgba(45,197,171,0.6)',stack:'g'},
     {label:'Gastos Operac.',data:D.map(d=>_pnlF(d,'go')),backgroundColor:'rgba(26,138,122,0.5)',stack:'g'},
-    {type:'line',label:'▶ Ingresos',data:D.map(d=>d.ing),borderColor:'#ff9800',
+    {type:'line',label:'▶ Ingresos',data:D.map(d=>_pnlF(d,'ing')),borderColor:'#ff9800',spanGaps:false,
      borderDash:[5,3],backgroundColor:'transparent',pointRadius:2,borderWidth:2}
   ]},options:{plugins:{tooltip:{callbacks:{label:c=>c.dataset.label===undefined?'':
     ' '+c.dataset.label+': '+fv(c.parsed.y)}}}}});
@@ -1153,8 +1153,8 @@ function buildFinPnl(){
     let yrRow='';
     years.forEach(y=>{
       D.filter(d=>d.y===y).forEach(d=>{
-        // Meses sin EEFF oficial: mostrar facturación real, ocultar P&L
-        if(d.eeffPending && r.f!=='ing'){
+        // Meses sin EEFF oficial: ocultar todos los campos (incluyendo ing que es dato oficial del contador)
+        if(d.eeffPending){
           yrRow+=`<td style="color:#9e9e9e;font-style:italic;font-size:10px">Pdte.</td>`;
           return;
         }
@@ -1182,7 +1182,7 @@ function buildFinPnl(){
     let yrRow='';
     years.forEach(y=>{
       D.filter(d=>d.y===y).forEach(d=>{
-        if(d.eeffPending && r.f!=='ing'){
+        if(d.eeffPending){
           yrRow+=`<td style="color:#9e9e9e;font-style:italic;font-size:10px;text-align:center" title="EEFF pendiente del contador">Pdte.</td>`;
           return;
         }
@@ -1311,32 +1311,35 @@ function buildFinCostos(){
   </div>
   <div class="gfull">${chartCard('ch-cos-stack','Composición mensual: Costo Total + Gastos Adm. vs Ingresos','',240,'')}</div>`;
 
+  // Helper local: null para meses sin EEFF (ing también excluido — es dato oficial del contador)
+  const _pc = (d,f) => d.eeffPending ? null : (d[f]??null);
+
   mkChart('ch-cos-main',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Costo Total',data:D.map(d=>d.cost),backgroundColor:D.map(d=>d.cost>d.ing?'rgba(239,83,80,0.9)':'rgba(239,83,80,0.55)'),order:2},
-    {type:'line',label:'▶ Ingresos',data:D.map(d=>d.ing),borderColor:'#2dc5ab',
-     backgroundColor:'transparent',pointRadius:3,borderWidth:2.5,order:1}
+    {label:'Costo Total',data:D.map(d=>_pc(d,'cost')),
+     backgroundColor:D.map(d=>d.eeffPending?'rgba(180,180,180,0.2)':(d.cost>d.ing?'rgba(239,83,80,0.9)':'rgba(239,83,80,0.55)')),order:2},
+    {type:'line',label:'▶ Ingresos',data:D.map(d=>_pc(d,'ing')),borderColor:'#2dc5ab',
+     backgroundColor:'transparent',pointRadius:3,borderWidth:2.5,order:1,spanGaps:false}
   ]}});
 
   mkChart('ch-cos-pct',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'% Costo/Ingresos',data:D.map(d=>+(d.cost/d.ing*100).toFixed(1)),
-     borderColor:D.map(d=>d.cost/d.ing>1?'#ef5350':'#2dc5ab'),
-     backgroundColor:D.map(d=>d.cost/d.ing>1?'rgba(239,83,80,0.1)':'rgba(45,197,171,0.1)'),
-     fill:true,pointRadius:3,borderWidth:2,
+    {label:'% Costo/Ingresos',data:D.map(d=>d.eeffPending||!d.ing?null:+(d.cost/d.ing*100).toFixed(1)),
+     borderColor:'#2dc5ab',backgroundColor:'rgba(45,197,171,0.1)',
+     fill:true,pointRadius:3,borderWidth:2,spanGaps:false,
      segment:{borderColor:ctx=>ctx.p1.parsed.y>100?'#ef5350':'#2dc5ab'},
      isPct:true}
   ]},options:{plugins:{annotation:{}},scales:{y:{ticks:{callback:v=>v+'%'},
     suggestedMin:30,suggestedMax:130}}}});
 
   mkChart('ch-cos-ga',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'% Gastos Adm/Ingresos',data:D.map(d=>+(d.ga/d.ing*100).toFixed(1)),
-     borderColor:'#1a8a7a',backgroundColor:'rgba(26,138,122,0.1)',fill:true,pointRadius:3,borderWidth:2,isPct:true}
+    {label:'% Gastos Adm/Ingresos',data:D.map(d=>d.eeffPending||!d.ing?null:+(d.ga/d.ing*100).toFixed(1)),
+     borderColor:'#1a8a7a',backgroundColor:'rgba(26,138,122,0.1)',fill:true,pointRadius:3,borderWidth:2,isPct:true,spanGaps:false}
   ]},options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 
   mkChart('ch-cos-stack',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Costo Total',data:D.map(d=>d.cost),backgroundColor:'rgba(239,83,80,0.6)',stack:'s'},
-    {label:'Gastos Adm.',data:D.map(d=>d.ga),backgroundColor:'rgba(45,197,171,0.5)',stack:'s'},
-    {type:'line',label:'▶ Ingresos',data:D.map(d=>d.ing),borderColor:'#1a3028',
-     backgroundColor:'transparent',pointRadius:2,borderWidth:2.5}
+    {label:'Costo Total',data:D.map(d=>_pc(d,'cost')),backgroundColor:'rgba(239,83,80,0.6)',stack:'s'},
+    {label:'Gastos Adm.',data:D.map(d=>_pc(d,'ga')),backgroundColor:'rgba(45,197,171,0.5)',stack:'s'},
+    {type:'line',label:'▶ Ingresos',data:D.map(d=>_pc(d,'ing')),borderColor:'#1a3028',
+     backgroundColor:'transparent',pointRadius:2,borderWidth:2.5,spanGaps:false}
   ]}});
 }
 
@@ -1449,10 +1452,11 @@ function buildFinAnual(){
               const fmap={mbp:['ub','ing'],mop:['uo','ing'],mnp:['un','ing'],mep:['ebitda','ing'],
                 mop:['uo','ing'],mop:['uo','ing'],mep:['ebitda','ing'],mnp:['un','ing']};
               let v26pct=v25,v25cPct=v24;
-              if(r.f==='mbp'){v26pct=sum(ytd26,'ub')/sum(ytd26,'ing')*100;v25cPct=sum(ytd25cmp,'ub')/sum(ytd25cmp,'ing')*100;}
-              else if(r.f==='mop'){v26pct=sum(ytd26,'uo')/sum(ytd26,'ing')*100;v25cPct=sum(ytd25cmp,'uo')/sum(ytd25cmp,'ing')*100;}
-              else if(r.f==='mep'){v26pct=sum(ytd26,'ebitda')/sum(ytd26,'ing')*100;v25cPct=sum(ytd25cmp,'ebitda')/sum(ytd25cmp,'ing')*100;}
-              else if(r.f==='mnp'){v26pct=sum(ytd26,'un')/sum(ytd26,'ing')*100;v25cPct=sum(ytd25cmp,'un')/sum(ytd25cmp,'ing')*100;}
+              const _i26=sum(ytd26_eeff,'ing'), _i25=sum(ytd25cmp,'ing');
+              if(r.f==='mbp'){v26pct=_i26?sum(ytd26_eeff,'ub')/_i26*100:0;v25cPct=_i25?sum(ytd25cmp,'ub')/_i25*100:0;}
+              else if(r.f==='mop'){v26pct=_i26?sum(ytd26_eeff,'uo')/_i26*100:0;v25cPct=_i25?sum(ytd25cmp,'uo')/_i25*100:0;}
+              else if(r.f==='mep'){v26pct=_i26?sum(ytd26_eeff,'ebitda')/_i26*100:0;v25cPct=_i25?sum(ytd25cmp,'ebitda')/_i25*100:0;}
+              else if(r.f==='mnp'){v26pct=_i26?sum(ytd26_eeff,'un')/_i26*100:0;v25cPct=_i25?sum(ytd25cmp,'un')/_i25*100:0;}
               const ppDelta=(v26pct-v25cPct).toFixed(1);
               return `<tr><td>${r.lbl}</td>
                 <td class="${tdCls(v24)}">${v24.toFixed(1)}%</td>
