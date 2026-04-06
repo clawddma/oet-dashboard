@@ -901,8 +901,8 @@ function cfCirujanos(){
 // Genera datasets de año para un gráfico horizontal de barras
 function cfYearDatasets(idxFn, fieldMap){
   // fieldMap = {2024: 'v24', 2025: 'v25', 2026: 'v26'}
-  const C24='rgba(12,48,40,0.75)', C25='rgba(45,197,171,0.88)', C26='rgba(255,193,7,0.82)';
-  const B24='rgba(12,48,40,0.95)', B25='rgba(45,197,171,1)',    B26='rgba(255,193,7,1)';
+  const C24='rgba(68,108,179,0.82)', C25='rgba(45,197,171,0.88)', C26='rgba(255,152,0,0.85)';
+  const B24='rgba(68,108,179,1)',    B25='rgba(45,197,171,1)',    B26='rgba(255,152,0,1)';
   const yrs=[
     {y:2024, lbl:'2024',     bg:C24, bd:B24, field:fieldMap[2024]},
     {y:2025, lbl:'2025',     bg:C25, bd:B25, field:fieldMap[2025]},
@@ -1241,15 +1241,21 @@ function buildFinEbitda(){
      backgroundColor:'transparent',pointRadius:2,borderWidth:2,spanGaps:false}
   ]}});
 
-  // Cumulative EBITDA 2024 vs 2025
-  let c24=0,c25=0;
+  // Cumulative EBITDA 2024 · 2025 · 2026 EEFF
+  const _MNS12=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  let c24=0,c25=0,c26e=0;
   const cu24=yr(2024).map(d=>{c24+=d.ebitda;return +c24.toFixed(0);});
   const cu25=yr(2025).map(d=>{c25+=d.ebitda;return +c25.toFixed(0);});
+  const cu26=_MNS12.map((_,i)=>{
+    const m=i+1; const d26=ytd26_eeff.find(d=>d.m===m);
+    if(d26){c26e+=d26.ebitda;return +c26e.toFixed(0);} return null;
+  });
   mkChart('ch-ebitda-cum',{type:'line',data:{
-    labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+    labels:_MNS12,
     datasets:[
-      {label:'2024 acum.',data:cu24,borderColor:'rgba(45,197,171,0.7)',pointRadius:3,borderWidth:2,borderDash:[4,2]},
-      {label:'2025 acum.',data:cu25,borderColor:'#2dc5ab',pointRadius:3,borderWidth:2.5}
+      {label:'2024 acum.',data:cu24,borderColor:'rgba(68,108,179,0.7)',pointRadius:3,borderWidth:1.5,borderDash:[4,2],spanGaps:false},
+      {label:'2025 acum.',data:cu25,borderColor:'#2dc5ab',pointRadius:3,borderWidth:2.5,spanGaps:false},
+      {label:'2026 acum. EEFF',data:cu26,borderColor:'rgba(255,152,0,0.9)',pointRadius:5,borderWidth:2.5,spanGaps:false}
     ]
   }});
 }
@@ -1267,28 +1273,35 @@ function buildFinMargen(){
     ${kpiCard('Margen EBITDA 2025', ANN[2025].mep.toFixed(1)+'%', 'vs 2024: '+ANN[2024].mep.toFixed(1)+'%', ANN[2025].mep>=0?'':'red')}
     ${kpiCard('Margen Neto 2025', ANN[2025].mnp.toFixed(1)+'%', 'vs 2024: '+ANN[2024].mnp.toFixed(1)+'%', ANN[2025].mnp>=0?'':'red')}
   </div>
-  <div class="gfull">${chartCard('ch-mg-all','4 Márgenes Clave — 26 meses (por encima de la línea naranja = ganancia)','',270,'')}</div>
+  <div class="gfull">${chartCard('ch-mg-all','4 Márgenes Clave — Historia completa (encima de 0% = rentable)','',270,'')}</div>
   <div class="g2">
-    ${chartCard('ch-mg-cmp24','Margen Bruto %: Comparativo mes a mes 2024 vs 2025','',220,'')}
-    ${chartCard('ch-mg-cmp25','Margen EBITDA %: Comparativo mes a mes 2024 vs 2025','',220,'')}
+    ${chartCard('ch-mg-cmp24','Margen Bruto %: 2024 · 2025 · 2026 YTD (EEFF)','',220,'')}
+    ${chartCard('ch-mg-cmp25','Margen EBITDA % · Mg Neto %: 2024 · 2025 · 2026 YTD (EEFF)','',220,'')}
   </div>`;
 
+  const _pMg = (d,f) => d.eeffPending ? null : (d[f]??null);
   mkChart('ch-mg-all',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Mg Bruto %',data:D.map(d=>d.mbp),borderColor:'#2dc5ab',pointRadius:2,borderWidth:2,isPct:true},
-    {label:'Mg Operativo %',data:D.map(d=>d.mop),borderColor:'#1a8a7a',pointRadius:2,borderWidth:2,isPct:true},
-    {label:'Mg EBITDA %',data:D.map(d=>d.mep),borderColor:'#1a3028',pointRadius:2,borderWidth:2,isPct:true},
-    {label:'Mg Neto %',data:D.map(d=>d.mnp),borderColor:'#ff9800',pointRadius:2,borderWidth:1.5,borderDash:[3,2],isPct:true}
+    {label:'Mg Bruto %',data:D.map(d=>_pMg(d,'mbp')),borderColor:'#2dc5ab',pointRadius:2,borderWidth:2,isPct:true,spanGaps:false},
+    {label:'Mg Operativo %',data:D.map(d=>_pMg(d,'mop')),borderColor:'#1a8a7a',pointRadius:2,borderWidth:2,isPct:true,spanGaps:false},
+    {label:'Mg EBITDA %',data:D.map(d=>_pMg(d,'mep')),borderColor:'#1a3028',pointRadius:2,borderWidth:2,isPct:true,spanGaps:false},
+    {label:'Mg Neto %',data:D.map(d=>_pMg(d,'mnp')),borderColor:'#ff9800',pointRadius:2,borderWidth:1.5,borderDash:[3,2],isPct:true,spanGaps:false}
   ]},options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 
   const mns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  // 2026 EEFF: solo los meses confirmados (Jan+Feb), null para los restantes
+  const _mg26 = (f) => mns.map((_,i)=>{const d=ytd26_eeff.find(d=>d.m===i+1);return d?(d[f]??null):null;});
   mkChart('ch-mg-cmp24',{type:'bar',data:{labels:mns,datasets:[
-    {label:'2024',data:yr(2024).map(d=>d.mbp),backgroundColor:'rgba(45,197,171,0.5)'},
-    {label:'2025',data:yr(2025).map(d=>d.mbp),backgroundColor:'rgba(45,197,171,0.85)'}
+    {label:'2024',data:yr(2024).map(d=>d.mbp),backgroundColor:'rgba(68,108,179,0.5)'},
+    {label:'2025',data:yr(2025).map(d=>d.mbp),backgroundColor:'rgba(45,197,171,0.85)'},
+    {label:'2026 YTD',data:_mg26('mbp'),backgroundColor:'rgba(255,152,0,0.82)'}
   ]},options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 
   mkChart('ch-mg-cmp25',{type:'bar',data:{labels:mns,datasets:[
-    {label:'2024',data:yr(2024).map(d=>d.mep),backgroundColor:yr(2024).map(d=>d.mep>=0?'rgba(45,197,171,0.5)':'rgba(239,83,80,0.5)')},
-    {label:'2025',data:yr(2025).map(d=>d.mep),backgroundColor:yr(2025).map(d=>d.mep>=0?'rgba(45,197,171,0.85)':'rgba(239,83,80,0.85)')}
+    {label:'Mg EBITDA% 2024',data:yr(2024).map(d=>d.mep),backgroundColor:yr(2024).map(d=>d.mep>=0?'rgba(68,108,179,0.45)':'rgba(239,83,80,0.45)')},
+    {label:'Mg EBITDA% 2025',data:yr(2025).map(d=>d.mep),backgroundColor:yr(2025).map(d=>d.mep>=0?'rgba(45,197,171,0.75)':'rgba(239,83,80,0.75)')},
+    {label:'Mg EBITDA% 2026',data:_mg26('mep'),backgroundColor:'rgba(255,152,0,0.82)'},
+    {label:'Mg Neto% 2025',data:yr(2025).map(d=>d.mnp),backgroundColor:yr(2025).map(d=>d.mnp>=0?'rgba(26,138,122,0.6)':'rgba(180,30,30,0.6)'),borderDash:[2,2]},
+    {label:'Mg Neto% 2026',data:_mg26('mnp'),backgroundColor:'rgba(180,100,0,0.7)'}
   ]},options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 }
 
@@ -1349,13 +1362,16 @@ function buildFinCostos(){
 function buildFinFlujo(){
   const el=document.getElementById('fin-flujo');
   let cum=0;
-  const cumsAll=D.map(d=>{cum+=d.ebitda;return +cum.toFixed(0);});
+  const cumsAll=D.map(d=>{
+    if(d.eeffPending) return null;          // línea se detiene en meses sin EEFF
+    cum+=(d.ebitda||0); return +cum.toFixed(0);
+  });
   el.innerHTML=`
   <div class="sec-title">Flujo de Caja <span class="st-badge">EBITDA como proxy de generación operativa</span></div>
   <div class="kpis k3">
     ${kpiCard('FCO Estimado 2024', fv(ANN[2024].ebitda), 'EBITDA anual 2024', ANN[2024].ebitda>=0?'':'red')}
     ${kpiCard('FCO Estimado 2025', fv(ANN[2025].ebitda), 'EBITDA anual 2025', ANN[2025].ebitda>=0?'':'red')}
-    ${kpiCard('FCO YTD 2026', fv(ANN[2026].ebitda), 'Ene+Feb+Mar 2026', ANN[2026].ebitda>=0?'':'red')}
+    ${kpiCard('FCO YTD 2026 (EEFF)', fv(sum(ytd26_eeff,'ebitda')), 'Ene+Feb 2026 · cierre oficial', sum(ytd26_eeff,'ebitda')>=0?'':'red')}
   </div>
   <div class="g6040">
     ${chartCard('ch-fcf-main','EBITDA mensual vs Ganancia Neta (diferencia = D&A y otros)','',260,'')}
@@ -1385,29 +1401,32 @@ function buildFinFlujo(){
 
   mkChart('ch-fcf-acum',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
     {label:'EBITDA Acumulado',data:cumsAll,borderColor:'#2dc5ab',
-     backgroundColor:'rgba(45,197,171,0.12)',fill:true,pointRadius:3,borderWidth:2.5}
+     backgroundColor:'rgba(45,197,171,0.12)',fill:true,pointRadius:3,borderWidth:2.5,spanGaps:false}
   ]}});
 
-  // Flujo tabla
-  const mkW=(lbl,v24,v25,indent=false)=>`
+  // Flujo tabla — 2024 · 2025 · 2026 EEFF YTD
+  const _v26f = f => sum(ytd26_eeff, f);
+  const mkW=(lbl,v24,v25,v26,indent=false)=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:7px ${indent?'8px 7px 24px':'8px 7px 8px'};border-bottom:1px solid #eef2f1;font-size:12px;">
       <span style="color:#1a2e28;${indent?'padding-left:14px;color:#607d76':'font-weight:600'}">${lbl}</span>
-      <div style="display:flex;gap:28px">
-        <span style="min-width:80px;text-align:right" class="${tdCls(v24)}">${fv(v24)}</span>
-        <span style="min-width:80px;text-align:right" class="${tdCls(v25)}">${fv(v25)}</span>
+      <div style="display:flex;gap:20px">
+        <span style="min-width:76px;text-align:right" class="${tdCls(v24)}">${fv(v24)}</span>
+        <span style="min-width:76px;text-align:right" class="${tdCls(v25)}">${fv(v25)}</span>
+        <span style="min-width:76px;text-align:right;color:#b8860b;font-weight:500" class="${tdCls(v26)}">${fv(v26)}</span>
       </div>
     </div>`;
   document.getElementById('flujo-tabla').innerHTML=`
-    <div style="display:flex;justify-content:flex-end;gap:28px;padding:6px 8px;background:#0c3028;border-radius:4px 4px 0 0">
-      <span style="color:#fff;font-size:11px;min-width:80px;text-align:right">2024</span>
-      <span style="color:#fff;font-size:11px;min-width:80px;text-align:right">2025</span>
+    <div style="display:flex;justify-content:flex-end;gap:20px;padding:6px 8px;background:#0c3028;border-radius:4px 4px 0 0">
+      <span style="color:#fff;font-size:11px;min-width:76px;text-align:right">2024</span>
+      <span style="color:#fff;font-size:11px;min-width:76px;text-align:right">2025</span>
+      <span style="color:#ffc107;font-size:11px;min-width:76px;text-align:right">2026 YTD</span>
     </div>
-    ${mkW('EBITDA (generación operativa)',ANN[2024].ebitda,ANN[2025].ebitda)}
-    ${mkW('(-) Depreciación/Amort.',-ANN[2024].da,-ANN[2025].da,true)}
-    ${mkW('= Ganancia Operativa',ANN[2024].uo,ANN[2025].uo)}
-    ${mkW('(+) Otros Ingresos netos',ANN[2024].oInc-ANN[2024].oGas,ANN[2025].oInc-ANN[2025].oGas,true)}
-    ${mkW('= Ganancia Neta',ANN[2024].un,ANN[2025].un)}
-    <div class="insight" style="margin-top:10px;font-size:11px">* Excluye CapEx, Δ Capital de Trabajo, Δ Deuda</div>`;
+    ${mkW('EBITDA (generación operativa)',ANN[2024].ebitda,ANN[2025].ebitda,_v26f('ebitda'))}
+    ${mkW('(-) Depreciación/Amort.',-ANN[2024].da,-ANN[2025].da,-_v26f('da'),true)}
+    ${mkW('= Ganancia Operativa',ANN[2024].uo,ANN[2025].uo,_v26f('uo'))}
+    ${mkW('(+) Otros Ingresos netos',ANN[2024].oInc-ANN[2024].oGas,ANN[2025].oInc-ANN[2025].oGas,_v26f('oInc')-_v26f('oGas'),true)}
+    ${mkW('= Ganancia Neta',ANN[2024].un,ANN[2025].un,_v26f('un'))}
+    <div class="insight" style="margin-top:10px;font-size:11px">* Excluye CapEx, Δ Capital de Trabajo, Δ Deuda · 2026 YTD = Ene+Feb EEFF oficial</div>`;
 }
 
 // ════════════════════════════════════════
@@ -1415,8 +1434,10 @@ function buildFinFlujo(){
 // ════════════════════════════════════════
 function buildFinAnual(){
   const el=document.getElementById('fin-anual');
+  const _nEEFF=ytd26_eeff.length; // meses con EEFF confirmado (Ene+Feb = 2)
+  const _eLabel=`2026 YTD (${_nEEFF}m EEFF)`;
   const ytdVar=(f)=>{
-    const v26=sum(ytd26,f),v25c=sum(ytd25cmp,f);
+    const v26=sum(ytd26_eeff,f),v25c=sum(ytd25cmp,f);
     return v25c?pctVar(v26,v25c):0;
   };
   const rows=[
@@ -1441,7 +1462,7 @@ function buildFinAnual(){
       <div class="card-body">
         <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th><th>2026 YTD (3m)</th><th>Δ vs Ene-Mar 2025</th></tr></thead>
+          <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th><th>${_eLabel}</th><th>Δ vs igual período 2025</th></tr></thead>
           <tbody>
           ${rows.map(r=>{
             if(r.pct){
@@ -1466,7 +1487,7 @@ function buildFinAnual(){
                 <td class="${tdCls(parseFloat(ppDelta))}">${parseFloat(ppDelta)>=0?'+':''}${ppDelta} pp</td>
               </tr>`;
             }
-            const v24=ANN[2024][r.f],v25=ANN[2025][r.f],v26s=sum(ytd26,r.f);
+            const v24=ANN[2024][r.f],v25=ANN[2025][r.f],v26s=sum(ytd26_eeff,r.f);
             const d2524=pctVar(v25,v24);
             const d26ytd=ytdVar(r.f);
             return `<tr class="${r.cls||''}">
@@ -1489,13 +1510,18 @@ function buildFinAnual(){
     ${chartCard('ch-ann-mg','Márgenes Comparativos por Año','',220,'')}
   </div>`;
 
+  // Datos 2026 EEFF (solo meses confirmados)
+  const _ing26e=sum(ytd26_eeff,'ing'),_cost26e=sum(ytd26_eeff,'cost'),_eb26e=sum(ytd26_eeff,'ebitda');
+  const _ub26e=sum(ytd26_eeff,'ub'),_uo26e=sum(ytd26_eeff,'uo'),_un26e=sum(ytd26_eeff,'un');
+  const _mbp26e=_ing26e?_ub26e/_ing26e*100:0, _mop26e=_ing26e?_uo26e/_ing26e*100:0;
+  const _mep26e=_ing26e?_eb26e/_ing26e*100:0, _mnp26e=_ing26e?_un26e/_ing26e*100:0;
   mkChart('ch-ann-bar',{type:'bar',data:{
-    labels:['2024 (12m)','2025 (12m)','2026 YTD (3m)'],
+    labels:['2024 (12m)','2025 (12m)',_eLabel],
     datasets:[
-      {label:'Ingresos',data:[ANN[2024].ing,ANN[2025].ing,ANN[2026].ing],backgroundColor:'rgba(45,197,171,0.8)'},
-      {label:'Costo Total',data:[ANN[2024].cost,ANN[2025].cost,ANN[2026].cost],backgroundColor:'rgba(239,83,80,0.65)'},
-      {label:'EBITDA',data:[ANN[2024].ebitda,ANN[2025].ebitda,ANN[2026].ebitda],
-       backgroundColor:[ANN[2024].ebitda,ANN[2025].ebitda,ANN[2026].ebitda].map(v=>v>=0?'rgba(26,138,122,0.8)':'rgba(239,83,80,0.8)')}
+      {label:'Ingresos',data:[ANN[2024].ing,ANN[2025].ing,_ing26e],backgroundColor:'rgba(45,197,171,0.8)'},
+      {label:'Costo Total',data:[ANN[2024].cost,ANN[2025].cost,_cost26e],backgroundColor:'rgba(239,83,80,0.65)'},
+      {label:'EBITDA',data:[ANN[2024].ebitda,ANN[2025].ebitda,_eb26e],
+       backgroundColor:[ANN[2024].ebitda,ANN[2025].ebitda,_eb26e].map(v=>v>=0?'rgba(26,138,122,0.8)':'rgba(239,83,80,0.8)')}
     ]
   }});
 
@@ -1503,9 +1529,11 @@ function buildFinAnual(){
     labels:['Mg Bruto','Mg Operativo','Mg EBITDA','Mg Neto'],
     datasets:[
       {label:'2024',data:[ANN[2024].mbp,ANN[2024].mop,ANN[2024].mep,ANN[2024].mnp].map(v=>+v.toFixed(1)),
-       backgroundColor:'rgba(45,197,171,0.5)'},
+       backgroundColor:'rgba(68,108,179,0.5)'},
       {label:'2025',data:[ANN[2025].mbp,ANN[2025].mop,ANN[2025].mep,ANN[2025].mnp].map(v=>+v.toFixed(1)),
-       backgroundColor:'rgba(45,197,171,0.85)'}
+       backgroundColor:'rgba(45,197,171,0.85)'},
+      {label:'2026 YTD',data:[_mbp26e,_mop26e,_mep26e,_mnp26e].map(v=>+v.toFixed(1)),
+       backgroundColor:'rgba(255,152,0,0.82)'}
     ]
   },options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 }
@@ -1544,6 +1572,7 @@ function buildComInicio(){
   const MN=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const mArr=Array.from(CF.months).sort((a,b)=>a-b);
   const mBadge=mArr.length===0?'':mArr.length<=3?mArr.map(m=>MN[m]).join('+'):mArr.length+' meses';
+  const mLbl=mArr.length===0?null:mBadge;  // null = sin filtro · string = mes(es) seleccionado(s)
   const _yrBadge=yrs.map(y=>y===2026?'2026 YTD':String(y)).join(' · ');
   const _badge=[_yrBadge,mBadge].filter(Boolean).join(' · ');
 
@@ -2226,9 +2255,9 @@ function buildComCirujanos(){
   const cir25m=mLbl?sumCirM(CIR.mes_25):null;
   const cir26m=mLbl?sumCirM(CIR.mes_26):null;
 
-  const C24='rgba(12,48,40,0.75)',B24='rgba(12,48,40,0.95)';
+  const C24='rgba(68,108,179,0.82)',B24='rgba(68,108,179,1)';
   const C25='rgba(45,197,171,0.88)',B25='rgba(45,197,171,1)';
-  const C26='rgba(255,193,7,0.82)',B26='rgba(255,193,7,1)';
+  const C26='rgba(255,152,0,0.85)',B26='rgba(255,152,0,1)';
 
   el.innerHTML=`
   <div class="sec-title">Cirujanos <span class="st-badge">${mLbl?mLbl+' · ':''+(tiIdx.length<CIR.tipos.length?'Tipo filtrado · ':'')}${_yrBadge}</span></div>
@@ -2473,18 +2502,26 @@ function buildFinBalance(){
               y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}}}}
   });
 
-  // ─── Chart: CxC vs Efectivo
+  // ─── Chart: CxC vs Efectivo — eje dual (CxC escala izq., Efectivo escala der.)
   new Chart(document.getElementById('ch-bss-cxc'),{
     type:'bar',
     data:{labels:BSS.labels,datasets:[
-      {label:'CxC Clientes', data:BSS.cxc,  backgroundColor:'rgba(255,152,0,0.78)', borderRadius:3},
-      {label:'Efectivo',     data:BSS.cash, backgroundColor:BSS.cash.map(v=>v<0?'rgba(239,83,80,0.85)':'rgba(45,197,171,0.85)'), borderRadius:3}
+      {label:'CxC Clientes', data:BSS.cxc, backgroundColor:'rgba(255,152,0,0.78)', borderRadius:3, yAxisID:'y', order:2},
+      {type:'line', label:'Efectivo', data:BSS.cash,
+       borderColor:'rgba(45,197,171,1)', backgroundColor:'transparent',
+       pointBackgroundColor:BSS.cash.map(v=>v<0?'rgba(239,83,80,1)':'rgba(45,197,171,1)'),
+       pointRadius:7, pointHoverRadius:9, borderWidth:2.5, yAxisID:'y2', order:1}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
         tooltip:{backgroundColor:'rgba(12,48,40,.92)',callbacks:{label:c=>` ${c.dataset.label}: ${fv(c.parsed.y)}`}}},
-      scales:{x:{ticks:{font:{size:11}},grid:{display:false}},
-              y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}}}}
+      scales:{
+        x:{ticks:{font:{size:11}},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'},position:'left',
+           title:{display:true,text:'CxC (miles COP)',font:{size:10},color:'#b8860b'}},
+        y2:{ticks:{callback:v=>fv(v),font:{size:10}},position:'right',grid:{display:false},
+            title:{display:true,text:'Efectivo (miles COP)',font:{size:10},color:'#2dc5ab'}}
+      }}
   });
 
   // ─── Chart: Composición pasivo corriente Feb-26 (doughnut)
