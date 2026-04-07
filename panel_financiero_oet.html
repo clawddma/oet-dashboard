@@ -688,9 +688,9 @@ const COM = {
   lineas: ['D.Sala (Cirugías)','Honorarios Cirujano','LIOs ★','Consultas Médicas','Exámenes Diagnóstico','Medicamentos'],
   v24: [3911625,2419606,1763875,794067,534799,207394], /* AUTO */
   v25: [5682677,3663733,3128993,910896,780285,363360], /* AUTO */
-  v26: [1704724,934203,716068,244071,184296,110277],   // Mar 2026 (YTD) /* AUTO */
+  v26: [1893338,995329,742160,255329,192764,118824],   // Mar 2026 (YTD) /* AUTO */
   pct25: [37.0,23.8,20.4,5.9,5.1,2.4],
-  cirugias: {v24:2955, v25:3918, v26:1056, pct:32.6}, /* AUTO */
+  cirugias: {v24:2955, v25:3918, v26:1174, pct:32.6}, /* AUTO */
   pacientes: {v24:8884, v25:10122, pct:13.9},
   meta26: 23500000
 };
@@ -699,16 +699,16 @@ const COM = {
 const CIR = {
   // Por Facturación (ingresos que genera cada médico, miles de COP) — sheetName = nombre exacto en col W /* AUTO */
   cirujanos:[
-    {name:'Dr. M.A. Jaramillo N.', sheetName:'DR. MIGUEL ANTONIO JARAMILLO NOGUERA', bill24:2860301, bill25:4023210, bill26:768988, cir24:402, cir25:486, cir26:87, esp:'Catarata · LIO Premium'}, /* AUTO */
-    {name:'Dr. Jon K. Balparda', sheetName:'DR. JON KEPA BALPARDA', bill24:1390703, bill25:1763729, bill26:427293, cir24:915, cir25:863, cir26:178, esp:'Alta volumen · Catarata'}, /* AUTO */
-    {name:'Dr. M. Jaramillo M.', sheetName:'DR. MIGUEL JARAMILLO MARTINEZ', bill24:889091, bill25:1750688, bill26:458529, cir24:134, cir25:236, cir26:50, esp:'Vitreoretina · Catarata'}, /* AUTO */
+    {name:'Dr. M.A. Jaramillo N.', sheetName:'DR. MIGUEL ANTONIO JARAMILLO NOGUERA', bill24:2860301, bill25:4023210, bill26:808720, cir24:402, cir25:486, cir26:91, esp:'Catarata · LIO Premium'}, /* AUTO */
+    {name:'Dr. Jon K. Balparda', sheetName:'DR. JON KEPA BALPARDA', bill24:1390703, bill25:1763729, bill26:486216, cir24:915, cir25:863, cir26:204, esp:'Alta volumen · Catarata'}, /* AUTO */
+    {name:'Dr. M. Jaramillo M.', sheetName:'DR. MIGUEL JARAMILLO MARTINEZ', bill24:889091, bill25:1750688, bill26:501670, cir24:134, cir25:236, cir26:58, esp:'Vitreoretina · Catarata'}, /* AUTO */
     {name:'Dr. J.E. Jaramillo N.', sheetName:'DR. JORGE EMILIO JARAMILLO NOGUERA', bill24:1414026, bill25:757236, bill26:118, cir24:194, cir25:97, cir26:0, esp:'Retirado 2025'}, /* AUTO */
-    {name:'Dr. J.A. Jaramillo H.', sheetName:'DR. JORGE ALEJANDRO JARAMILLO HENRIQUEZ', bill24:526311, bill25:1185346, bill26:385096, cir24:66, cir25:117, cir26:42, esp:'Catarata · Córnea'}, /* AUTO */
-    {name:'Dr. J.G. Sánchez M.', sheetName:'DR. JUAN GONZALO SANCHEZ MONTOYA', bill24:210306, bill25:924652, bill26:258522, cir24:33, cir25:200, cir26:73, esp:'Glaucoma · Catarata'}, /* AUTO */
-    {name:'Dr. B.A. Ramírez S.', sheetName:'DR. BORIS ARTURO RAMIREZ SERAFINOFF', bill24:389869, bill25:666632, bill26:201382, cir24:331, cir25:525, cir26:145, esp:'Catarata · Refractiva'}, /* AUTO */
-    {name:'Dr. J.A. Jaramillo S.', sheetName:'DR. JOSE AGUSTIN JARAMILLO SOLA', bill24:296152, bill25:699091, bill26:238593, cir24:63, cir25:118, cir26:36, esp:'LIO · Córnea'}, /* AUTO */
-    {name:'Dr. J.C. Gil Muñoz', sheetName:'DR. JUAN CARLOS GIL MUÑOZ', bill24:240702, bill25:400033, bill26:75584, cir24:133, cir25:212, cir26:46, esp:'Catarata'}, /* AUTO */
-    {name:'Dra. C. Sardi Correa', sheetName:'DRA. CAROLINA SARDI CORREA', bill24:231289, bill25:338178, bill26:81891, cir24:28, cir25:35, cir26:17, esp:'Refractiva'}, /* AUTO */
+    {name:'Dr. J.A. Jaramillo H.', sheetName:'DR. JORGE ALEJANDRO JARAMILLO HENRIQUEZ', bill24:526311, bill25:1185346, bill26:385402, cir24:66, cir25:117, cir26:42, esp:'Catarata · Córnea'}, /* AUTO */
+    {name:'Dr. J.G. Sánchez M.', sheetName:'DR. JUAN GONZALO SANCHEZ MONTOYA', bill24:210306, bill25:924652, bill26:270086, cir24:33, cir25:200, cir26:77, esp:'Glaucoma · Catarata'}, /* AUTO */
+    {name:'Dr. B.A. Ramírez S.', sheetName:'DR. BORIS ARTURO RAMIREZ SERAFINOFF', bill24:389869, bill25:666632, bill26:239278, cir24:331, cir25:525, cir26:174, esp:'Catarata · Refractiva'}, /* AUTO */
+    {name:'Dr. J.A. Jaramillo S.', sheetName:'DR. JOSE AGUSTIN JARAMILLO SOLA', bill24:296152, bill25:699091, bill26:240637, cir24:63, cir25:118, cir26:36, esp:'LIO · Córnea'}, /* AUTO */
+    {name:'Dr. J.C. Gil Muñoz', sheetName:'DR. JUAN CARLOS GIL MUÑOZ', bill24:240702, bill25:400033, bill26:84912, cir24:133, cir25:212, cir26:49, esp:'Catarata'}, /* AUTO */
+    {name:'Dra. C. Sardi Correa', sheetName:'DRA. CAROLINA SARDI CORREA', bill24:231289, bill25:338178, bill26:82115, cir24:28, cir25:35, cir26:17, esp:'Refractiva'}, /* AUTO */
   ],
   // Por tipo de procedimiento (facturación, miles COP) — actualización manual
   tipos:['Catarata (Facoemulsif.)','LIOs Premium','PRK (Refractiva)','LASIK (Refractiva)','Vitrectomía','Blefaroplastia','LIO Fáquico','Crosslinking','Otros'],
@@ -719,7 +719,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 17:54) /* AUTO */
+  mes_26:[375,373,426,0,0,0,0,0,0,0,0,0],  // total=1174 (2026-04-06 20:30) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -1157,6 +1157,16 @@ function ffYrMmap(y,fn){
   return Array.from({length:12},(_,i)=>{const d=rows.find(d=>d.m===i+1);return d?(fn(d)??null):null;});
 }
 
+// Dataset filtrado para gráficos financieros: excluye eeffPending y respeta filtros FF
+// Los labels del eje X se CONTRAEN al filtro activo (meses no seleccionados desaparecen)
+function ffD(){
+  return D.filter(d =>
+    !d.eeffPending &&
+    FF.years.has(d.y) &&
+    (FF.months.size === 0 || FF.months.has(d.m))
+  );
+}
+
 const FIN_SECS_ALL=['fin-inicio','fin-pnl','fin-ebitda','fin-margen','fin-costos','fin-flujo','fin-balance','fin-anual'];
 function clearFinBuilt(){
   FIN_SECS_ALL.forEach(sid=>{
@@ -1362,28 +1372,26 @@ function buildFinInicio(){
     ${chartCard('ch-ini-mg','Márgenes Clave por Mes (%)','',200,'')}
   </div>`;
 
-  // ffVal maneja EEFF + filtros FF (año, mes)
-  const _pnl = (d,f) => ffVal(d,f);
+  const _fD_ini = ffD(); // dataset contraído al filtro activo
 
-  // Chart: Ingresos + Ganancia Neta  (solo EEFF oficial — ing también null si mes pendiente)
-  mkChart('ch-ini-main',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Ingresos',data:D.map(d=>_pnl(d,'ing')),backgroundColor:'rgba(45,197,171,0.65)',order:2},
-    {label:'Costo Total',data:D.map(d=>_pnl(d,'cost')),backgroundColor:'rgba(239,83,80,0.45)',order:2},
-    {type:'line',label:'Ganancia Neta',data:D.map(d=>_pnl(d,'un')),borderColor:'#1a3028',
+  // Chart: Ingresos + Ganancia Neta
+  mkChart('ch-ini-main',{type:'bar',data:{labels:_fD_ini.map(d=>d.p),datasets:[
+    {label:'Ingresos',data:_fD_ini.map(d=>d.ing),backgroundColor:'rgba(45,197,171,0.65)',order:2},
+    {label:'Costo Total',data:_fD_ini.map(d=>d.cost),backgroundColor:'rgba(239,83,80,0.45)',order:2},
+    {type:'line',label:'Ganancia Neta',data:_fD_ini.map(d=>d.un),borderColor:'#1a3028',
      backgroundColor:'transparent',pointRadius:3,borderWidth:2,order:1,spanGaps:false}
   ]}});
 
   // Chart: EBITDA
-  mkChart('ch-ini-ebitda',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'EBITDA',data:D.map(d=>_pnl(d,'ebitda')),backgroundColor:barClrs(D.filter(hasEEFF).map(d=>d.ebitda)
-      .concat(D.filter(d=>d.eeffPending).map(()=>0)))}
+  mkChart('ch-ini-ebitda',{type:'bar',data:{labels:_fD_ini.map(d=>d.p),datasets:[
+    {label:'EBITDA',data:_fD_ini.map(d=>d.ebitda),backgroundColor:barClrs(_fD_ini.map(d=>d.ebitda))}
   ]}});
 
   // Chart: Márgenes
-  mkChart('ch-ini-mg',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Mg Bruto%',data:D.map(d=>_pnl(d,'mbp')),borderColor:'#2dc5ab',pointRadius:2,borderWidth:1.5,isPct:true,spanGaps:false},
-    {label:'Mg EBITDA%',data:D.map(d=>_pnl(d,'mep')),borderColor:'#1a8a7a',pointRadius:2,borderWidth:1.5,isPct:true,spanGaps:false},
-    {label:'Mg Neto%',data:D.map(d=>_pnl(d,'mnp')),borderColor:'#ff9800',pointRadius:2,borderWidth:1.5,isPct:true,spanGaps:false}
+  mkChart('ch-ini-mg',{type:'line',data:{labels:_fD_ini.map(d=>d.p),datasets:[
+    {label:'Mg Bruto%',data:_fD_ini.map(d=>d.mbp),borderColor:'#2dc5ab',pointRadius:2,borderWidth:1.5,isPct:true,spanGaps:false},
+    {label:'Mg EBITDA%',data:_fD_ini.map(d=>d.mep),borderColor:'#1a8a7a',pointRadius:2,borderWidth:1.5,isPct:true,spanGaps:false},
+    {label:'Mg Neto%',data:_fD_ini.map(d=>d.mnp),borderColor:'#ff9800',pointRadius:2,borderWidth:1.5,isPct:true,spanGaps:false}
   ]},options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 
   // Resumen ejecutivo table
@@ -1457,27 +1465,29 @@ function buildFinPnl(){
 
   const _pnlF = (d,f) => ffVal(d,f);
 
-  mkChart('ch-pnl-main',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Costo Médico/Directo',data:D.map(d=>_pnlF(d,'cost')),backgroundColor:'rgba(239,83,80,0.80)',
+  const _fD_pnl = ffD(); // dataset contraído al filtro activo
+
+  mkChart('ch-pnl-main',{type:'bar',data:{labels:_fD_pnl.map(d=>d.p),datasets:[
+    {label:'Costo Médico/Directo',data:_fD_pnl.map(d=>d.cost),backgroundColor:'rgba(239,83,80,0.80)',
      stack:'costos',borderRadius:2,order:2},
-    {label:'Gasto Administrativo',data:D.map(d=>_pnlF(d,'ga')),backgroundColor:'rgba(255,152,0,0.70)',
+    {label:'Gasto Administrativo',data:_fD_pnl.map(d=>d.ga),backgroundColor:'rgba(255,152,0,0.70)',
      stack:'costos',borderRadius:2,order:2},
-    {type:'line',label:'▶ Ingresos',data:D.map(d=>_pnlF(d,'ing')),borderColor:'#2dc5ab',
+    {type:'line',label:'▶ Ingresos',data:_fD_pnl.map(d=>d.ing),borderColor:'#2dc5ab',
      backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'#2dc5ab',borderWidth:2.5,order:1,spanGaps:false}
   ]}});
 
-  mkChart('ch-pnl-gastos',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Gastos Adm.',data:D.map(d=>_pnlF(d,'ga')),backgroundColor:'rgba(45,197,171,0.6)',stack:'g'},
-    {label:'Gastos Operac.',data:D.map(d=>_pnlF(d,'go')),backgroundColor:'rgba(26,138,122,0.5)',stack:'g'},
-    {type:'line',label:'▶ Ingresos',data:D.map(d=>_pnlF(d,'ing')),borderColor:'#ff9800',spanGaps:false,
+  mkChart('ch-pnl-gastos',{type:'bar',data:{labels:_fD_pnl.map(d=>d.p),datasets:[
+    {label:'Gastos Adm.',data:_fD_pnl.map(d=>d.ga),backgroundColor:'rgba(45,197,171,0.6)',stack:'g'},
+    {label:'Gastos Operac.',data:_fD_pnl.map(d=>d.go),backgroundColor:'rgba(26,138,122,0.5)',stack:'g'},
+    {type:'line',label:'▶ Ingresos',data:_fD_pnl.map(d=>d.ing),borderColor:'#ff9800',spanGaps:false,
      borderDash:[5,3],backgroundColor:'transparent',pointRadius:2,borderWidth:2}
   ]},options:{plugins:{tooltip:{callbacks:{label:c=>c.dataset.label===undefined?'':
     ' '+c.dataset.label+': '+fv(c.parsed.y)}}}}});
 
-  mkChart('ch-pnl-un',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Ganancia Operativa',data:D.map(d=>_pnlF(d,'uo')),
-     backgroundColor:D.map(d=>d.eeffPending?'rgba(180,180,180,0.25)':(d.uo>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)'))},
-    {type:'line',label:'Ganancia Neta',data:D.map(d=>_pnlF(d,'un')),borderColor:'#1a3028',
+  mkChart('ch-pnl-un',{type:'bar',data:{labels:_fD_pnl.map(d=>d.p),datasets:[
+    {label:'Ganancia Operativa',data:_fD_pnl.map(d=>d.uo),
+     backgroundColor:_fD_pnl.map(d=>d.uo>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)')},
+    {type:'line',label:'Ganancia Neta',data:_fD_pnl.map(d=>d.un),borderColor:'#1a3028',
      backgroundColor:'transparent',pointRadius:3,borderWidth:2,spanGaps:false}
   ]}});
 
@@ -1576,21 +1586,21 @@ function buildFinEbitda(){
     Sin los 3 meses negativos (Jun, Sep, Oct), el EBITDA hubiera sido <strong>${fv(ANN[2025].ebitda+147893.92+447648.26+130804.32)}</strong>.
   </div>`;
 
-  const _pE = (d,f) => ffVal(d,f);
+  const _fD_ebt = ffD();
 
-  mkChart('ch-ebitda-full',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'EBITDA',data:D.map(d=>_pE(d,'ebitda')),
-     backgroundColor:D.map(d=>d.eeffPending?'rgba(180,180,180,0.2)':(d.ebitda>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)')),
-     borderColor:D.map(d=>d.eeffPending?'transparent':(d.ebitda>=0?'rgba(45,197,171,1)':'rgba(239,83,80,1)')),borderWidth:1},
-    {type:'line',label:'Margen EBITDA %',data:D.map(d=>_pE(d,'mep')),
+  mkChart('ch-ebitda-full',{type:'bar',data:{labels:_fD_ebt.map(d=>d.p),datasets:[
+    {label:'EBITDA',data:_fD_ebt.map(d=>d.ebitda),
+     backgroundColor:_fD_ebt.map(d=>d.ebitda>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)'),
+     borderColor:_fD_ebt.map(d=>d.ebitda>=0?'rgba(45,197,171,1)':'rgba(239,83,80,1)'),borderWidth:1},
+    {type:'line',label:'Margen EBITDA %',data:_fD_ebt.map(d=>d.mep),
      borderColor:'#1a3028',backgroundColor:'transparent',pointRadius:3,borderWidth:2,
      yAxisID:'y2',isPct:true,spanGaps:false}
   ]},options:{scales:{y2:{position:'right',ticks:{callback:v=>v+'%',font:{size:10}},grid:{display:false}}}}});
 
-  mkChart('ch-ebitda-vs',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'EBITDA',data:D.map(d=>_pE(d,'ebitda')),borderColor:'#2dc5ab',
+  mkChart('ch-ebitda-vs',{type:'line',data:{labels:_fD_ebt.map(d=>d.p),datasets:[
+    {label:'EBITDA',data:_fD_ebt.map(d=>d.ebitda),borderColor:'#2dc5ab',
      backgroundColor:'rgba(45,197,171,0.08)',fill:true,pointRadius:2,borderWidth:2,spanGaps:false},
-    {label:'Ganancia Neta',data:D.map(d=>_pE(d,'un')),borderColor:'#ff9800',
+    {label:'Ganancia Neta',data:_fD_ebt.map(d=>d.un),borderColor:'#ff9800',
      backgroundColor:'transparent',pointRadius:2,borderWidth:2,spanGaps:false}
   ]}});
 
@@ -1631,12 +1641,12 @@ function buildFinMargen(){
     ${chartCard('ch-mg-cmp25','Margen EBITDA % · Mg Neto %: 2024 · 2025 · 2026 YTD (EEFF)','',220,'')}
   </div>`;
 
-  const _pMg = (d,f) => ffVal(d,f);
-  mkChart('ch-mg-all',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Mg Bruto %',data:D.map(d=>_pMg(d,'mbp')),borderColor:'#2dc5ab',pointRadius:2,borderWidth:2,isPct:true,spanGaps:false},
-    {label:'Mg Operativo %',data:D.map(d=>_pMg(d,'mop')),borderColor:'#1a8a7a',pointRadius:2,borderWidth:2,isPct:true,spanGaps:false},
-    {label:'Mg EBITDA %',data:D.map(d=>_pMg(d,'mep')),borderColor:'#1a3028',pointRadius:2,borderWidth:2,isPct:true,spanGaps:false},
-    {label:'Mg Neto %',data:D.map(d=>_pMg(d,'mnp')),borderColor:'#ff9800',pointRadius:2,borderWidth:1.5,borderDash:[3,2],isPct:true,spanGaps:false}
+  const _fD_mg = ffD();
+  mkChart('ch-mg-all',{type:'line',data:{labels:_fD_mg.map(d=>d.p),datasets:[
+    {label:'Mg Bruto %',data:_fD_mg.map(d=>d.mbp),borderColor:'#2dc5ab',pointRadius:2,borderWidth:2,isPct:true,spanGaps:false},
+    {label:'Mg Operativo %',data:_fD_mg.map(d=>d.mop),borderColor:'#1a8a7a',pointRadius:2,borderWidth:2,isPct:true,spanGaps:false},
+    {label:'Mg EBITDA %',data:_fD_mg.map(d=>d.mep),borderColor:'#1a3028',pointRadius:2,borderWidth:2,isPct:true,spanGaps:false},
+    {label:'Mg Neto %',data:_fD_mg.map(d=>d.mnp),borderColor:'#ff9800',pointRadius:2,borderWidth:1.5,borderDash:[3,2],isPct:true,spanGaps:false}
   ]},options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 
   const mns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -1676,17 +1686,17 @@ function buildFinCostos(){
   </div>
   <div class="gfull">${chartCard('ch-cos-stack','Composición mensual: Costo Total + Gastos Adm. vs Ingresos','',240,'')}</div>`;
 
-  const _pc = (d,f) => ffVal(d,f);
+  const _fD_cos = ffD();
 
-  mkChart('ch-cos-main',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Costo Total',data:D.map(d=>_pc(d,'cost')),
-     backgroundColor:D.map(d=>d.eeffPending?'rgba(180,180,180,0.2)':(d.cost>d.ing?'rgba(239,83,80,0.9)':'rgba(239,83,80,0.55)')),order:2},
-    {type:'line',label:'▶ Ingresos',data:D.map(d=>_pc(d,'ing')),borderColor:'#2dc5ab',
+  mkChart('ch-cos-main',{type:'bar',data:{labels:_fD_cos.map(d=>d.p),datasets:[
+    {label:'Costo Total',data:_fD_cos.map(d=>d.cost),
+     backgroundColor:_fD_cos.map(d=>d.cost>d.ing?'rgba(239,83,80,0.9)':'rgba(239,83,80,0.55)'),order:2},
+    {type:'line',label:'▶ Ingresos',data:_fD_cos.map(d=>d.ing),borderColor:'#2dc5ab',
      backgroundColor:'transparent',pointRadius:3,borderWidth:2.5,order:1,spanGaps:false}
   ]}});
 
-  mkChart('ch-cos-pct',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'% Costo/Ingresos',data:D.map(d=>d.eeffPending||!d.ing?null:+(d.cost/d.ing*100).toFixed(1)),
+  mkChart('ch-cos-pct',{type:'line',data:{labels:_fD_cos.map(d=>d.p),datasets:[
+    {label:'% Costo/Ingresos',data:_fD_cos.map(d=>!d.ing?null:+(d.cost/d.ing*100).toFixed(1)),
      borderColor:'#2dc5ab',backgroundColor:'rgba(45,197,171,0.1)',
      fill:true,pointRadius:3,borderWidth:2,spanGaps:false,
      segment:{borderColor:ctx=>ctx.p1.parsed.y>100?'#ef5350':'#2dc5ab'},
@@ -1694,15 +1704,15 @@ function buildFinCostos(){
   ]},options:{plugins:{annotation:{}},scales:{y:{ticks:{callback:v=>v+'%'},
     suggestedMin:30,suggestedMax:130}}}});
 
-  mkChart('ch-cos-ga',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'% Gastos Adm/Ingresos',data:D.map(d=>d.eeffPending||!d.ing?null:+(d.ga/d.ing*100).toFixed(1)),
+  mkChart('ch-cos-ga',{type:'line',data:{labels:_fD_cos.map(d=>d.p),datasets:[
+    {label:'% Gastos Adm/Ingresos',data:_fD_cos.map(d=>!d.ing?null:+(d.ga/d.ing*100).toFixed(1)),
      borderColor:'#1a8a7a',backgroundColor:'rgba(26,138,122,0.1)',fill:true,pointRadius:3,borderWidth:2,isPct:true,spanGaps:false}
   ]},options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 
-  mkChart('ch-cos-stack',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'Costo Total',data:D.map(d=>_pc(d,'cost')),backgroundColor:'rgba(239,83,80,0.6)',stack:'s'},
-    {label:'Gastos Adm.',data:D.map(d=>_pc(d,'ga')),backgroundColor:'rgba(45,197,171,0.5)',stack:'s'},
-    {type:'line',label:'▶ Ingresos',data:D.map(d=>_pc(d,'ing')),borderColor:'#1a3028',
+  mkChart('ch-cos-stack',{type:'bar',data:{labels:_fD_cos.map(d=>d.p),datasets:[
+    {label:'Costo Total',data:_fD_cos.map(d=>d.cost),backgroundColor:'rgba(239,83,80,0.6)',stack:'s'},
+    {label:'Gastos Adm.',data:_fD_cos.map(d=>d.ga),backgroundColor:'rgba(45,197,171,0.5)',stack:'s'},
+    {type:'line',label:'▶ Ingresos',data:_fD_cos.map(d=>d.ing),borderColor:'#1a3028',
      backgroundColor:'transparent',pointRadius:2,borderWidth:2.5,spanGaps:false}
   ]}});
 }
@@ -1712,13 +1722,9 @@ function buildFinCostos(){
 // ════════════════════════════════════════
 function buildFinFlujo(){
   const el=document.getElementById('fin-flujo');
+  const _fD_flu = ffD();
   let cum=0;
-  const cumsAll=D.map(d=>{
-    if(d.eeffPending) return null;
-    if(!FF.years.has(d.y)) return null;
-    if(FF.months.size>0 && !FF.months.has(d.m)) return null;
-    cum+=(d.ebitda||0); return +cum.toFixed(0);
-  });
+  const cumsAll=_fD_flu.map(d=>{cum+=(d.ebitda||0);return +cum.toFixed(0);});
   el.innerHTML=`
   <div class="sec-title">Flujo de Caja <span class="st-badge">EBITDA como proxy de generación operativa</span></div>
   <div class="kpis k3">
@@ -1744,15 +1750,14 @@ function buildFinFlujo(){
     <strong>Acción inmediata:</strong> cobrar CxC atrasada → ve al módulo <strong>Balance/Liquidez</strong> para proyección de caja.
   </div>`;
 
-  const _pF = (d,f) => ffVal(d,f);
-  mkChart('ch-fcf-main',{type:'bar',data:{labels:D.map(d=>d.p),datasets:[
-    {label:'EBITDA (FCO proxy)',data:D.map(d=>_pF(d,'ebitda')),
-     backgroundColor:D.map(d=>d.eeffPending?'rgba(180,180,180,0.2)':(d.ebitda>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)')),order:2},
-    {type:'line',label:'Ganancia Neta',data:D.map(d=>_pF(d,'un')),borderColor:'#1a3028',
+  mkChart('ch-fcf-main',{type:'bar',data:{labels:_fD_flu.map(d=>d.p),datasets:[
+    {label:'EBITDA (FCO proxy)',data:_fD_flu.map(d=>d.ebitda),
+     backgroundColor:_fD_flu.map(d=>d.ebitda>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)'),order:2},
+    {type:'line',label:'Ganancia Neta',data:_fD_flu.map(d=>d.un),borderColor:'#1a3028',
      backgroundColor:'transparent',pointRadius:3,borderWidth:2,order:1,spanGaps:false}
   ]}});
 
-  mkChart('ch-fcf-acum',{type:'line',data:{labels:D.map(d=>d.p),datasets:[
+  mkChart('ch-fcf-acum',{type:'line',data:{labels:_fD_flu.map(d=>d.p),datasets:[
     {label:'EBITDA Acumulado',data:cumsAll,borderColor:'#2dc5ab',
      backgroundColor:'rgba(45,197,171,0.12)',fill:true,pointRadius:3,borderWidth:2.5,spanGaps:false}
   ]}});
