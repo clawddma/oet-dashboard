@@ -1461,19 +1461,27 @@ function buildFinInicio(){
     mkChart('ch-ini-ebitda',{type:'bar',data:{labels:_mLbl,datasets:_ebtDs},options:{
       plugins:{legend:{position:'top',labels:{boxWidth:11,font:{size:10},padding:8}}},
       scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
-    const _mgDs=[];
-    const _mgFam={2024:{mbp:'rgba(68,108,179,0.9)',mep:'rgba(68,108,179,0.65)',mnp:'rgba(68,108,179,0.42)'},
-                  2025:{mbp:'#2dc5ab',mep:'#1a8a7a',mnp:'#ff9800'},
-                  2026:{mbp:'rgba(220,165,0,0.95)',mep:'rgba(255,193,7,0.9)',mnp:'rgba(180,118,0,0.9)'}};
+    // ch-ini-mg: UN INSIGHT LIMPIO — Mg EBITDA% (barras) + Mg Neto% (línea delgada) + ref 0%
+    // Lectura inmediata: verde=rentable · rojo=pérdida · brecha barra/línea = impacto D&A+otros
+    const _mgSimDs=[];
     [2024,2025,2026].filter(y=>FF.years.has(y)).forEach(y=>{
-      [{f:'mbp',lbl:'Mg Bruto%'},{f:'mep',lbl:'Mg EBITDA%'},{f:'mnp',lbl:'Mg Neto%'}].forEach(mg=>{
-        _mgDs.push({label:mg.lbl+' '+(y===2026?'2026E':y),data:_ya(y,mg.f),
-          borderColor:_mgFam[y][mg.f],borderWidth:y===2025?2:1.5,
-          borderDash:y===2024?[5,3]:y===2026?[2,2]:[],pointRadius:2,isPct:true,spanGaps:false});
-      });
+      const mepD=_ya(y,'mep');
+      // Barra Mg EBITDA% — verde si positivo, rojo si negativo
+      _mgSimDs.push({type:'bar',label:'Mg EBITDA% '+(y===2026?'26E':y),data:mepD,
+        backgroundColor:mepD.map(v=>v==null?'transparent':v>=0?_YC[y]:'rgba(239,83,80,0.75)'),
+        borderRadius:2,order:2});
+      // Línea delgada Mg Neto% — muestra el impacto real post-impuestos/D&A
+      const netClr=y===2024?'rgba(68,108,179,0.85)':y===2025?'#1a3028':'rgba(160,110,0,0.9)';
+      _mgSimDs.push({type:'line',label:'Mg Neto% '+(y===2026?'26E':y),data:_ya(y,'mnp'),
+        borderColor:netClr,borderWidth:y===2025?1.8:1.2,borderDash:[3,2],
+        pointRadius:1.5,backgroundColor:'transparent',isPct:true,spanGaps:false,order:1});
     });
-    mkChart('ch-ini-mg',{type:'line',data:{labels:_mLbl,datasets:_mgDs},options:{
-      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
+    // Línea de referencia 0% — visualmente separa rentabilidad de pérdida
+    _mgSimDs.push({type:'line',label:'Neutro (0%)',data:_mArr.map(()=>0),
+      borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false});
+    mkChart('ch-ini-mg',{type:'bar',data:{labels:_mLbl,datasets:_mgSimDs},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:5,filter:i=>i.text!=='Neutro (0%)'}},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+(c.parsed.y?.toFixed(1)??'—')+'%'}}},
       scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}});
   }
 
@@ -1696,7 +1704,7 @@ function buildFinEbitda(){
   </div>
   <div class="gfull">${chartCard('ch-ebitda-full','EBITDA Mensual — Verde = gana · Rojo = pierde','La barra llega hasta $0 cuando el mes es neutro',270,'')}</div>
   <div class="g2">
-    ${chartCard('ch-ebitda-vs','EBITDA vs Ganancia Neta por Mes','Brecha = D&A + otros ajustes',220,'')}
+    ${chartCard('ch-ebitda-vs','EBITDA vs Ganancia Neta — brecha = amortizaciones y ajustes','',220,'')}
     ${chartCard('ch-ebitda-cum','EBITDA Acumulado: ¿cuánto se ha generado?','2024 vs 2025',220,'')}
   </div>
   <div class="insight warn">
@@ -1757,12 +1765,23 @@ function buildFinEbitda(){
     mkChart('ch-ebitda-full',{type:'bar',data:{labels:_mLbl_e,datasets:_ebtFullDs},options:{
       plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
       scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}},y2:{position:'right',ticks:{callback:v=>v+'%',font:{size:10}},grid:{display:false}}}}});
+    // ch-ebitda-vs: EBITDA barras (verde/rojo) + GN línea delgada por año + $0 referencia
     const _ebtVsDs=[];
-    if(FF.years.has(2024)){_ebtVsDs.push({label:'EBITDA 2024',data:_ye(2024,'ebitda'),borderColor:'rgba(68,108,179,0.7)',backgroundColor:'rgba(68,108,179,0.06)',fill:true,pointRadius:2,borderWidth:1.5,borderDash:[4,2],spanGaps:false});_ebtVsDs.push({label:'GN 2024',data:_ye(2024,'un'),borderColor:'rgba(68,108,179,0.4)',backgroundColor:'transparent',pointRadius:2,borderWidth:1.2,borderDash:[2,2],spanGaps:false});}
-    if(FF.years.has(2025)){_ebtVsDs.push({label:'EBITDA 2025',data:_ye(2025,'ebitda'),borderColor:'#2dc5ab',backgroundColor:'rgba(45,197,171,0.08)',fill:true,pointRadius:2,borderWidth:2,spanGaps:false});_ebtVsDs.push({label:'GN 2025',data:_ye(2025,'un'),borderColor:'#ff9800',backgroundColor:'transparent',pointRadius:2,borderWidth:2,spanGaps:false});}
-    if(FF.years.has(2026)){_ebtVsDs.push({label:'EBITDA 2026 EEFF',data:_ye(2026,'ebitda'),borderColor:'rgba(200,148,0,0.95)',backgroundColor:'rgba(255,193,7,0.08)',fill:true,pointRadius:3,borderWidth:2,spanGaps:false});_ebtVsDs.push({label:'GN 2026 EEFF',data:_ye(2026,'un'),borderColor:'rgba(180,110,0,0.85)',backgroundColor:'transparent',pointRadius:3,borderWidth:1.5,borderDash:[3,2],spanGaps:false});}
-    mkChart('ch-ebitda-vs',{type:'line',data:{labels:_mLbl_e,datasets:_ebtVsDs},options:{
-      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
+    [2024,2025,2026].filter(y=>FF.years.has(y)).forEach(y=>{
+      const ebtD=_ye(y,'ebitda');
+      _ebtVsDs.push({type:'bar',label:'EBITDA '+(y===2026?'2026E':y),data:ebtD,
+        backgroundColor:ebtD.map(v=>v==null?'transparent':v>=0?_YC_e[y]:'rgba(239,83,80,0.75)'),
+        borderRadius:2,order:2});
+      const gnClr=y===2024?'rgba(68,108,179,0.85)':y===2025?'#1a3028':'rgba(160,110,0,0.9)';
+      _ebtVsDs.push({type:'line',label:'G.Neta '+(y===2026?'2026E':y),data:_ye(y,'un'),
+        borderColor:gnClr,borderWidth:y===2025?1.8:1.2,borderDash:[3,2],
+        pointRadius:1.5,backgroundColor:'transparent',spanGaps:false,order:1});
+    });
+    _ebtVsDs.push({type:'line',label:'Neutro ($0)',data:_mArr_e.map(()=>0),
+      borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false});
+    mkChart('ch-ebitda-vs',{type:'bar',data:{labels:_mLbl_e,datasets:_ebtVsDs},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:5,filter:i=>i.text!=='Neutro ($0)'}},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fv(c.parsed.y)}}},
       scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
   }
 
@@ -1797,7 +1816,7 @@ function buildFinMargen(){
       kpiCard('Mg Neto 2025',     a25.mnp.toFixed(1)+'%','vs 2024: '+a24.mnp.toFixed(1)+'%',a25.mnp>=0?'':'red')
     ].join('');})()}
   </div>
-  <div class="gfull">${chartCard('ch-mg-all','4 Márgenes Clave — Historia completa (encima de 0% = rentable)','',270,'')}</div>
+  <div class="gfull">${chartCard('ch-mg-all','Mg EBITDA% y Mg Neto% — Histórico mensual (encima de 0% = rentable)','',270,'')}</div>
   <div class="g2">
     ${chartCard('ch-mg-cmp24','Margen Bruto %: 2024 · 2025 · 2026 YTD (EEFF)','',220,'')}
     ${chartCard('ch-mg-cmp25','Margen EBITDA % · Mg Neto %: 2024 · 2025 · 2026 YTD (EEFF)','',220,'')}
@@ -1827,20 +1846,24 @@ function buildFinMargen(){
         title:{display:true,text:'Márgenes — '+_pLbl_m,font:{size:11},color:'#2dc5ab',padding:{bottom:4}}},
         scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}});
   } else {
-    // ── MODO ANUAL: X=meses, líneas por año ───────────────────────────────
-    const _mgAllDs=[];
-    const _mgAllDefs=[
-      {f:'mbp',lbl:'Mg Bruto%',    clrs:{2024:'rgba(68,108,179,0.9)', 2025:'#2dc5ab',          2026:'rgba(220,165,0,0.95)'}},
-      {f:'mop',lbl:'Mg Operativo%',clrs:{2024:'rgba(68,108,179,0.65)',2025:'#1a8a7a',          2026:'rgba(190,135,0,0.9)'}},
-      {f:'mep',lbl:'Mg EBITDA%',   clrs:{2024:'rgba(68,108,179,0.42)',2025:'#1a3028',          2026:'rgba(160,110,0,0.88)'}},
-      {f:'mnp',lbl:'Mg Neto%',     clrs:{2024:'rgba(68,108,179,0.28)',2025:'#ff9800',          2026:'rgba(130,85,0,0.85)'}}
-    ];
+    // ── MODO ANUAL: EBITDA% barras (verde/rojo) + Neto% línea delgada ─────
+    const _mgSimDs2=[];
     [2024,2025,2026].filter(y=>FF.years.has(y)).forEach(y=>{
-      _mgAllDefs.forEach(mg=>{_mgAllDs.push({label:mg.lbl+' '+(y===2026?'2026E':y),data:_ym(y,mg.f),borderColor:mg.clrs[y],borderWidth:y===2025?2:1.5,borderDash:y===2024?[5,3]:y===2026?[2,2]:[],pointRadius:y===2025?2.5:2,isPct:true,spanGaps:false});});
+      const mepD=_ym(y,'mep');
+      _mgSimDs2.push({type:'bar',label:'Mg EBITDA% '+(y===2026?'26E':y),data:mepD,
+        backgroundColor:mepD.map(v=>v==null?'transparent':v>=0?_YC_m[y]:'rgba(239,83,80,0.75)'),
+        borderRadius:2,order:2});
+      const netClr=y===2024?'rgba(68,108,179,0.85)':y===2025?'#1a3028':'rgba(160,110,0,0.9)';
+      _mgSimDs2.push({type:'line',label:'Mg Neto% '+(y===2026?'26E':y),data:_ym(y,'mnp'),
+        borderColor:netClr,borderWidth:y===2025?1.8:1.2,borderDash:[3,2],
+        pointRadius:1.5,backgroundColor:'transparent',isPct:true,spanGaps:false,order:1});
     });
-    mkChart('ch-mg-all',{type:'line',data:{labels:_mLbl_m,datasets:_mgAllDs},options:{
-      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:5}}},
-      scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}});
+    _mgSimDs2.push({type:'line',label:'Neutro (0%)',data:_mArr_m.map(()=>0),
+      borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false});
+    mkChart('ch-mg-all',{type:'bar',data:{labels:_mLbl_m,datasets:_mgSimDs2},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:5,filter:i=>i.text!=='Neutro (0%)'}},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+(c.parsed.y?.toFixed(1)??'—')+'%'}}},
+      scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}})
   }
 
   const mns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
