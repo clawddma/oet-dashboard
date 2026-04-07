@@ -371,9 +371,121 @@ a{text-decoration:none;color:inherit;}
   .cfb-lbl{ font-size:9px; }
   .cfb-div{ display:none; }
 }
+
+/* ═══════════════════════════════════════
+   EXPAND / FULLSCREEN MODAL
+   Estilo Power BI · Tableau · Zoho
+═══════════════════════════════════════ */
+.card{ position:relative; }
+.card-hdr{ padding-right:44px !important; }   /* room for expand btn */
+.card-expand-btn{
+  position:absolute; top:7px; right:7px;
+  width:30px; height:30px;
+  background:rgba(45,197,171,0.10);
+  border:1px solid rgba(45,197,171,0.28);
+  border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:14px; color:#2dc5ab;
+  transition:background .15s, transform .12s, box-shadow .15s;
+  z-index:3; flex-shrink:0; line-height:1; user-select:none;
+}
+.card-expand-btn:hover{
+  background:rgba(45,197,171,0.26); color:#0c3028;
+  transform:scale(1.08); box-shadow:0 2px 8px rgba(45,197,171,0.25);
+}
+.card-expand-btn:active{ transform:scale(0.96); }
+
+/* Modal overlay */
+.cmo{
+  display:none; position:fixed; inset:0;
+  background:rgba(6,16,12,0.80);
+  z-index:9900;
+  align-items:center; justify-content:center;
+  padding:10px;
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+.cmo.open{ display:flex; }
+
+/* Modal box */
+.cmo-box{
+  background:#fff;
+  border-radius:14px;
+  width:min(98vw,1280px);
+  max-height:93vh;
+  display:flex; flex-direction:column;
+  box-shadow:0 28px 72px rgba(0,0,0,0.48), 0 0 0 1px rgba(45,197,171,0.15);
+  overflow:hidden;
+  animation:cmoIn .18s ease-out;
+}
+@keyframes cmoIn{
+  from{ opacity:0; transform:scale(0.96) translateY(8px); }
+  to{   opacity:1; transform:scale(1)    translateY(0);    }
+}
+
+/* Modal header */
+.cmo-hdr{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:11px 16px;
+  background:#0c3028; color:#fff; flex-shrink:0;
+  border-bottom:2px solid rgba(45,197,171,0.3);
+}
+.cmo-hdr h3{
+  margin:0; font-size:14px; font-weight:600; color:#fff; line-height:1.35;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.cmo-close{
+  background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.22);
+  color:#fff; font-size:17px; line-height:1; padding:5px 11px;
+  border-radius:6px; cursor:pointer; transition:background .15s; flex-shrink:0;
+  min-width:36px; min-height:36px; display:flex; align-items:center; justify-content:center;
+}
+.cmo-close:hover{ background:rgba(239,83,80,0.38); }
+
+/* Modal body & canvas */
+.cmo-body{
+  flex:1; overflow:auto; padding:20px 22px; min-height:0;
+  background:#fafdfb;
+}
+.cmo-canvas-wrap{
+  width:100%;
+  height:calc(93vh - 120px);
+  min-height:340px; max-height:720px;
+}
+
+/* ═══════════════════════════════════════
+   ZOHO ANALYTICS BAR STYLE — vertical bars
+═══════════════════════════════════════ */
+/* Value-label datalabels plugin rendered via custom afterDraw */
+.chart-val-label{ font-size:10px; }
+
+/* Slightly larger chart heights for vertical bars */
+@media(max-width:767px){
+  .cmo-canvas-wrap{ height:calc(90vh - 100px); min-height:260px; max-height:none; }
+  .cmo-close{ font-size:15px; padding:4px 9px; }
+  .cmo-hdr h3{ font-size:12.5px; }
+  .cmo-body{ padding:12px 12px; }
+  .card-expand-btn{ width:26px; height:26px; font-size:12px; top:6px; right:6px; }
+}
 </style>
 </head>
 <body>
+
+<!-- ═══════════════ EXPAND CHART MODAL ═══════════════ -->
+<div class="cmo" id="cmo" role="dialog" aria-modal="true" aria-labelledby="cmoTitle"
+     onclick="if(event.target===this)closeChartModal()">
+  <div class="cmo-box">
+    <div class="cmo-hdr">
+      <h3 id="cmoTitle">Gráfica</h3>
+      <button class="cmo-close" onclick="closeChartModal()" title="Cerrar (ESC)" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="cmo-body">
+      <div class="cmo-canvas-wrap" id="cmoWrap">
+        <canvas id="cmoCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════ HEADER ═══════════════ -->
 <header id="hdr">
@@ -500,9 +612,9 @@ const COM = {
   lineas: ['D.Sala (Cirugías)','Honorarios Cirujano','LIOs ★','Consultas Médicas','Exámenes Diagnóstico','Medicamentos'],
   v24: [3911625,2419606,1763875,794067,534799,207394], /* AUTO */
   v25: [5682677,3663733,3128993,910896,780285,363360], /* AUTO */
-  v26: [1893338,995329,742160,255329,192764,118824],   // Mar 2026 (YTD) /* AUTO */
+  v26: [1704724,934203,716068,244071,184296,110277],   // Mar 2026 (YTD) /* AUTO */
   pct25: [37.0,23.8,20.4,5.9,5.1,2.4],
-  cirugias: {v24:2955, v25:3918, v26:1174, pct:32.6}, /* AUTO */
+  cirugias: {v24:2955, v25:3918, v26:1056, pct:32.6}, /* AUTO */
   pacientes: {v24:8884, v25:10122, pct:13.9},
   meta26: 23500000
 };
@@ -511,16 +623,16 @@ const COM = {
 const CIR = {
   // Por Facturación (ingresos que genera cada médico, miles de COP) — sheetName = nombre exacto en col W /* AUTO */
   cirujanos:[
-    {name:'Dr. M.A. Jaramillo N.', sheetName:'DR. MIGUEL ANTONIO JARAMILLO NOGUERA', bill24:2860301, bill25:4023210, bill26:808720, cir24:402, cir25:486, cir26:91, esp:'Catarata · LIO Premium'}, /* AUTO */
-    {name:'Dr. Jon K. Balparda', sheetName:'DR. JON KEPA BALPARDA', bill24:1390703, bill25:1763729, bill26:486216, cir24:915, cir25:863, cir26:204, esp:'Alta volumen · Catarata'}, /* AUTO */
-    {name:'Dr. M. Jaramillo M.', sheetName:'DR. MIGUEL JARAMILLO MARTINEZ', bill24:889091, bill25:1750688, bill26:501670, cir24:134, cir25:236, cir26:58, esp:'Vitreoretina · Catarata'}, /* AUTO */
+    {name:'Dr. M.A. Jaramillo N.', sheetName:'DR. MIGUEL ANTONIO JARAMILLO NOGUERA', bill24:2860301, bill25:4023210, bill26:768988, cir24:402, cir25:486, cir26:87, esp:'Catarata · LIO Premium'}, /* AUTO */
+    {name:'Dr. Jon K. Balparda', sheetName:'DR. JON KEPA BALPARDA', bill24:1390703, bill25:1763729, bill26:427293, cir24:915, cir25:863, cir26:178, esp:'Alta volumen · Catarata'}, /* AUTO */
+    {name:'Dr. M. Jaramillo M.', sheetName:'DR. MIGUEL JARAMILLO MARTINEZ', bill24:889091, bill25:1750688, bill26:458529, cir24:134, cir25:236, cir26:50, esp:'Vitreoretina · Catarata'}, /* AUTO */
     {name:'Dr. J.E. Jaramillo N.', sheetName:'DR. JORGE EMILIO JARAMILLO NOGUERA', bill24:1414026, bill25:757236, bill26:118, cir24:194, cir25:97, cir26:0, esp:'Retirado 2025'}, /* AUTO */
-    {name:'Dr. J.A. Jaramillo H.', sheetName:'DR. JORGE ALEJANDRO JARAMILLO HENRIQUEZ', bill24:526311, bill25:1185346, bill26:385402, cir24:66, cir25:117, cir26:42, esp:'Catarata · Córnea'}, /* AUTO */
-    {name:'Dr. J.G. Sánchez M.', sheetName:'DR. JUAN GONZALO SANCHEZ MONTOYA', bill24:210306, bill25:924652, bill26:270086, cir24:33, cir25:200, cir26:77, esp:'Glaucoma · Catarata'}, /* AUTO */
-    {name:'Dr. B.A. Ramírez S.', sheetName:'DR. BORIS ARTURO RAMIREZ SERAFINOFF', bill24:389869, bill25:666632, bill26:239278, cir24:331, cir25:525, cir26:174, esp:'Catarata · Refractiva'}, /* AUTO */
-    {name:'Dr. J.A. Jaramillo S.', sheetName:'DR. JOSE AGUSTIN JARAMILLO SOLA', bill24:296152, bill25:699091, bill26:240637, cir24:63, cir25:118, cir26:36, esp:'LIO · Córnea'}, /* AUTO */
-    {name:'Dr. J.C. Gil Muñoz', sheetName:'DR. JUAN CARLOS GIL MUÑOZ', bill24:240702, bill25:400033, bill26:84912, cir24:133, cir25:212, cir26:49, esp:'Catarata'}, /* AUTO */
-    {name:'Dra. C. Sardi Correa', sheetName:'DRA. CAROLINA SARDI CORREA', bill24:231289, bill25:338178, bill26:82115, cir24:28, cir25:35, cir26:17, esp:'Refractiva'}, /* AUTO */
+    {name:'Dr. J.A. Jaramillo H.', sheetName:'DR. JORGE ALEJANDRO JARAMILLO HENRIQUEZ', bill24:526311, bill25:1185346, bill26:385096, cir24:66, cir25:117, cir26:42, esp:'Catarata · Córnea'}, /* AUTO */
+    {name:'Dr. J.G. Sánchez M.', sheetName:'DR. JUAN GONZALO SANCHEZ MONTOYA', bill24:210306, bill25:924652, bill26:258522, cir24:33, cir25:200, cir26:73, esp:'Glaucoma · Catarata'}, /* AUTO */
+    {name:'Dr. B.A. Ramírez S.', sheetName:'DR. BORIS ARTURO RAMIREZ SERAFINOFF', bill24:389869, bill25:666632, bill26:201382, cir24:331, cir25:525, cir26:145, esp:'Catarata · Refractiva'}, /* AUTO */
+    {name:'Dr. J.A. Jaramillo S.', sheetName:'DR. JOSE AGUSTIN JARAMILLO SOLA', bill24:296152, bill25:699091, bill26:238593, cir24:63, cir25:118, cir26:36, esp:'LIO · Córnea'}, /* AUTO */
+    {name:'Dr. J.C. Gil Muñoz', sheetName:'DR. JUAN CARLOS GIL MUÑOZ', bill24:240702, bill25:400033, bill26:75584, cir24:133, cir25:212, cir26:46, esp:'Catarata'}, /* AUTO */
+    {name:'Dra. C. Sardi Correa', sheetName:'DRA. CAROLINA SARDI CORREA', bill24:231289, bill25:338178, bill26:81891, cir24:28, cir25:35, cir26:17, esp:'Refractiva'}, /* AUTO */
   ],
   // Por tipo de procedimiento (facturación, miles COP) — actualización manual
   tipos:['Catarata (Facoemulsif.)','LIOs Premium','PRK (Refractiva)','LASIK (Refractiva)','Vitrectomía','Blefaroplastia','LIO Fáquico','Crosslinking','Otros'],
@@ -531,7 +643,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,373,426,0,0,0,0,0,0,0,0,0],  // total=1174 (2026-04-06 19:30) /* AUTO */
+  mes_26:[375,373,308,0,0,0,0,0,0,0,0,0],  // total=1056 (2026-04-05 17:54) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -717,24 +829,78 @@ const BASE_OPTS = {
   }
 };
 
-function mkChart(id,cfg){
-  const el=document.getElementById(id);
+// ── Chart registry for expand modal ──────────────────────────────────────────
+const _chartReg = {};
+
+function mkChart(id, cfg, _targetEl){
+  _chartReg[id] = cfg;                     // store for expand-modal reuse
+  const el = _targetEl || document.getElementById(id);
   if(!el) return;
+  // Zoho-style: default borderRadius on bar datasets (no override if already set)
+  if(cfg.data && cfg.data.datasets){
+    cfg.data.datasets.forEach(ds=>{
+      if((!ds.type||ds.type==='bar') && ds.borderRadius===undefined) ds.borderRadius=5;
+    });
+  }
   // Merge options
   const opts = JSON.parse(JSON.stringify(BASE_OPTS));
   if(cfg.options){
-    // Deep merge scales
-    if(cfg.options.scales){
-      Object.assign(opts.scales, cfg.options.scales);
-    }
+    if(cfg.options.scales)  Object.assign(opts.scales, cfg.options.scales);
     if(cfg.options.plugins) Object.assign(opts.plugins, cfg.options.plugins);
-    // Other top-level options
     Object.keys(cfg.options).forEach(k=>{
       if(k!=='scales'&&k!=='plugins') opts[k]=cfg.options[k];
     });
   }
   return new Chart(el,{type:cfg.type||'bar',data:cfg.data,options:opts});
 }
+
+// ── Expand / fullscreen modal ─────────────────────────────────────────────────
+let _cmoInst = null;
+
+function expandChart(id, title){
+  const cfg = _chartReg[id];
+  if(!cfg){ console.warn('expandChart: no registry entry for', id); return; }
+  document.getElementById('cmoTitle').textContent = title;
+  document.getElementById('cmo').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Reset canvas
+  document.getElementById('cmoWrap').innerHTML = '<canvas id="cmoCanvas"></canvas>';
+  if(_cmoInst){ try{ _cmoInst.destroy(); }catch(e){} _cmoInst=null; }
+  // Re-create chart in modal — larger fonts for readability
+  const mc = JSON.parse(JSON.stringify(cfg,(_k,v)=>typeof v==='function'?undefined:v));
+  // Restore function callbacks that were stripped
+  if(cfg.options){
+    if(cfg.options.scales){
+      ['x','y','y2'].forEach(ax=>{
+        if(cfg.options.scales[ax]?.ticks?.callback && mc.options.scales[ax])
+          mc.options.scales[ax].ticks.callback = cfg.options.scales[ax].ticks.callback;
+      });
+    }
+    if(cfg.options.plugins?.tooltip?.callbacks?.label && mc.options.plugins?.tooltip?.callbacks)
+      mc.options.plugins.tooltip.callbacks.label = cfg.options.plugins.tooltip.callbacks.label;
+  }
+  // Upsize fonts
+  if(!mc.options) mc.options={};
+  if(!mc.options.plugins) mc.options.plugins={};
+  mc.options.plugins.legend = Object.assign({position:'top',labels:{boxWidth:14,font:{size:14},padding:14}},
+    mc.options.plugins.legend||{});
+  if(!mc.options.scales) mc.options.scales={};
+  ['x','y'].forEach(ax=>{
+    if(!mc.options.scales[ax]) mc.options.scales[ax]={};
+    if(!mc.options.scales[ax].ticks) mc.options.scales[ax].ticks={};
+    mc.options.scales[ax].ticks.font = Object.assign({size:13}, mc.options.scales[ax].ticks.font||{});
+  });
+  _cmoInst = mkChart('__cmo__'+id, mc, document.getElementById('cmoCanvas'));
+}
+
+function closeChartModal(){
+  document.getElementById('cmo').classList.remove('open');
+  document.body.style.overflow='';
+  if(_cmoInst){ try{ _cmoInst.destroy(); }catch(e){} _cmoInst=null; }
+  document.getElementById('cmoWrap').innerHTML='<canvas id="cmoCanvas"></canvas>';
+}
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeChartModal(); });
 
 function barClrs(vals){ return vals.map(v=>v>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)'); }
 
@@ -962,8 +1128,13 @@ function kpiCard(label, val, sub, cls=''){
 }
 
 function chartCard(id, title, badge, height=240, extraBody='', showZeroLine=false){
+  const _et = title.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   return `<div class="card">
-    <div class="card-hdr"><h3>${title}</h3>${badge?`<span class="badge teal">${badge}</span>`:''}</div>
+    <div class="card-hdr">
+      <h3>${title}</h3>${badge?`<span class="badge teal">${badge}</span>`:''}
+    </div>
+    <button class="card-expand-btn" onclick="expandChart('${id}','${_et}')"
+            title="Expandir a pantalla completa" aria-label="Expandir gráfica">⤢</button>
     <div class="card-body">
       <div class="chart-wrap" style="height:${height}px"><canvas id="${id}"></canvas></div>
       ${showZeroLine?'<div class="zero-legend">Línea $0 — límite ganancia/pérdida</div>':''}
@@ -1673,8 +1844,11 @@ function buildComInicio(){
   if(CF.years.has(2025)) _bar_ds.push({label:'2025',    data:li25, backgroundColor:'rgba(45,197,171,0.88)',borderRadius:2, borderColor:'rgba(45,197,171,1)',    borderWidth:1});
   if(CF.years.has(2026)) _bar_ds.push({label:'2026 YTD',data:li26, backgroundColor:'rgba(255,193,7,0.82)', borderRadius:2, borderColor:'rgba(255,193,7,1)',   borderWidth:1});
   mkChart('ch-com-bar',{type:'bar',data:{labels:liLabels,datasets:_bar_ds},
-    options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,padding:12,font:{size:11}}}},
-      scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,padding:12,font:{size:11}}}},
+      scales:{
+        x:{ticks:{font:{size:10},maxRotation:40,minRotation:20,autoSkip:false},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}}
+      }}});
 
   // Doughnut 2025
   new Chart(document.getElementById('ch-com-pie'),{
@@ -1810,10 +1984,13 @@ function buildComLineas(){
       _svcDs.push({label:'2026',data:liT26,backgroundColor:'rgba(255,193,7,0.85)',borderRadius:2,borderColor:'rgba(255,193,7,1)',borderWidth:1});
     mkChart('ch-lnl-month-bar',{type:'bar',
       data:{labels:liLabels,datasets:_svcDs},
-      options:{indexAxis:'y',
+      options:{
         plugins:{legend:{position:'top',labels:{boxWidth:12,padding:10,font:{size:11}}},
-          tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fv(ctx.parsed.x)}}},
-        scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:10}}}}}
+          tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fv(ctx.parsed.y)}}},
+        scales:{
+          x:{ticks:{font:{size:10},maxRotation:40,minRotation:20,autoSkip:false},grid:{display:false}},
+          y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}}
+        }}
     });
 
     // ── Mix de servicios — % participación para el mes seleccionado ──────────
@@ -1875,15 +2052,21 @@ function buildComLineas(){
     if(CF.years.has(2025)) _la_ds.push({label:'2025',    data:li25,backgroundColor:'rgba(45,197,171,0.88)',borderRadius:2,borderColor:'rgba(45,197,171,1)',   borderWidth:1});
     if(CF.years.has(2026)) _la_ds.push({label:'2026 YTD',data:li26,backgroundColor:'rgba(255,193,7,0.82)', borderRadius:2,borderColor:'rgba(255,193,7,1)',    borderWidth:1});
     mkChart('ch-lnl-abs',{type:'bar',data:{labels:liLabels,datasets:_la_ds},
-      options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,padding:10,font:{size:11}}}},
-        scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+      options:{plugins:{legend:{position:'top',labels:{boxWidth:12,padding:10,font:{size:11}}}},
+        scales:{
+          x:{ticks:{font:{size:10},maxRotation:40,minRotation:20,autoSkip:false},grid:{display:false}},
+          y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}}
+        }}});
 
     const _lp_ds=[];
     if(CF.years.has(2024)&&CF.years.has(2025)) _lp_ds.push({label:'Crecimiento 24→25 %',data:growth2526.map(v=>+v.toFixed(1)),backgroundColor:'rgba(45,197,171,0.75)',borderRadius:2});
     if(CF.years.has(2025)&&CF.years.has(2026)) _lp_ds.push({label:'Ritmo 2026 vs 2025 %',data:growth2526_ytd.map(v=>Math.max(-100,Math.min(200,+v.toFixed(1)))),backgroundColor:'rgba(255,193,7,0.78)',borderRadius:2});
     mkChart('ch-lnl-pct',{type:'bar',data:{labels:liLabels,datasets:_lp_ds},
-      options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,padding:10,font:{size:11}}}},
-        scales:{x:{ticks:{callback:v=>v+'%',font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+      options:{plugins:{legend:{position:'top',labels:{boxWidth:12,padding:10,font:{size:11}}}},
+        scales:{
+          x:{ticks:{font:{size:10},maxRotation:40,minRotation:20,autoSkip:false},grid:{display:false}},
+          y:{ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'#eef2f1'}}
+        }}});
   }
 }
 
@@ -2317,33 +2500,43 @@ function buildComCirujanos(){
   if(CF.years.has(2024)) _bill_ds.push({label:'2024',    data:billSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.bill:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:2});
   if(CF.years.has(2025)) _bill_ds.push({label:'2025',    data:billSort.map(c=>c.bill),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:2});
   if(CF.years.has(2026)) _bill_ds.push({label:'2026 YTD',data:billSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.bill:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:2});
-  mkChart('ch-cir-bill',{type:'bar',data:{labels:billSort.map(c=>c.name.replace(/^Dr[a]?\. /,'').split(' ').slice(0,2).join(' ')),datasets:_bill_ds},
-    options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-      scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:9}}}}}});
+  // Abbreviate names for vertical X axis: "Apellido1 Apellido2" → max 12 chars
+  const _abbr = name => { const p=name.replace(/^Dr[a]?\. /,'').split(' '); return (p[0]+(p[1]?' '+p[1]:'')).substring(0,14); };
+  const _xOpts = {ticks:{font:{size:9},maxRotation:50,minRotation:35,autoSkip:false},grid:{display:false}};
+  const _yFmt  = {ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}};
+
+  mkChart('ch-cir-bill',{type:'bar',data:{labels:billSort.map(c=>_abbr(c.name)),datasets:_bill_ds},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{x:_xOpts, y:_yFmt}}});
 
   // Volume bar — datos filtrados
   const cirSort=[..._drVis25].sort((a,b)=>b.cir-a.cir);
   {
     const ds=[];
-    if(CF.years.has(2024)) ds.push({label:'2024',    data:cirSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:2});
-    if(CF.years.has(2025)) ds.push({label:'2025',    data:cirSort.map(c=>c.cir),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:2});
-    if(CF.years.has(2026)) ds.push({label:'2026 YTD',data:cirSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:2});
-    mkChart('ch-cir-vol',{type:'bar',data:{labels:cirSort.map(c=>c.name.replace(/^Dr[a]?\. /,'').split(' ').slice(0,2).join(' ')),datasets:ds},
-      options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-        scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:9}}}}}});
+    if(CF.years.has(2024)) ds.push({label:'2024',    data:cirSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:5});
+    if(CF.years.has(2025)) ds.push({label:'2025',    data:cirSort.map(c=>c.cir),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:5});
+    if(CF.years.has(2026)) ds.push({label:'2026 YTD',data:cirSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:5});
+    mkChart('ch-cir-vol',{type:'bar',data:{labels:cirSort.map(c=>_abbr(c.name)),datasets:ds},
+      options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+        scales:{x:_xOpts, y:{ticks:{font:{size:10}},grid:{color:'#eef2f1'}}}}});
   }
 
   // Tipos procedimiento bar — datos filtrados
   const _ct24=cfTipoYear(2024), _ct25=cfTipoYear(2025), _ct26=cfTipoYear(2026);
-  mkChart('ch-cir-tipos',{type:'bar',data:{labels:tiIdx.map(i=>CIR.tipos[i]),datasets:(() => {
+  // Abbreviate tipo labels: first word only
+  const _tiLbl = tiIdx.map(i=>CIR.tipos[i].split(' ').slice(0,2).join(' '));
+  mkChart('ch-cir-tipos',{type:'bar',data:{labels:_tiLbl,datasets:(() => {
     const ds2=[];
-    if(CF.years.has(2024)) ds2.push({label:'2024',    data:tiIdx.map(i=>_ct24[i]),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:2});
-    if(CF.years.has(2025)) ds2.push({label:'2025',    data:tiIdx.map(i=>_ct25[i]),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:2});
-    if(CF.years.has(2026)) ds2.push({label:'2026 YTD',data:tiIdx.map(i=>_ct26[i]),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:2});
+    if(CF.years.has(2024)) ds2.push({label:'2024',    data:tiIdx.map(i=>_ct24[i]),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:5});
+    if(CF.years.has(2025)) ds2.push({label:'2025',    data:tiIdx.map(i=>_ct25[i]),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:5});
+    if(CF.years.has(2026)) ds2.push({label:'2026 YTD',data:tiIdx.map(i=>_ct26[i]),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:5});
     return ds2;
   })()},
-  options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-    scales:{x:{ticks:{callback:v=>fv(v),font:{size:10}}},y:{ticks:{font:{size:9}}}}}}); // tipos
+  options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+    scales:{
+      x:{ticks:{font:{size:9},maxRotation:40,minRotation:20,autoSkip:false},grid:{display:false}},
+      y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}}
+    }}}); // tipos
 
   // Monthly surgery chart (when month filter active)
   if(mLbl){
