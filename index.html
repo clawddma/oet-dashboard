@@ -2725,7 +2725,7 @@ function buildComInicio(){
 
   <!-- ═══ SECCIÓN: Ingresos por Tipo de Procedimiento ═══ -->
   <div class="gfull" style="margin-top:4px">
-    ${chartCard('ch-com-tipos','Ingresos por Tipo de Procedimiento — 2025 vs 2026 YTD','Facturación acumulada por tipo · Ordena de mayor a menor por 2025 · Permite ver dónde se genera más valor',280,'')}
+    ${chartCard('ch-com-tipos','Ingresos por Tipo de Procedimiento — 2025 vs 2026 YTD','Facturación acumulada por tipo · De mayor a menor (2025) · Tooltip muestra nombre completo y variación vs 2025',300,'')}
   </div>
 
   <!-- ═══ SECCIÓN: KPIs Estratégicos ═══ -->
@@ -2935,39 +2935,42 @@ function buildComInicio(){
     }});
   }
 
-  // ═══ ch-com-tipos: Ingresos por Tipo de Procedimiento (horizontal bar) ═══
+  // ═══ ch-com-tipos: Ingresos por Tipo de Procedimiento (barras verticales) ═══
   {
-    // Ordena por tipos_v25 desc para mostrar los más rentables arriba
+    // Ordena por tipos_v25 desc — el más rentable va primero (izquierda)
     const _tipLabels=CIR.tipos;
     const _tOrder=[..._tipLabels.keys()].sort((a,b)=>CIR.tipos_v25[b]-CIR.tipos_v25[a]);
-    const _tLbl=_tOrder.map(i=>_tipLabels[i]);
+    // Etiquetas cortas para eje X vertical (evita solapamiento)
+    const _tLblShort=_tOrder.map(i=>{
+      const t=_tipLabels[i];
+      return t.replace(' (Facoemulsif.)','').replace(' (Refractiva)','').replace('Honorarios ','Hon. ');
+    });
     const _t25=_tOrder.map(i=>CIR.tipos_v25[i]);
     const _t26=_tOrder.map(i=>CIR.tipos_v26[i]);
     mkChart('ch-com-tipos',{
       type:'bar',
       data:{
-        labels:_tLbl,
+        labels:_tLblShort,
         datasets:[
-          {label:'2025 (año completo)',data:_t25,backgroundColor:'rgba(45,197,171,0.82)',borderColor:'rgba(45,197,171,1)',borderWidth:1,borderRadius:3},
-          {label:'2026 YTD',          data:_t26,backgroundColor:'rgba(255,193,7,0.82)', borderColor:'rgba(255,193,7,1)',   borderWidth:1,borderRadius:3}
+          {label:'2025 (año completo)',data:_t25,backgroundColor:'rgba(45,197,171,0.82)',borderColor:'rgba(45,197,171,1)',borderWidth:1,borderRadius:{topLeft:3,topRight:3}},
+          {label:'2026 YTD',          data:_t26,backgroundColor:'rgba(255,193,7,0.82)', borderColor:'rgba(255,193,7,1)',   borderWidth:1,borderRadius:{topLeft:3,topRight:3}}
         ]
       },
       options:{
-        indexAxis:'y',
         responsive:true,
         maintainAspectRatio:false,
         plugins:{
           legend:{position:'top',labels:{boxWidth:12,padding:12,font:{size:11}}},
           tooltip:{
             callbacks:{
+              title:items=>{const i=items[0].dataIndex;return _tipLabels[_tOrder[i]];},
               label:ctx=>' '+ctx.dataset.label+': '+fvFull(ctx.raw),
               afterLabel:ctx=>{
-                // Para 2026 YTD muestra variación vs 2025
                 if(ctx.datasetIndex===1){
                   const v25=_t25[ctx.dataIndex];
                   if(v25>0){
                     const pct=((ctx.raw-v25)/v25*100).toFixed(1);
-                    return ' vs 2025: '+(pct>0?'+':'')+pct+'%';
+                    return ' vs 2025 completo: '+(pct>0?'+':'')+pct+'%';
                   }
                 }
                 return '';
@@ -2976,8 +2979,8 @@ function buildComInicio(){
           }
         },
         scales:{
-          x:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},
-          y:{ticks:{font:{size:10}},grid:{display:false}}
+          x:{ticks:{font:{size:10},maxRotation:30,minRotation:0},grid:{display:false}},
+          y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}}
         }
       }
     });
@@ -3049,7 +3052,17 @@ function buildComLineas(){
   const li25=liIdx.map(i=>_cl25b[i]);
   const li26=liIdx.map(i=>_cl26b[i]);
   const growth2526=li25.map((v,i)=>pctVar(v,li24[i]));
-  const growth2526_ytd=li26.map((v,i)=>pctVar(v*6,li25[i]/2));
+  // Crecimiento 2026 YTD vs mismo período 2025 (comparable real, sin extrapolación)
+  const _lm26c=COM.ing_m26.reduce((a,v,i)=>v>0?i+1:a,0); // meses con datos 2026
+  const _cl25comp=(()=>{
+    const result=new Array(COM.lineas.length).fill(0);
+    for(let m=1;m<=_lm26c;m++){
+      if(LMON[2025]&&LMON[2025][m]) LMON[2025][m].forEach((v,i2)=>result[i2]+=v);
+    }
+    return result;
+  })();
+  const li25comp=liIdx.map(i=>_cl25comp[i]);
+  const growth2526_ytd=li26.map((v,i)=>li25comp[i]>0?+pctVar(v,li25comp[i]).toFixed(1):null);
   const _yrBadgeLn=Array.from(CF.years).sort().map(y=>y===2026?'2026 YTD':String(y)).join(' · ');
 
   if(mLbl){
@@ -3178,14 +3191,41 @@ function buildComLineas(){
         }}});
 
     const _lp_ds=[];
-    if(CF.years.has(2024)&&CF.years.has(2025)) _lp_ds.push({label:'Crecimiento 24→25 %',data:growth2526.map(v=>+v.toFixed(1)),backgroundColor:'rgba(45,197,171,0.75)',borderRadius:2});
-    if(CF.years.has(2025)&&CF.years.has(2026)) _lp_ds.push({label:'Ritmo 2026 vs 2025 %',data:growth2526_ytd.map(v=>Math.max(-100,Math.min(200,+v.toFixed(1)))),backgroundColor:'rgba(255,193,7,0.78)',borderRadius:2});
+    const _mnsLabel=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    if(CF.years.has(2024)&&CF.years.has(2025)) _lp_ds.push({
+      label:'Crecimiento 24→25 %',
+      data:growth2526.map(v=>Math.max(-100,Math.min(300,+v.toFixed(1)))),
+      backgroundColor:'rgba(45,197,171,0.75)',borderRadius:3,borderColor:'rgba(45,197,171,1)',borderWidth:1
+    });
+    if(CF.years.has(2025)&&CF.years.has(2026)) _lp_ds.push({
+      label:'2026 YTD vs mismo período 2025 %',
+      data:growth2526_ytd,  // ya viene limpio y capeado
+      backgroundColor:(ctx)=>{
+        const v=ctx.raw; return v==null?'transparent':v>=0?'rgba(255,193,7,0.82)':'rgba(220,53,69,0.75)';
+      },
+      borderColor:(ctx)=>{const v=ctx.raw;return v==null?'transparent':v>=0?'rgba(255,193,7,1)':'rgba(220,53,69,1)';},
+      borderWidth:1,borderRadius:3
+    });
+    // Badge período comparable en el chart title
+    const _MNS2=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const _prdLbl=CF.years.has(2026)?'2026 YTD Ene–'+_MNS2[_lm26c]+' vs mismo período 2025':'Crecimiento 24→25';
+    const _chEl=document.getElementById('ch-lnl-pct');
+    if(_chEl){const _hdr=_chEl.closest('.card')?.querySelector('.badge');if(_hdr)_hdr.textContent=_prdLbl;}
     mkChart('ch-lnl-pct',{type:'bar',data:{labels:liLabels,datasets:_lp_ds},
-      options:{plugins:{legend:{position:'top',labels:{boxWidth:12,padding:10,font:{size:11}}}},
+      options:{
+        plugins:{
+          legend:{position:'top',labels:{boxWidth:12,padding:10,font:{size:11}}},
+          tooltip:{callbacks:{label:ctx=>ctx.raw!=null?' '+ctx.dataset.label+': '+(ctx.raw>0?'+':'')+ctx.raw+'%':'sin datos'}}
+        },
         scales:{
           x:{ticks:{font:{size:10},maxRotation:40,minRotation:20,autoSkip:false},grid:{display:false}},
-          y:{ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'#eef2f1'}}
-        }}});
+          y:{
+            ticks:{callback:v=>v+'%',font:{size:10}},
+            grid:{color:(ctx)=>ctx.tick.value===0?'rgba(0,0,0,0.35)':'#eef2f1',lineWidth:(ctx)=>ctx.tick.value===0?1.5:1},
+            suggestedMin:-30,suggestedMax:120
+          }
+        }
+      }});
   }
 }
 
@@ -3297,19 +3337,25 @@ function buildComTrend(){
     }
   }});
 
-  // ── Barras mensuales por año ───────────────────────────────────────
+  // ── Barras mensuales por año — solo hasta el último mes con datos 2026 ───────
+  // mArr_ytd: limita a meses YTD cuando no hay filtro manual de meses
+  const mArr_ytd=CF.months.size>0?mArr2t:mArr2t.filter(m=>m<=last26);
+  const mns_ytd=mArr_ytd.map(m=>mns[m-1]);
   const barDs=[];
   if(CF.years.has(2024)) barDs.push({label:'2024',borderRadius:3,
-    data:mArr2t.map(m=>{const d=D.find(x=>x.y===2024&&x.m===m);return d?d.ing:null;}),
+    data:mArr_ytd.map(m=>{const d=D.find(x=>x.y===2024&&x.m===m);return d?d.ing:null;}),
     backgroundColor:'rgba(45,197,171,0.38)',borderColor:'rgba(45,197,171,0.65)',borderWidth:1});
   if(CF.years.has(2025)) barDs.push({label:'2025',borderRadius:3,
-    data:mArr2t.map(m=>{const d=D.find(x=>x.y===2025&&x.m===m);return d?d.ing:null;}),
+    data:mArr_ytd.map(m=>{const d=D.find(x=>x.y===2025&&x.m===m);return d?d.ing:null;}),
     backgroundColor:'rgba(45,197,171,0.82)',borderColor:'#2dc5ab',borderWidth:1});
-  if(CF.years.has(2026)) barDs.push({label:'2026',borderRadius:3,
-    data:mArr2t.map(m=>{const d=D.find(x=>x.y===2026&&x.m===m);return d?d.ing:null;}),
-    backgroundColor:'rgba(255,193,7,0.85)',borderColor:'#ffc107',borderWidth:1});
-  mkChart('ch-trn-main',{type:'bar',data:{labels:mns_labels,datasets:barDs},options:{
-    plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:14}}},
+  if(CF.years.has(2026)) barDs.push({label:'2026 (a la fecha)',borderRadius:3,
+    data:mArr_ytd.map(m=>{const d=D.find(x=>x.y===2026&&x.m===m);return d?d.ing:null;}),
+    backgroundColor:'rgba(255,193,7,0.88)',borderColor:'#ffc107',borderWidth:1});
+  mkChart('ch-trn-main',{type:'bar',data:{labels:mns_ytd,datasets:barDs},options:{
+    plugins:{
+      legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:14}},
+      tooltip:{callbacks:{label:ctx=>ctx.raw!=null?' '+ctx.dataset.label+': '+fvFull(ctx.raw):'sin datos'}}
+    },
     scales:{
       y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},
       x:{ticks:{font:{size:10}},grid:{display:false}}
