@@ -100,6 +100,13 @@ function syncDashboard() {
     var medBill = { 2024:{}, 2025:{}, 2026:{} };
     var medCir  = { 2024:{}, 2025:{}, 2026:{} };
 
+    // 3a-bis. Acumuladores facturación mensual real (todos los tipos, para COM.ing_m)
+    var monthBill = {};
+    years.forEach(function(y) {
+      monthBill[y] = {};
+      for (var m = 1; m <= 12; m++) monthBill[y][m] = 0;
+    });
+
     // 3b. Acumuladores MTD (mes actual en curso)
     var todayColombiaStr = Utilities.formatDate(now, CFG.timezone, 'yyyy-MM-dd');
     var todayY = parseInt(todayColombiaStr.substring(0,4), 10);
@@ -129,6 +136,9 @@ function syncDashboard() {
       var ano = (anoRaw === 3026) ? 2026 : Number(anoRaw);
       if (years.indexOf(ano) < 0) continue;
       if (mes < 1 || mes > 12)    continue;
+
+      // ── Facturación mensual total (TODOS los tipos — para COM.ing_m) ─
+      monthBill[ano][mes] += valor;
 
       // ── COM por tipo ──────────────────────────────────────────────
       if (tipo && TIPO_IDX.hasOwnProperty(tipo)) {
@@ -193,6 +203,11 @@ function syncDashboard() {
       for (var m = 1; m <= 12; m++) a.push(cirCount[year][m] || 0);
       return a;
     }
+    function ingMesArr(year) {
+      var a = [];
+      for (var m = 1; m <= 12; m++) a.push(Math.round((monthBill[year][m]||0)/1000));
+      return a;
+    }
 
     var v24 = toMiles(comSum[2024]);
     var v25 = toMiles(comSum[2025]);
@@ -200,6 +215,10 @@ function syncDashboard() {
     var m24 = mesArr(2024);
     var m25 = mesArr(2025);
     var m26 = mesArr(2026);
+    var ib24 = ingMesArr(2024);
+    var ib25 = ingMesArr(2025);
+    var ib26 = ingMesArr(2026);
+    llog('📈 Facturación mensual real — 2026: ['+ib26.slice(0,6).join(',')+',...]');
     var cir24 = m24.reduce(function(a,b){return a+b;},0);
     var cir25 = m25.reduce(function(a,b){return a+b;},0);
     var cir26 = m26.reduce(function(a,b){return a+b;},0);
@@ -315,6 +334,20 @@ function syncDashboard() {
       /mes_26:\s*\[[^\]]*\],\s*\/\/[^/]*\/\* AUTO \*\//,
       'mes_26:['+m26.join(',')+'],  // total='+cir26+' ('+ts+') /* AUTO */'
     );
+    // Actualizar ing_m24/25/26 (facturación mensual real para gráficos comerciales)
+    block = block.replace(
+      /ing_m24:\s*\[[^\]]*\],\s*\/\* AUTO-ING \*\//,
+      'ing_m24: ['+ib24.join(',')+'],  /* AUTO-ING */'
+    );
+    block = block.replace(
+      /ing_m25:\s*\[[^\]]*\],\s*\/\* AUTO-ING \*\//,
+      'ing_m25: ['+ib25.join(',')+'],  /* AUTO-ING */'
+    );
+    block = block.replace(
+      /ing_m26:\s*\[[^\]]*\],\s*\/\* AUTO-ING \*\//,
+      'ing_m26: ['+ib26.join(',')+'],  /* AUTO-ING */'
+    );
+
     block = block.replace(
       /\{name:'([^']+)',\s*sheetName:'([^']+)',\s*bill24:\d+,\s*bill25:\d+,\s*bill26:\d+,\s*cir24:\d+,\s*cir25:\d+,\s*cir26:\d+,\s*esp:'([^']*)'\},\s*\/\* AUTO \*\//g,
       function(match, displayName, sheetName, esp) {
@@ -517,7 +550,7 @@ function checkHealth() {
  * Si el token expira, actualiza el valor 'ghp_...' y vuelve a ejecutar esta función.
  */
 function setGithubPAT() {
-  var pat = 'TU_TOKEN_AQUI';  // 2190 pega aqu00ed tu GitHub PAT (ghp_...);  // ← reemplaza si el token expira
+  var pat = 'TU_TOKEN_AQUI';;  // ← reemplaza si el token expira
   PropertiesService.getScriptProperties().setProperty('GH_PAT', pat);
   Logger.log('✅ GH_PAT guardado: ' + pat.substring(0,8) + '...');
 }

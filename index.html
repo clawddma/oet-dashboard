@@ -733,7 +733,12 @@ const COM = {
   lineas: ['D.Sala (Cirugías)','Honorarios Cirujano','LIOs ★','Consultas Médicas','Exámenes Diagnóstico','Medicamentos'],
   v24: [3911625,2419606,1763875,794067,534799,207394], /* AUTO */
   v25: [5682677,3663733,3128993,910896,780285,363360], /* AUTO */
+
   v26: [1955275,1024009,766656,263580,203045,120613],   // Abr 2026 (YTD) /* AUTO */
+  // Facturación mensual real por año — Google Sheets (todos los tipos) — auto-sync
+  ing_m24: [0,0,0,0,0,0,0,0,0,0,0,0],  /* AUTO-ING */
+  ing_m25: [0,0,0,0,0,0,0,0,0,0,0,0],  /* AUTO-ING */
+  ing_m26: [0,0,0,0,0,0,0,0,0,0,0,0],  /* AUTO-ING */
   pct25: [37.0,23.8,20.4,5.9,5.1,2.4],
   cirugias: {v24:2955, v25:3918, v26:1212, pct:32.6}, /* AUTO */
   pacientes: {v24:8884, v25:10122, pct:13.9},
@@ -2783,7 +2788,8 @@ function buildComInicio(){
   // ═══ ch-com-yoy: Barras agrupadas interanuales (12 meses × 3 años) ════════
   {
     const _yoyMns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    const _yoyGet=(y)=>_yoyMns.map((_,i)=>{const r=D.find(d=>d.y===y&&d.m===i+1);return r?+r.ing.toFixed(0):null;});
+    // Usa COM.ing_m (facturación real Google Sheets), NO D[].ing (EEFF/P&L)
+    const _yoyGet=(y)=>{const arr=y===2024?COM.ing_m24:y===2025?COM.ing_m25:COM.ing_m26;return arr.map(v=>v>0?v:null);};
     const _yoy24=_yoyGet(2024), _yoy25=_yoyGet(2025), _yoy26=_yoyGet(2026);
     const _yoyDs=[];
     if(CF.years.has(2024)) _yoyDs.push({label:'2024',data:_yoy24,
@@ -2818,16 +2824,17 @@ function buildComInicio(){
   {
     const _tkMns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const _tkDs=[];
+    // Usa COM.ing_m (facturación real Google Sheets) / CIR.mes_XX (cirugías reales)
     if(CF.years.has(2024)) _tkDs.push({label:'2024',
-      data:_tkMns.map((_,i)=>{const d=D.find(r=>r.y===2024&&r.m===i+1);const c=CIR.mes_24[i];return(d&&c)?+(d.ing/c).toFixed(0):null;}),
+      data:_tkMns.map((_,i)=>{const ing=COM.ing_m24[i];const c=CIR.mes_24[i];return(ing&&c)?+(ing/c).toFixed(0):null;}),
       borderColor:'rgba(68,108,179,0.8)',backgroundColor:'rgba(68,108,179,0.06)',
       borderWidth:1.5,borderDash:[4,3],pointRadius:3,fill:true,tension:0.3,spanGaps:false});
     if(CF.years.has(2025)) _tkDs.push({label:'2025',
-      data:_tkMns.map((_,i)=>{const d=D.find(r=>r.y===2025&&r.m===i+1);const c=CIR.mes_25[i];return(d&&c)?+(d.ing/c).toFixed(0):null;}),
+      data:_tkMns.map((_,i)=>{const ing=COM.ing_m25[i];const c=CIR.mes_25[i];return(ing&&c)?+(ing/c).toFixed(0):null;}),
       borderColor:'#2dc5ab',backgroundColor:'rgba(45,197,171,0.07)',
       borderWidth:2,pointRadius:3,fill:true,tension:0.3,spanGaps:false});
     if(CF.years.has(2026)) _tkDs.push({label:'2026',
-      data:_tkMns.map((_,i)=>{const d=D.find(r=>r.y===2026&&r.m===i+1);const c=CIR.mes_26[i];return(d&&c)?+(d.ing/c).toFixed(0):null;}),
+      data:_tkMns.map((_,i)=>{const ing=COM.ing_m26[i];const c=CIR.mes_26[i];return(ing&&c)?+(ing/c).toFixed(0):null;}),
       borderColor:'#ffc107',backgroundColor:'rgba(255,193,7,0.09)',
       borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#ffc107',fill:true,tension:0.3,spanGaps:false});
     mkChart('ch-com-ticket',{type:'line',data:{labels:_tkMns,datasets:_tkDs},options:{
@@ -2844,12 +2851,13 @@ function buildComInicio(){
   }
 
   // ═══ ch-com-season: Índice de Estacionalidad ═════════════════════════════
+  // Usa COM.ing_m24/25 (facturación real Google Sheets) para base estacional
   const _seaIdx=(()=>{
     const _mns=[1,2,3,4,5,6,7,8,9,10,11,12];
     const _vals=_mns.map(m=>{
-      const d24=D.find(d=>d.y===2024&&d.m===m);
-      const d25=D.find(d=>d.y===2025&&d.m===m);
-      const vs=[d24,d25].filter(Boolean).map(d=>d.ing);
+      const v24=COM.ing_m24[m-1]||0;
+      const v25=COM.ing_m25[m-1]||0;
+      const vs=[v24,v25].filter(v=>v>0);
       return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:0;
     });
     const _avg=_vals.filter(v=>v>0).reduce((a,b)=>a+b,0)/12;
@@ -2886,16 +2894,16 @@ function buildComInicio(){
   {
     const _kEl=document.getElementById('com-kpis-extra');
     if(_kEl){
-      // Proyección anual 2026
-      const _ytd26k=D.filter(d=>d.y===2026).reduce((s,d)=>s+d.ing,0);
-      const _last26k=Math.max(...D.filter(d=>d.y===2026).map(d=>d.m));
-      const _proy26k=Math.round(_ytd26k/_last26k*12);
-      const _metaPct=COM.meta26?(_proy26k/COM.meta26*100).toFixed(0):null;
-      // Crecimiento ticket 2026 vs 2025
+      // Proyección anual 2026 — usa facturación real Google Sheets (COM.ing_m26)
+      const _ytd26k=COM.ing_m26.reduce((s,v)=>s+v,0);
+      const _last26k=COM.ing_m26.reduce((a,v,i)=>v>0?i+1:a,0);
+      const _proy26k=_last26k>0?Math.round(_ytd26k/_last26k*12):0;
+      const _metaPct=COM.meta26&&_proy26k?(_proy26k/COM.meta26*100).toFixed(0):null;
+      // Crecimiento ticket 2026 vs 2025 — usa facturación real Google Sheets
       const _cir26k=CIR.mes_26.slice(0,_last26k).reduce((a,b)=>a+b,0);
       const _tk26k=_cir26k>0?_ytd26k/_cir26k:0;
       const _cir25k=CIR.mes_25.reduce((a,b)=>a+b,0);
-      const _tk25k=_cir25k>0?D.filter(d=>d.y===2025).reduce((s,d)=>s+d.ing,0)/_cir25k:0;
+      const _tk25k=_cir25k>0?COM.ing_m25.reduce((a,b)=>a+b,0)/_cir25k:0;
       const _tkDeltaK=_tk25k?pctVar(_tk26k,_tk25k):0;
       // Concentración top 3 médicos (por bill25)
       const _cirSorted=[...CIR.cirujanos].sort((a,b)=>b.bill25-a.bill25);
@@ -2942,12 +2950,12 @@ function buildComLineas(){
 
   if(mLbl){
     // ── MONTHLY VIEW — solo datos de facturación por servicio (Google Sheets) ─
-    // aggMonthIng: suma SOLO el campo ing de D[] (facturación real). SIN costos.
+    // aggMonthIng: usa COM.ing_m (facturación real Google Sheets, no EEFF)
     function aggMonthIng(y){
       const ms=mArr2.length>0?mArr2:[1,2,3,4,5,6,7,8,9,10,11,12];
-      const rows=D.filter(d=>d.y===y&&ms.includes(d.m));
-      if(!rows.length) return null;
-      return rows.reduce((s,r)=>s+r.ing,0);
+      const arr=y===2024?COM.ing_m24:y===2025?COM.ing_m25:COM.ing_m26;
+      const vals=ms.map(m=>arr[m-1]||0).filter(v=>v>0);
+      return vals.length?vals.reduce((s,v)=>s+v,0):null;
     }
     const ing24m=aggMonthIng(2024);
     const ing25m=aggMonthIng(2025);
