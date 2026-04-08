@@ -997,6 +997,9 @@ function mkChart(id, cfg, _targetEl){
   _chartReg[id] = cfg;                     // store for expand-modal reuse
   const el = _targetEl || document.getElementById(id);
   if(!el) return;
+  // Destruir instancia previa con este id (evita duplicados tras rebuild de innerHTML)
+  const _prev = Object.values(Chart.instances).find(c => c.canvas?.id === id);
+  if(_prev) try{ _prev.destroy(); }catch(e){}
   // Zoho-style: default borderRadius on bar datasets (no override if already set)
   if(cfg.data && cfg.data.datasets){
     cfg.data.datasets.forEach(ds=>{
