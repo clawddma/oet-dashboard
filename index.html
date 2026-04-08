@@ -840,6 +840,12 @@ function fv(v, decimals=1){
   if(abs>=1000)    return s+'$'+(abs/1000).toFixed(0)+'M';
   return s+'$'+abs.toFixed(0)+'K';
 }
+// fvFull: número exacto para tooltips (millones con 1 decimal — evita abreviación en billones)
+function fvFull(v){
+  const s=v<0?'-':''; const abs=Math.abs(v);
+  if(abs>=1000) return s+'$'+(abs/1000).toFixed(1)+'M';
+  return s+'$'+abs.toFixed(0)+'K';
+}
 function fp(v){ return (v>=0?'+':'')+v.toFixed(1)+'%'; }
 function clr(v){ return v>=0 ? '#2dc5ab' : '#ef5350'; }
 function tdCls(v){ return v>=0?'pos':'neg'; }
@@ -2652,17 +2658,29 @@ function buildComInicio(){
     <div style="font-size:10px;color:#607d76;margin-top:6px">ℹ️ Facturación por médico disponible en forma anual</div>
   </div>`:''}`:`
   <!-- Vista anual completa (sin filtros) -->
-  <div class="kpis k4">
-    ${kpiCard('Facturación 2024', fv(vTotal24), 'Año base')}
-    ${kpiCard('Facturación 2025', fv(vTotal25), fp(pctVar(vTotal25,vTotal24))+' vs 2024')}
-    ${kpiCard('YTD 2026 (Ene–Mar)', fv(vTotal26), fp(pctVar(vTotal26,vTotal24/12*3))+' vs promedio trimestral 2024')}
-    ${kpiCard('Cirugías 2026 YTD', COM.cirugias.v26.toLocaleString(), 'vs '+COM.cirugias.v25.toLocaleString()+' en 2025 completo')}
-  </div>
-  <div class="kpis k3" style="margin-bottom:16px">
-    ${kpiCard('Ticket Promedio 2025', fv(Math.round(vTotal25/COM.cirugias.v25)), 'Por cirugía · 2025')}
-    ${kpiCard('LIOs — motor premium', fp(pctVar(COM.v25[2],COM.v24[2])), '2025 vs 2024 · YTD-26: '+fv(COM.v26[2]), COM.v25[2]>COM.v24[2]?'':'red')}
-    ${kpiCard('Consultas Médicas', fp(pctVar(COM.v26[3],COM.v25[3]/12*2)), '2026 YTD vs ritmo 2025', COM.v26[3]>COM.v25[3]/12*2?'':'warn')}
-  </div>`}
+  ${(()=>{
+    // Calcular período comparable: meses con datos en 2026
+    const _lm=COM.ing_m26.reduce((a,v,i)=>v>0?i+1:a,0);
+    const _ytd26r=COM.ing_m26.slice(0,_lm).reduce((a,b)=>a+b,0); // YTD 2026 real
+    const _ytd25s=COM.ing_m25.slice(0,_lm).reduce((a,b)=>a+b,0); // mismo período 2025
+    const _cir25s=CIR.mes_25.slice(0,_lm).reduce((a,b)=>a+b,0);  // cirugías mismo período 2025
+    const _mLbl='Ene–'+MN[_lm]; // ej: "Ene–Abr"
+    // Ticket: billing YTD 2026 / cirugías YTD 2026
+    const _tk26=COM.cirugias.v26>0?_ytd26r/COM.cirugias.v26:0;
+    const _tk25s=_cir25s>0?_ytd25s/_cir25s:0;
+    return `
+    <div class="kpis k4">
+      ${kpiCard('Facturación 2024', fv(vTotal24), 'Año base')}
+      ${kpiCard('Facturación 2025', fv(vTotal25), fp(pctVar(vTotal25,vTotal24))+' vs 2024')}
+      ${kpiCard('YTD 2026 ('+_mLbl+')', fv(_ytd26r), fp(pctVar(_ytd26r,_ytd25s))+' vs '+_mLbl+' 2025')}
+      ${kpiCard('Cirugías 2026 YTD', COM.cirugias.v26.toLocaleString(), fp(pctVar(COM.cirugias.v26,_cir25s))+' vs '+_cir25s.toLocaleString()+' en '+_mLbl+' 2025')}
+    </div>
+    <div class="kpis k3" style="margin-bottom:16px">
+      ${kpiCard('Ticket $/Cirugía — 2026 YTD', fv(Math.round(_tk26)), fp(pctVar(_tk26,_tk25s))+' vs '+_mLbl+' 2025 · Ref. 2025 completo: '+fv(Math.round(vTotal25/COM.cirugias.v25)))}
+      ${kpiCard('LIOs — motor premium', fv(COM.v26[2]), _mLbl+' 2026: '+fp(pctVar(COM.v26[2],COM.v25[2]/12*_lm))+' vs ritmo 2025')}
+      ${kpiCard('Consultas Médicas', fv(COM.v26[3]), _mLbl+' 2026: '+fp(pctVar(COM.v26[3],COM.v25[3]/12*_lm))+' vs ritmo 2025', COM.v26[3]>COM.v25[3]/12*_lm?'':'warn')}
+    </div>`;
+  })()}`}
 
   <!-- Gráficas por línea de negocio (datos filtrados) -->
   <div class="g6040">
@@ -2702,7 +2720,12 @@ function buildComInicio(){
   <!-- ═══ SECCIÓN: Ticket Promedio + Índice de Estacionalidad ═══ -->
   <div class="g2" style="margin-top:4px">
     ${chartCard('ch-com-ticket','Ticket Promedio por Cirugía — Evolución Mensual','Facturación del mes ÷ cirugías del mes · Refleja mix de procedimientos y tendencia de precios',240,'')}
-    ${chartCard('ch-com-season','Índice de Estacionalidad (base 2024–2025)','100 = mes promedio · Verde >110 · Amarillo 85–110 · Rojo <85 · Planificación de capacidad',240,'')}
+    ${chartCard('ch-com-season','¿Cuándo factura más el negocio?','Promedio histórico 2024–2025 por mes · Verde = meses fuertes · Rojo = meses débiles · El tooltip muestra si estás sobre o bajo el promedio',240,'')}
+  </div>
+
+  <!-- ═══ SECCIÓN: Ingresos por Tipo de Procedimiento ═══ -->
+  <div class="gfull" style="margin-top:4px">
+    ${chartCard('ch-com-tipos','Ingresos por Tipo de Procedimiento — 2025 vs 2026 YTD','Facturación acumulada por tipo · Ordena de mayor a menor por 2025 · Permite ver dónde se genera más valor',280,'')}
   </div>
 
   <!-- ═══ SECCIÓN: KPIs Estratégicos ═══ -->
@@ -2803,7 +2826,7 @@ function buildComInicio(){
       plugins:{
         legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:16}},
         tooltip:{callbacks:{
-          label:ctx=>ctx.dataset.label+': '+(ctx.raw!=null?fv(ctx.raw):'sin datos'),
+          label:ctx=>ctx.dataset.label+': '+(ctx.raw!=null?fvFull(ctx.raw):'sin datos'),
           footer:items=>{
             const f=items.filter(i=>i.raw!=null);
             if(f.length<2) return [];
@@ -2841,7 +2864,7 @@ function buildComInicio(){
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:14}},
-        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw!=null?fv(ctx.raw)+'/cir':'—')}}
+        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw!=null?fvFull(ctx.raw)+'/cir':'—')}}
       },
       scales:{
         x:{ticks:{font:{size:10}},grid:{display:false}},
@@ -2850,8 +2873,8 @@ function buildComInicio(){
     }});
   }
 
-  // ═══ ch-com-season: Índice de Estacionalidad ═════════════════════════════
-  // Usa COM.ing_m24/25 (facturación real Google Sheets) para base estacional
+  // ═══ ch-com-season: Estacionalidad — facturación promedio por mes (2024+2025) ══════
+  // Usa COM.ing_m24/25 (facturación real Google Sheets)
   const _seaIdx=(()=>{
     const _mns=[1,2,3,4,5,6,7,8,9,10,11,12];
     const _vals=_mns.map(m=>{
@@ -2863,18 +2886,40 @@ function buildComInicio(){
     const _avg=_vals.filter(v=>v>0).reduce((a,b)=>a+b,0)/12;
     return _vals.map(v=>_avg?+(v/_avg*100).toFixed(1):0);
   })();
+  const _seaAvgBill=(()=>{
+    const _mns=[1,2,3,4,5,6,7,8,9,10,11,12];
+    return _mns.map(m=>{
+      const v24=COM.ing_m24[m-1]||0, v25=COM.ing_m25[m-1]||0;
+      const vs=[v24,v25].filter(v=>v>0);
+      return vs.length?Math.round(vs.reduce((a,b)=>a+b,0)/vs.length):0;
+    });
+  })();
   {
     const _sMns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    // Top 3 y bottom 3 meses para colores
+    const _sorted=[..._seaIdx].sort((a,b)=>b-a);
+    const _top3=_sorted[2], _bot3=_sorted[9];
     mkChart('ch-com-season',{type:'bar',data:{labels:_sMns,datasets:[{
-      label:'Índice Estacional',
-      data:_seaIdx,
-      backgroundColor:_seaIdx.map(v=>v>=110?'rgba(45,197,171,0.85)':v>=90?'rgba(45,197,171,0.45)':v>=75?'rgba(255,193,7,0.78)':'rgba(239,83,80,0.65)'),
+      label:'Facturación promedio del mes',
+      data:_seaAvgBill,
+      backgroundColor:_seaIdx.map(v=>v>=_top3?'rgba(45,197,171,0.88)':v<=_bot3?'rgba(239,83,80,0.65)':'rgba(99,146,209,0.6)'),
       borderRadius:3
     }]},options:{
       plugins:{
         legend:{display:false},
         tooltip:{callbacks:{
-          label:ctx=>'Índice: '+ctx.raw+(ctx.raw>=100?' (+':' (')+((ctx.raw-100).toFixed(1))+'%)'
+          label:ctx=>{
+            const idx=_seaIdx[ctx.dataIndex];
+            const diff=(idx-100).toFixed(1);
+            const rel=idx>=100?'+'+diff+'% sobre el promedio':diff+'% bajo el promedio';
+            return fvFull(ctx.raw)+' promedio · '+rel;
+          },
+          afterBody:items=>{
+            const idx=_seaIdx[items[0].dataIndex];
+            if(idx>=_top3) return ['🟢 Mes fuerte — el negocio factura más de lo usual'];
+            if(idx<=_bot3) return ['🔴 Mes débil — buena época para promociones o eficiencia'];
+            return ['🔵 Mes normal'];
+          }
         }}
       },
       scales:{
@@ -2888,6 +2933,54 @@ function buildComInicio(){
         }
       }
     }});
+  }
+
+  // ═══ ch-com-tipos: Ingresos por Tipo de Procedimiento (horizontal bar) ═══
+  {
+    // Ordena por tipos_v25 desc para mostrar los más rentables arriba
+    const _tipLabels=CIR.tipos;
+    const _tOrder=[..._tipLabels.keys()].sort((a,b)=>CIR.tipos_v25[b]-CIR.tipos_v25[a]);
+    const _tLbl=_tOrder.map(i=>_tipLabels[i]);
+    const _t25=_tOrder.map(i=>CIR.tipos_v25[i]);
+    const _t26=_tOrder.map(i=>CIR.tipos_v26[i]);
+    mkChart('ch-com-tipos',{
+      type:'bar',
+      data:{
+        labels:_tLbl,
+        datasets:[
+          {label:'2025 (año completo)',data:_t25,backgroundColor:'rgba(45,197,171,0.82)',borderColor:'rgba(45,197,171,1)',borderWidth:1,borderRadius:3},
+          {label:'2026 YTD',          data:_t26,backgroundColor:'rgba(255,193,7,0.82)', borderColor:'rgba(255,193,7,1)',   borderWidth:1,borderRadius:3}
+        ]
+      },
+      options:{
+        indexAxis:'y',
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'top',labels:{boxWidth:12,padding:12,font:{size:11}}},
+          tooltip:{
+            callbacks:{
+              label:ctx=>' '+ctx.dataset.label+': '+fvFull(ctx.raw),
+              afterLabel:ctx=>{
+                // Para 2026 YTD muestra variación vs 2025
+                if(ctx.datasetIndex===1){
+                  const v25=_t25[ctx.dataIndex];
+                  if(v25>0){
+                    const pct=((ctx.raw-v25)/v25*100).toFixed(1);
+                    return ' vs 2025: '+(pct>0?'+':'')+pct+'%';
+                  }
+                }
+                return '';
+              }
+            }
+          }
+        },
+        scales:{
+          x:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},
+          y:{ticks:{font:{size:10}},grid:{display:false}}
+        }
+      }
+    });
   }
 
   // ═══ com-kpis-extra: 4 KPIs estratégicos ════════════════════════════════
@@ -2914,19 +3007,30 @@ function buildComInicio(){
       const _mnsN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
       const _bestSeaM=_seaIdx.indexOf(Math.max(..._seaIdx));
       const _worstSeaM=_seaIdx.indexOf(Math.min(..._seaIdx));
+      // Proyección: a este ritmo ¿dónde cierra el año?
+      const _gap=COM.meta26&&_proy26k?(COM.meta26-_proy26k):0;
+      const _proy26Label=_proy26k>0?
+        (_proy26k>=(COM.meta26||0)?'✅ Superaría la meta de '+fv(COM.meta26||0):'Faltarían '+fv(_gap)+' para la meta de '+fv(COM.meta26||0)):
+        'Sin datos suficientes';
+      // Top 3 médicos
+      const _top3names=_cirSorted.slice(0,3).map(d=>d.name.replace(/^Dr[a]?\. /,'')).join(' · ');
+      const _top3sum3=_cirSorted.slice(0,3).reduce((s,d)=>s+d.bill25,0);
+      const _concPct3=_billTot25?(_top3sum3/_billTot25*100).toFixed(0):0;
+      const _top1pct=_billTot25?(_cirSorted[0].bill25/_billTot25*100).toFixed(0):0;
+      // Pico y Valle en lenguaje claro
+      const _peakDiff=(_seaIdx[_bestSeaM]-100).toFixed(0);
+      const _valDiff=(100-_seaIdx[_worstSeaM]).toFixed(0);
       _kEl.innerHTML=
         kpiCard('Proyección Anual 2026',fv(_proy26k),
-          _metaPct?'Al ritmo Ene–'+_mnsN[_last26k-1]+' · '+_metaPct+'% de meta $23.5B':'Al ritmo Ene–'+_mnsN[_last26k-1],
+          _proy26Label,
           _proy26k>=(COM.meta26||0)*0.9?'':'warn')+
-        kpiCard('Ticket $/Cirugía — 2026 YTD',fv(_tk26k),
-          (_tkDeltaK>=0?'↑ +':'↓ ')+Math.abs(_tkDeltaK).toFixed(1)+'% vs ticket promedio 2025',
-          _tkDeltaK>=0?'':'')+
-        kpiCard('Concentración Top 3 Médicos',_concPct+'% de ingresos 2025',
-          _cirSorted[0].name+' · '+_cirSorted[1].name,
-          parseInt(_concPct)>65?'warn':'')+
-        kpiCard('Estacionalidad · Pico vs Valle',
-          _mnsN[_bestSeaM]+' (×'+(_seaIdx[_bestSeaM]/100).toFixed(2)+')',
-          'Mes más débil: '+_mnsN[_worstSeaM]+' (×'+(_seaIdx[_worstSeaM]/100).toFixed(2)+')');
+        kpiCard('Concentración Top 3 Médicos',_top3names,
+          'Generan el '+_concPct3+'% de ingresos 2025 · Mayor dependencia: '+_cirSorted[0].name.replace(/^Dr[a]?\. /,'')+' ('+_top1pct+'%)',
+          parseInt(_concPct3)>65?'warn':'')+
+        kpiCard('Mejor mes del año',_mnsN[_bestSeaM]+' factura '+_peakDiff+'% más',
+          'Ene es el más flojo ('+_valDiff+'% bajo el promedio). Planifica refuerzos para meses rojos.','')+
+        kpiCard('Velocidad de cirugías 2026',COM.cirugias.v26+' YTD',
+          'A este ritmo cerrará en ~'+Math.round(COM.cirugias.v26/_last26k*12).toLocaleString()+' cirugías · 2025 tuvo '+COM.cirugias.v25.toLocaleString());
     }
   }
 }
