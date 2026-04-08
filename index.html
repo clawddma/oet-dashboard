@@ -348,6 +348,28 @@ a{text-decoration:none;color:inherit;}
 .cfb-div{ width:1px; height:22px; background:rgba(45,197,171,0.18); flex-shrink:0; }
 .cfb-month-pill{ padding:2px 7px !important; font-size:10px !important; min-width:32px; text-align:center; }
 .cfb-doc-pill{ max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px !important; }
+/* ── Period presets ─────────────────────────────────────────── */
+.cfb-sep{ color:rgba(45,197,171,0.25); font-size:13px; padding:0 2px; align-self:center; user-select:none; }
+.cfb-pill.cfb-mtd-pill{ position:relative; }
+.cfb-pill.cfb-mtd-pill .mtd-dot{
+  display:inline-block; width:6px; height:6px;
+  background:#ef5350; border-radius:50%; margin-left:4px; vertical-align:middle;
+  animation:mtd-pulse 1.5s ease-in-out infinite;
+}
+.cfb-pill.cfb-mtd-pill.on .mtd-dot{ background:#071f18; }
+@keyframes mtd-pulse{
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%{      opacity:.4; transform:scale(0.7); }
+}
+/* MTD progress bar */
+.mtd-bar-wrap{ background:rgba(45,197,171,0.1); border-radius:6px; height:8px; width:100%; overflow:hidden; margin:4px 0; }
+.mtd-bar-fill{ height:100%; border-radius:6px; background:linear-gradient(90deg,rgba(45,197,171,0.7),rgba(45,197,171,1)); transition:width .4s; }
+.mtd-section{ background:rgba(45,197,171,0.05); border:1px solid rgba(45,197,171,0.2); border-radius:8px; padding:12px 14px; margin-bottom:12px; }
+.mtd-section .mtd-title{ font-size:11px; font-weight:700; color:#2dc5ab; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.mtd-section .mtd-no-data{ font-size:11px; color:#607d76; padding:6px 0; }
+/* Daily/week unavailable badge */
+.cfb-pill.cfb-dim{ opacity:0.5; }
+.cfb-pill.cfb-dim:hover{ opacity:0.75; }
 .cfb-clear{
   background:transparent; border:1px solid rgba(239,83,80,0.45); color:#ef9090;
   border-radius:6px; padding:3px 10px; font-size:11px; cursor:pointer;
@@ -547,6 +569,28 @@ a{text-decoration:none;color:inherit;}
   <div id="sub-nav-wrap"><div id="sub-nav"></div></div>
   <!-- ─── Commercial filter bar ─── -->
   <div id="com-filter-bar">
+    <!-- ── Período rápido ───────────────────────────────────────── -->
+    <div class="cfb-group">
+      <span class="cfb-lbl">Período</span>
+      <button class="cfb-pill cfb-month-pill cfb-mtd-pill" id="cfb-p-mtd"
+        onclick="setComPeriod('mtd',this)" title="Mes a la Fecha — compara el avance parcial vs meses anteriores">MTD <span class="mtd-dot"></span></button>
+      <button class="cfb-pill cfb-month-pill" id="cfb-p-week"
+        onclick="setComPeriod('week',this)" title="Esta semana (disponible cuando Apps Script sincronice datos diarios)">Semana</button>
+      <span class="cfb-sep">|</span>
+      <button class="cfb-pill cfb-month-pill" id="cfb-p-q1"
+        data-cq="1" onclick="toggleComQuarter(1,this)" title="Ene · Feb · Mar (multi-selección con otros Qs)">Q1</button>
+      <button class="cfb-pill cfb-month-pill" id="cfb-p-q2"
+        data-cq="2" onclick="toggleComQuarter(2,this)" title="Abr · May · Jun (multi-selección con otros Qs)">Q2</button>
+      <button class="cfb-pill cfb-month-pill" id="cfb-p-q3"
+        data-cq="3" onclick="toggleComQuarter(3,this)" title="Jul · Ago · Sep (multi-selección con otros Qs)">Q3</button>
+      <button class="cfb-pill cfb-month-pill" id="cfb-p-q4"
+        data-cq="4" onclick="toggleComQuarter(4,this)" title="Oct · Nov · Dic (multi-selección con otros Qs)">Q4</button>
+      <span class="cfb-sep">|</span>
+      <button class="cfb-pill cfb-month-pill on" id="cfb-p-all"
+        onclick="setComPeriodAll(this)" title="Ver todos los meses del año">Año ↺</button>
+    </div>
+    <div class="cfb-div"></div>
+    <!-- ── Año ──────────────────────────────────────────────────── -->
     <div class="cfb-group">
       <span class="cfb-lbl">Año</span>
       <button class="cfb-pill on" data-year="2024" onclick="toggleComYear(2024,this)">2024</button>
@@ -554,6 +598,7 @@ a{text-decoration:none;color:inherit;}
       <button class="cfb-pill on" data-year="2026" onclick="toggleComYear(2026,this)">YTD '26</button>
     </div>
     <div class="cfb-div"></div>
+    <!-- ── Mes (multi-selección individual) ─────────────────────── -->
     <div class="cfb-group">
       <span class="cfb-lbl">Mes</span>
       <button class="cfb-pill cfb-month-pill" data-m="1"  onclick="toggleComMonth(1,this)">Ene</button>
@@ -722,6 +767,35 @@ const CIR = {
   mes_26:[375,373,426,0,0,0,0,0,0,0,0,0],  // total=1174 (2026-04-07 19:00) /* AUTO */
 };
 /* ==OET_DATA_END== */
+
+// ════════════════════════════════════════
+//  MTD — MES A LA FECHA (auto-sync diario)
+// ════════════════════════════════════════
+// Apps Script debe actualizar este bloque cada noche (~20:00) con:
+// const MTD_RAW = {
+//   y:2026, m:4, d:7,          // año, mes (1-12), día del mes
+//   ing: 234567,               // facturación acumulada en el mes hasta hoy
+//   cir: 48,                   // cirugías acumuladas en el mes hasta hoy
+//   daysInMonth: 30,           // días totales del mes
+//   lineas: [v0,v1,v2,v3,v4,v5],         // facturación MTD por línea (orden = COM.lineas)
+//   cirujanos: [{name,bill,cir}, ...]     // top cirujanos MTD
+// };
+// ==MTD_DATA_START==
+const MTD_RAW = null; /* AUTO-MTD */
+// ==MTD_DATA_END==
+
+// ════════════════════════════════════════
+//  DAILY_RAW — datos diarios (habilita filtros Hoy y Esta Semana)
+// ════════════════════════════════════════
+// Apps Script popula desde la hoja de facturación (registro a registro → suma diaria):
+// const DAILY_RAW = [
+//   {f:'2026-04-01', y:2026, m:4, w:14, d:1, ing:45000, cir:12},
+//   {f:'2026-04-02', y:2026, m:4, w:14, d:2, ing:67000, cir:18},
+//   ...
+// ];
+// ==DAILY_DATA_START==
+const DAILY_RAW = []; /* AUTO-DAILY */
+// ==DAILY_DATA_END==
 
 // Balance Sheet Snapshots (miles de COP) — Fuente: EEFF Feb 2026
 const BSS = {
@@ -992,6 +1066,7 @@ const CF = {
   doctors: new Set(),  // empty = todos
   tipo: '',
   linea: '',
+  period:  'all',     // 'all' | 'mtd' | 'week' — presets de período
 };
 
 function initComFilters(){
@@ -1020,6 +1095,8 @@ function initComFilters(){
   if(bar && window.ResizeObserver){
     new ResizeObserver(()=>updateFilterBarHeight()).observe(bar);
   }
+  // Inicializar estado visual de botones de período
+  _syncComPeriodBtns();
 }
 
 function toggleComYear(y,btn){
@@ -1044,13 +1121,16 @@ function clearComFilters(){
   CF.months=new Set();
   CF.doctors=new Set();
   CF.tipo=''; CF.linea='';
+  CF.period='all';
   document.querySelectorAll('[data-year]').forEach(p=>p.classList.add('on'));
-  document.querySelectorAll('.cfb-month-pill').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('[data-m]').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('[data-cq]').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.cfb-doc-pill').forEach(p=>p.classList.remove('on'));
   ['cfb-tipo','cfb-linea'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.value='';
   });
+  _syncComPeriodBtns();
   updateCfHint();
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
 }
@@ -1058,10 +1138,19 @@ function clearComFilters(){
 function updateCfHint(){
   const MN=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const hints=[];
-  if(CF.years.size<3) hints.push(Array.from(CF.years).sort().map(y=>y===2026?"YTD'26":String(y)).join('+'));
-  if(CF.months.size>0){
-    const ma=Array.from(CF.months).sort((a,b)=>a-b).map(m=>MN[m]);
-    hints.push(ma.length<=3?ma.join('+'):ma.length+' meses');
+  // Período activo
+  if(CF.period==='mtd'){
+    const mtd=getMtdInfo();
+    hints.push(mtd?'MTD · '+mtd.monthName+'-'+mtd.y+' ('+mtd.d+' días)':'MTD · sin datos diarios');
+  } else if(CF.period==='week'){
+    const w=getWeekRows();
+    hints.push(w?'Semana '+w.week+' · '+w.from+' → '+w.to:'Semana · sin datos diarios');
+  } else {
+    if(CF.years.size<3) hints.push(Array.from(CF.years).sort().map(y=>y===2026?"YTD'26":String(y)).join('+'));
+    if(CF.months.size>0){
+      const ma=Array.from(CF.months).sort((a,b)=>a-b).map(m=>MN[m]);
+      hints.push(ma.length<=3?ma.join('+'):ma.length+' meses');
+    }
   }
   if(CF.doctors.size>0){
     const da=Array.from(CF.doctors).map(d=>d.replace(/^Dr[a]?\. /,'').split(/[\s.]/)[0]);
@@ -1082,6 +1171,15 @@ function updateCfHint(){
 function toggleComMonth(m,btn){
   if(CF.months.has(m)){ CF.months.delete(m); btn.classList.remove('on'); }
   else { CF.months.add(m); btn.classList.add('on'); }
+  // Salir de modos exclusivos MTD/week al seleccionar meses manualmente
+  if(CF.period==='mtd'||CF.period==='week') CF.period='all';
+  // Sync quarter pills — un Q está "on" solo si sus 3 meses están activos
+  document.querySelectorAll('#com-filter-bar [data-cq]').forEach(b=>{
+    const q=+b.dataset.cq;
+    const ms={1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]}[q];
+    b.classList.toggle('on', ms.every(x=>CF.months.has(x)));
+  });
+  _syncComPeriodBtns();
   updateCfHint();
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
 }
@@ -1113,6 +1211,104 @@ function clearComBuilt(){
     });
     built.delete(sid);
   });
+}
+
+// ════════════════════════════════════════
+//  PERIOD HELPERS — MTD y DAILY
+// ════════════════════════════════════════
+
+// Retorna info completa del MTD, o null si no hay datos
+function getMtdInfo(){
+  if(!MTD_RAW) return null;
+  const {y,m,d,ing,cir,daysInMonth} = MTD_RAW;
+  const pct = daysInMonth>0 ? d/daysInMonth : 0;          // % del mes completado
+  const pace = pct>0 ? Math.round(ing/pct) : 0;           // proyección mes completo
+  const MNS=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const monthName = MNS[m]||'';
+  // Mismo mes año anterior (completo) para comparación
+  const prevY = y-1;
+  const prevD = D.find(x=>x.y===prevY&&x.m===m);
+  const prevIng = prevD ? prevD.ing : null;
+  const prevScaled = prevIng ? Math.round(prevIng * pct) : null; // ajustado a mismos días
+  // Cirugías previas
+  const prevCirArr = prevY===2025?CIR.mes_25:prevY===2024?CIR.mes_24:null;
+  const prevCir = prevCirArr ? Math.round((prevCirArr[m-1]||0)*pct) : null;
+  return {y,m,d,ing,cir,daysInMonth,pct,pace,monthName,prevY,prevIng,prevScaled,prevCir};
+}
+
+// Retorna filas de la semana más reciente en DAILY_RAW, o null si no hay datos
+function getWeekRows(){
+  if(!DAILY_RAW||!DAILY_RAW.length) return null;
+  const latest = DAILY_RAW[DAILY_RAW.length-1];
+  const rows = DAILY_RAW.filter(r=>r.y===latest.y&&r.w===latest.w);
+  if(!rows.length) return null;
+  const ing = rows.reduce((s,r)=>s+r.ing,0);
+  const cir = rows.reduce((s,r)=>s+r.cir,0);
+  return {rows, ing, cir, week:latest.w, y:latest.y, days:rows.length,
+          from:rows[0].f, to:latest.f};
+}
+
+// ── Quarter toggle para tab Comercial (multi-select) ─────────────────────────
+function toggleComQuarter(q,btn){
+  const qMs={1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]};
+  const ms=qMs[q];
+  const allOn=ms.every(m=>CF.months.has(m));
+  if(allOn){ ms.forEach(m=>CF.months.delete(m)); btn.classList.remove('on'); }
+  else { ms.forEach(m=>CF.months.add(m)); btn.classList.add('on'); }
+  // Reset MTD/week modes
+  CF.period='all';
+  _syncComPeriodBtns();
+  // Sync month pills
+  document.querySelectorAll('#com-filter-bar [data-m]').forEach(b=>b.classList.toggle('on',CF.months.has(+b.dataset.m)));
+  // Si no quedan meses activos, activar "Año ↺"
+  const allBtn=document.getElementById('cfb-p-all');
+  if(allBtn) allBtn.classList.toggle('on', CF.months.size===0);
+  updateCfHint();
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+}
+
+// Activa MTD o Semana (modos exclusivos; desactiva filtros de mes)
+function setComPeriod(mode,btn){
+  if(CF.period===mode){
+    // Toggle off
+    CF.period='all';
+    btn.classList.remove('on');
+    document.getElementById('cfb-p-all')?.classList.add('on');
+  } else {
+    CF.period=mode;
+    _syncComPeriodBtns();
+    btn.classList.add('on');
+    // En MTD/week los meses individuales no aplican (pero no los borramos para no perder selección)
+  }
+  updateCfHint();
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+}
+
+// Limpia filtros de mes y activa "Año completo"
+function setComPeriodAll(btn){
+  CF.months.clear();
+  CF.period='all';
+  document.querySelectorAll('#com-filter-bar [data-m]').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('#com-filter-bar [data-cq]').forEach(b=>b.classList.remove('on'));
+  _syncComPeriodBtns();
+  btn.classList.add('on');
+  updateCfHint();
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+}
+
+// Sincroniza visualmente los botones MTD/Semana/Año según CF.period
+function _syncComPeriodBtns(){
+  document.getElementById('cfb-p-mtd')?.classList.toggle('on', CF.period==='mtd');
+  document.getElementById('cfb-p-week')?.classList.toggle('on', CF.period==='week');
+  document.getElementById('cfb-p-all')?.classList.toggle('on', CF.period==='all' && CF.months.size===0);
+  // Marcar Semana como dim si no hay datos diarios
+  const weekBtn=document.getElementById('cfb-p-week');
+  if(weekBtn){
+    weekBtn.classList.toggle('cfb-dim', !DAILY_RAW||!DAILY_RAW.length);
+    weekBtn.title = (!DAILY_RAW||!DAILY_RAW.length)
+      ? 'Esta semana — requiere que Apps Script sincronice DAILY_RAW'
+      : 'Esta semana — ver facturación de la semana en curso';
+  }
 }
 
 // ════════════════════════════════════════
@@ -1208,15 +1404,25 @@ function toggleFinYear(y,btn){
 function toggleFinMonth(m,btn){
   if(FF.months.has(m)){FF.months.delete(m);btn.classList.remove('on');}
   else{FF.months.add(m);btn.classList.add('on');}
-  document.querySelectorAll('#fin-filter-bar [data-fq]').forEach(b=>b.classList.remove('on'));
+  // Sync Q buttons — on solo si los 3 meses del trimestre están activos
+  const qMs={1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]};
+  document.querySelectorAll('#fin-filter-bar [data-fq]').forEach(b=>{
+    const ms=qMs[+b.dataset.fq];
+    b.classList.toggle('on', ms&&ms.every(x=>FF.months.has(x)));
+  });
   updateFfHint(); if(activeTab==='fin'){clearFinBuilt();navigate(activeSection);}
 }
 function toggleFinQuarter(q,btn){
+  // Multi-select: cada Q agrega/quita sus 3 meses sin borrar los demás
   const qMs={1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]};
   const ms=qMs[q]; const allOn=ms.every(m=>FF.months.has(m));
   if(allOn){ ms.forEach(m=>FF.months.delete(m)); btn.classList.remove('on'); }
-  else{ FF.months.clear(); ms.forEach(m=>FF.months.add(m));
-    document.querySelectorAll('#fin-filter-bar [data-fq]').forEach(b=>b.classList.toggle('on',b===btn)); }
+  else { ms.forEach(m=>FF.months.add(m)); btn.classList.add('on'); }
+  // Sync: cada Q button refleja si sus 3 meses están todos activos
+  document.querySelectorAll('#fin-filter-bar [data-fq]').forEach(b=>{
+    const bMs=qMs[+b.dataset.fq];
+    b.classList.toggle('on', bMs&&bMs.every(m=>FF.months.has(m)));
+  });
   document.querySelectorAll('#fin-filter-bar [data-fm]').forEach(b=>b.classList.toggle('on',FF.months.has(+b.dataset.fm)));
   updateFfHint(); if(activeTab==='fin'){clearFinBuilt();navigate(activeSection);}
 }
@@ -2243,6 +2449,110 @@ function buildFinAnual(){
 // ════════════════════════════════════════
 function buildComInicio(){
   const el=document.getElementById('com-inicio');
+
+  // ══ MODO MTD — vista de mes a la fecha ════════════════════════════════════
+  if(CF.period==='mtd'){
+    const mtd=getMtdInfo();
+    const MNS=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    el.innerHTML=`
+    <div class="sec-title">Análisis Comercial — <span style="color:#2dc5ab">MTD: Mes a la Fecha</span></div>
+    ${!mtd?`
+    <div class="mtd-section">
+      <div class="mtd-title">⏳ Datos MTD no disponibles</div>
+      <div class="mtd-no-data">
+        El Apps Script aún no ha sincronizado <code>MTD_RAW</code>.<br>
+        Agrega el bloque de sync diario en Apps Script para habilitar esta vista.<br><br>
+        <strong>Formato esperado:</strong><br>
+        <code style="font-size:10px">MTD_RAW = {y:2026, m:4, d:7, ing:234567, cir:48, daysInMonth:30, lineas:[...], cirujanos:[...]}</code>
+      </div>
+    </div>`:`
+    <!-- KPIs principales MTD -->
+    <div class="kpis k4" style="margin-bottom:12px">
+      ${kpiCard('Facturación MTD · '+mtd.monthName+'-'+mtd.y,
+        fv(mtd.ing),
+        mtd.prevScaled!=null ? fp(pctVar(mtd.ing,mtd.prevScaled))+' vs '+mtd.monthName+'-'+mtd.prevY+' ('+mtd.d+'d)' : 'Acumulado '+mtd.d+' días'
+      )}
+      ${kpiCard('Ritmo proyectado (mes completo)',
+        fv(mtd.pace),
+        mtd.prevIng!=null ? fp(pctVar(mtd.pace,mtd.prevIng))+' vs '+mtd.monthName+'-'+mtd.prevY+' completo' : 'Basado en '+mtd.d+'/'+mtd.daysInMonth+' días'
+      )}
+      ${kpiCard('Cirugías MTD · '+mtd.monthName+'-'+mtd.y,
+        mtd.cir.toString(),
+        mtd.prevCir!=null ? fp(pctVar(mtd.cir,mtd.prevCir))+' vs '+mtd.monthName+'-'+mtd.prevY+' ('+mtd.d+'d)' : 'Derechos de Sala'
+      )}
+      ${kpiCard('Avance del mes',
+        (mtd.pct*100).toFixed(0)+'%',
+        'Día '+mtd.d+' de '+mtd.daysInMonth,
+        mtd.pct<0.5?'red':''
+      )}
+    </div>
+    <!-- Barra de progreso del mes -->
+    <div class="mtd-section" style="margin-bottom:12px">
+      <div class="mtd-title">
+        📅 Progreso de ${mtd.monthName}-${mtd.y}
+        <span style="font-size:10px;color:#607d76;font-weight:400">Día ${mtd.d} de ${mtd.daysInMonth} · ${(mtd.pct*100).toFixed(1)}% del mes completado</span>
+      </div>
+      <div class="mtd-bar-wrap"><div class="mtd-bar-fill" style="width:${(mtd.pct*100).toFixed(1)}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#607d76;margin-top:4px">
+        <span>1 ${mtd.monthName}</span>
+        ${mtd.prevIng!=null?`<span>Referencia ${mtd.monthName}-${mtd.prevY} completo: <strong>${fv(mtd.prevIng)}</strong></span>`:''}
+        <span>${mtd.daysInMonth} ${mtd.monthName}</span>
+      </div>
+    </div>
+    <!-- Gráfica comparativa MTD: este mes vs mismo período año anterior -->
+    <div class="g2">
+      ${chartCard('ch-mtd-ing','Facturación MTD vs mismo período año anterior','Barras = acumulado hasta el día '+mtd.d,220,'')}
+      ${chartCard('ch-mtd-cir','Cirugías MTD vs mismo período año anterior','Ritmo diario de Derechos de Sala',220,'')}
+    </div>
+    <div class="insight" style="margin-top:8px;padding:10px 14px;font-size:11px">
+      ℹ️ <strong>MTD = Mes a la Fecha.</strong> La comparación vs año anterior se ajusta proporcionalmente a los mismos días corridos (día ${mtd.d} de cada mes), no al mes completo — para que la comparación sea justa.
+      ${mtd.prevScaled!=null?`<br>📊 Si el ritmo actual se mantiene: ${mtd.monthName}-${mtd.y} cerraría en <strong>${fv(mtd.pace)}</strong> (ritmo del día ${mtd.d}).`:''}
+    </div>`}
+    `;
+    // Gráficas MTD solo si hay datos
+    if(mtd){
+      const MNS2=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const labels=[mtd.monthName+'-'+mtd.y, mtd.monthName+'-'+mtd.prevY];
+      const ingVals=[mtd.ing, mtd.prevScaled];
+      const cirVals=[mtd.cir, mtd.prevCir];
+      mkChart('ch-mtd-ing',{type:'bar',data:{labels,datasets:[{
+        label:'Facturación ('+mtd.d+' días)',data:ingVals,
+        backgroundColor:['rgba(45,197,171,0.85)','rgba(68,108,179,0.6)'],borderRadius:4
+      }]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fv(v)}}}}});
+      mkChart('ch-mtd-cir',{type:'bar',data:{labels,datasets:[{
+        label:'Cirugías ('+mtd.d+' días)',data:cirVals,
+        backgroundColor:['rgba(45,197,171,0.85)','rgba(68,108,179,0.6)'],borderRadius:4
+      }]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{stepSize:1}}}}});
+    }
+    return;
+  }
+
+  // ══ MODO SEMANA — vista de semana en curso ════════════════════════════════
+  if(CF.period==='week'){
+    const w=getWeekRows();
+    el.innerHTML=`
+    <div class="sec-title">Análisis Comercial — <span style="color:#2dc5ab">Esta Semana</span></div>
+    ${!w?`
+    <div class="mtd-section">
+      <div class="mtd-title">⏳ Datos diarios no disponibles</div>
+      <div class="mtd-no-data">
+        <strong>DAILY_RAW</strong> está vacío — Apps Script debe sincronizar los datos diarios de facturación.<br><br>
+        <strong>Formato esperado en DAILY_RAW:</strong><br>
+        <code style="font-size:10px">[{f:'2026-04-07', y:2026, m:4, w:15, d:7, ing:45000, cir:12}, ...]</code><br><br>
+        Cuando Apps Script llene este array, verás aquí el resumen de la semana en curso.
+      </div>
+    </div>`:
+    `<div class="kpis k3">
+      ${kpiCard('Facturación semana '+w.week+'-'+w.y, fv(w.ing), w.from+' → '+w.to)}
+      ${kpiCard('Cirugías esta semana', w.cir.toString(), w.days+' días con datos')}
+      ${kpiCard('Promedio diario', fv(Math.round(w.ing/w.days)), '~'+Math.round(w.cir/w.days)+' cir/día')}
+    </div>
+    <div class="insight" style="margin-top:8px;padding:10px 14px;font-size:11px">
+      📆 Semana ${w.week} · Datos del ${w.from} al ${w.to} (${w.days} días registrados)
+    </div>`}
+    `;
+    return;
+  }
 
   // ── Datos filtrados de D[] — respeta CF.years + CF.months ─────────────────
   const rows=cfD();
