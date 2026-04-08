@@ -2675,7 +2675,33 @@ function buildComInicio(){
       <div class="card-hdr"><h3>Detalle por Línea de Negocio</h3><span class="badge teal">${hasFilters?_badge:'2024 · 2025 · 2026 YTD'}</span></div>
       <div class="card-body" id="com-tabla-lineas"></div>
     </div>
-  </div>`;
+  </div>
+
+  <!-- ═══ SECCIÓN ESTRELLA: Evolución Mensual Comparativa YoY ═══ -->
+  <div class="gfull" style="margin-top:4px">
+    <div class="card">
+      <div class="card-hdr">
+        <h3>Ingresos por Mes — Comparativa Interanual</h3>
+        <span class="badge teal">Barras agrupadas · mismo mes en 3 años</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:310px"><canvas id="ch-com-yoy"></canvas></div>
+        <div class="insight" style="margin-top:6px;padding:8px 12px;font-size:11px">
+          📊 <strong>Cómo leer este gráfico:</strong> cada grupo de barras muestra el mismo mes en los 3 años — permite ver si enero siempre es bajo, si agosto es el mes pico, y si 2026 va por encima o por debajo del ritmo histórico.<br>
+          💡 <strong>Acción:</strong> meses donde 2026 (dorado) supera a 2025 (teal) indican <strong>aceleración real</strong> del negocio, no solo inflación.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SECCIÓN: Ticket Promedio + Índice de Estacionalidad ═══ -->
+  <div class="g2" style="margin-top:4px">
+    ${chartCard('ch-com-ticket','Ticket Promedio por Cirugía — Evolución Mensual','Facturación del mes ÷ cirugías del mes · Refleja mix de procedimientos y tendencia de precios',240,'')}
+    ${chartCard('ch-com-season','Índice de Estacionalidad (base 2024–2025)','100 = mes promedio · Verde >110 · Amarillo 85–110 · Rojo <85 · Planificación de capacidad',240,'')}
+  </div>
+
+  <!-- ═══ SECCIÓN: KPIs Estratégicos ═══ -->
+  <div class="kpis k4" id="com-kpis-extra" style="margin-top:4px"></div>`;
 
   // Bar chart líneas — datos filtrados
   const _bar_ds=[];
@@ -2753,6 +2779,148 @@ function buildComInicio(){
       : '📈 Al ritmo actual, 2026 supera el promedio trimestral 2024. Para análisis de rentabilidad por línea, ver pestaña <strong>EEFF</strong>.'}
     ${CF.years.has(2026)?'<br><span style="font-size:10px;color:#9e7b00">⚠️ Datos de cierre de P&amp;L de marzo 2026 pendientes de confirmación en estados financieros.</span>':''}
   </div>`;
+
+  // ═══ ch-com-yoy: Barras agrupadas interanuales (12 meses × 3 años) ════════
+  {
+    const _yoyMns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const _yoyGet=(y)=>_yoyMns.map((_,i)=>{const r=D.find(d=>d.y===y&&d.m===i+1);return r?+r.ing.toFixed(0):null;});
+    const _yoy24=_yoyGet(2024), _yoy25=_yoyGet(2025), _yoy26=_yoyGet(2026);
+    const _yoyDs=[];
+    if(CF.years.has(2024)) _yoyDs.push({label:'2024',data:_yoy24,
+      backgroundColor:'rgba(68,108,179,0.72)',borderRadius:3,borderColor:'rgba(68,108,179,0.9)',borderWidth:1});
+    if(CF.years.has(2025)) _yoyDs.push({label:'2025',data:_yoy25,
+      backgroundColor:'rgba(45,197,171,0.85)',borderRadius:3,borderColor:'rgba(45,197,171,1)',borderWidth:1});
+    if(CF.years.has(2026)) _yoyDs.push({label:'2026',data:_yoy26,
+      backgroundColor:'rgba(255,193,7,0.88)',borderRadius:3,borderColor:'rgba(255,193,7,1)',borderWidth:1});
+    mkChart('ch-com-yoy',{type:'bar',data:{labels:_yoyMns,datasets:_yoyDs},options:{
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:16}},
+        tooltip:{callbacks:{
+          label:ctx=>ctx.dataset.label+': '+(ctx.raw!=null?fv(ctx.raw):'sin datos'),
+          footer:items=>{
+            const f=items.filter(i=>i.raw!=null);
+            if(f.length<2) return [];
+            const s=f.slice().sort((a,b)=>a.raw-b.raw);
+            const pct=((s[s.length-1].raw/s[0].raw-1)*100).toFixed(0);
+            return ['Diferencia: +'+pct+'% ('+s[0].dataset.label+'→'+s[s.length-1].dataset.label+')'];
+          }
+        }}
+      },
+      scales:{
+        x:{ticks:{font:{size:10}},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}}
+      }
+    }});
+  }
+
+  // ═══ ch-com-ticket: Ticket promedio por cirugía mensual ══════════════════
+  {
+    const _tkMns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const _tkDs=[];
+    if(CF.years.has(2024)) _tkDs.push({label:'2024',
+      data:_tkMns.map((_,i)=>{const d=D.find(r=>r.y===2024&&r.m===i+1);const c=CIR.mes_24[i];return(d&&c)?+(d.ing/c).toFixed(0):null;}),
+      borderColor:'rgba(68,108,179,0.8)',backgroundColor:'rgba(68,108,179,0.06)',
+      borderWidth:1.5,borderDash:[4,3],pointRadius:3,fill:true,tension:0.3,spanGaps:false});
+    if(CF.years.has(2025)) _tkDs.push({label:'2025',
+      data:_tkMns.map((_,i)=>{const d=D.find(r=>r.y===2025&&r.m===i+1);const c=CIR.mes_25[i];return(d&&c)?+(d.ing/c).toFixed(0):null;}),
+      borderColor:'#2dc5ab',backgroundColor:'rgba(45,197,171,0.07)',
+      borderWidth:2,pointRadius:3,fill:true,tension:0.3,spanGaps:false});
+    if(CF.years.has(2026)) _tkDs.push({label:'2026',
+      data:_tkMns.map((_,i)=>{const d=D.find(r=>r.y===2026&&r.m===i+1);const c=CIR.mes_26[i];return(d&&c)?+(d.ing/c).toFixed(0):null;}),
+      borderColor:'#ffc107',backgroundColor:'rgba(255,193,7,0.09)',
+      borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#ffc107',fill:true,tension:0.3,spanGaps:false});
+    mkChart('ch-com-ticket',{type:'line',data:{labels:_tkMns,datasets:_tkDs},options:{
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:14}},
+        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw!=null?fv(ctx.raw)+'/cir':'—')}}
+      },
+      scales:{
+        x:{ticks:{font:{size:10}},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}}
+      }
+    }});
+  }
+
+  // ═══ ch-com-season: Índice de Estacionalidad ═════════════════════════════
+  const _seaIdx=(()=>{
+    const _mns=[1,2,3,4,5,6,7,8,9,10,11,12];
+    const _vals=_mns.map(m=>{
+      const d24=D.find(d=>d.y===2024&&d.m===m);
+      const d25=D.find(d=>d.y===2025&&d.m===m);
+      const vs=[d24,d25].filter(Boolean).map(d=>d.ing);
+      return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:0;
+    });
+    const _avg=_vals.filter(v=>v>0).reduce((a,b)=>a+b,0)/12;
+    return _vals.map(v=>_avg?+(v/_avg*100).toFixed(1):0);
+  })();
+  {
+    const _sMns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    mkChart('ch-com-season',{type:'bar',data:{labels:_sMns,datasets:[{
+      label:'Índice Estacional',
+      data:_seaIdx,
+      backgroundColor:_seaIdx.map(v=>v>=110?'rgba(45,197,171,0.85)':v>=90?'rgba(45,197,171,0.45)':v>=75?'rgba(255,193,7,0.78)':'rgba(239,83,80,0.65)'),
+      borderRadius:3
+    }]},options:{
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label:ctx=>'Índice: '+ctx.raw+(ctx.raw>=100?' (+':' (')+((ctx.raw-100).toFixed(1))+'%)'
+        }}
+      },
+      scales:{
+        x:{ticks:{font:{size:10}},grid:{display:false}},
+        y:{ticks:{callback:v=>v,font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'},
+           suggestedMin:60,suggestedMax:145,
+           afterDataLimits:axis=>{
+             const el2=document.getElementById('ch-com-season');
+             if(el2&&el2.chart){/* anotación 100 */}
+           }
+        }
+      }
+    }});
+  }
+
+  // ═══ com-kpis-extra: 4 KPIs estratégicos ════════════════════════════════
+  {
+    const _kEl=document.getElementById('com-kpis-extra');
+    if(_kEl){
+      // Proyección anual 2026
+      const _ytd26k=D.filter(d=>d.y===2026).reduce((s,d)=>s+d.ing,0);
+      const _last26k=Math.max(...D.filter(d=>d.y===2026).map(d=>d.m));
+      const _proy26k=Math.round(_ytd26k/_last26k*12);
+      const _metaPct=COM.meta26?(_proy26k/COM.meta26*100).toFixed(0):null;
+      // Crecimiento ticket 2026 vs 2025
+      const _cir26k=CIR.mes_26.slice(0,_last26k).reduce((a,b)=>a+b,0);
+      const _tk26k=_cir26k>0?_ytd26k/_cir26k:0;
+      const _cir25k=CIR.mes_25.reduce((a,b)=>a+b,0);
+      const _tk25k=_cir25k>0?D.filter(d=>d.y===2025).reduce((s,d)=>s+d.ing,0)/_cir25k:0;
+      const _tkDeltaK=_tk25k?pctVar(_tk26k,_tk25k):0;
+      // Concentración top 3 médicos (por bill25)
+      const _cirSorted=[...CIR.cirujanos].sort((a,b)=>b.bill25-a.bill25);
+      const _top3sum=_cirSorted.slice(0,3).reduce((s,d)=>s+d.bill25,0);
+      const _billTot25=_cirSorted.reduce((s,d)=>s+d.bill25,0);
+      const _concPct=_billTot25?(_top3sum/_billTot25*100).toFixed(0):0;
+      // Mejor mes estacional
+      const _mnsN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const _bestSeaM=_seaIdx.indexOf(Math.max(..._seaIdx));
+      const _worstSeaM=_seaIdx.indexOf(Math.min(..._seaIdx));
+      _kEl.innerHTML=
+        kpiCard('Proyección Anual 2026',fv(_proy26k),
+          _metaPct?'Al ritmo Ene–'+_mnsN[_last26k-1]+' · '+_metaPct+'% de meta $23.5B':'Al ritmo Ene–'+_mnsN[_last26k-1],
+          _proy26k>=(COM.meta26||0)*0.9?'':'warn')+
+        kpiCard('Ticket $/Cirugía — 2026 YTD',fv(_tk26k),
+          (_tkDeltaK>=0?'↑ +':'↓ ')+Math.abs(_tkDeltaK).toFixed(1)+'% vs ticket promedio 2025',
+          _tkDeltaK>=0?'':'')+
+        kpiCard('Concentración Top 3 Médicos',_concPct+'% de ingresos 2025',
+          _cirSorted[0].name+' · '+_cirSorted[1].name,
+          parseInt(_concPct)>65?'warn':'')+
+        kpiCard('Estacionalidad · Pico vs Valle',
+          _mnsN[_bestSeaM]+' (×'+(_seaIdx[_bestSeaM]/100).toFixed(2)+')',
+          'Mes más débil: '+_mnsN[_worstSeaM]+' (×'+(_seaIdx[_worstSeaM]/100).toFixed(2)+')');
+    }
+  }
 }
 
 function buildComLineas(){
