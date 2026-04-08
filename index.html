@@ -3036,6 +3036,8 @@ function buildComInicio(){
           'A este ritmo cerrará en ~'+Math.round(COM.cirugias.v26/_last26k*12).toLocaleString()+' cirugías · 2025 tuvo '+COM.cirugias.v25.toLocaleString());
     }
   }
+  // Re-dimensionar charts después del layout (canvas puede iniciar en 0×0 si el panel estaba oculto)
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
 
 function buildComLineas(){
@@ -3227,6 +3229,7 @@ function buildComLineas(){
         }
       }});
   }
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
 
 function buildComTrend(){
@@ -3396,6 +3399,7 @@ function buildComTrend(){
       x:{ticks:{font:{size:10}},grid:{display:false}}
     }
   }});
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
 
 function buildComMeta(){
