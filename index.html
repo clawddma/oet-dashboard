@@ -370,6 +370,16 @@ a{text-decoration:none;color:inherit;}
 /* Daily/week unavailable badge */
 .cfb-pill.cfb-dim{ opacity:0.5; }
 .cfb-pill.cfb-dim:hover{ opacity:0.75; }
+/* ── Compare mode pills (YTD / Full year / Auto) ─────────────── */
+.cfb-pill.cfb-cmp-pill{
+  background:rgba(255,193,7,0.08); border:1px solid rgba(255,193,7,0.35);
+  color:#d4a73c; padding:3px 10px;
+}
+.cfb-pill.cfb-cmp-pill:hover{ background:rgba(255,193,7,0.16); color:#e6b940; }
+.cfb-pill.cfb-cmp-pill.on{
+  background:rgba(255,193,7,0.85); color:#1a2a1f;
+  border-color:#ffc107; font-weight:700;
+}
 .cfb-clear{
   background:transparent; border:1px solid rgba(239,83,80,0.45); color:#ef9090;
   border-radius:6px; padding:3px 10px; font-size:11px; cursor:pointer;
@@ -588,6 +598,20 @@ a{text-decoration:none;color:inherit;}
       <span class="cfb-sep">|</span>
       <button class="cfb-pill cfb-month-pill on" id="cfb-p-all"
         onclick="setComPeriodAll(this)" title="Ver todos los meses del año">Año ↺</button>
+    </div>
+    <div class="cfb-div"></div>
+    <!-- ── Comparativa: YTD vs Año Completo ─────────────────────── -->
+    <div class="cfb-group" id="cfb-cmp-group">
+      <span class="cfb-lbl" title="Cómo comparar años entre sí cuando no hay filtro de mes">Comparativa</span>
+      <button class="cfb-pill cfb-cmp-pill on" id="cfb-cmp-auto"
+        data-cmp="auto" onclick="setCompareMode('auto',this)"
+        title="Automático: YTD si 2026 está activo con datos del día; si no, Año Completo">Auto</button>
+      <button class="cfb-pill cfb-cmp-pill" id="cfb-cmp-ytd"
+        data-cmp="ytd" onclick="setCompareMode('ytd',this)"
+        title="YTD: todos los años se cortan al mismo día (Ene–DD del mes en curso) — 100% comparable">YTD</button>
+      <button class="cfb-pill cfb-cmp-pill" id="cfb-cmp-full"
+        data-cmp="full" onclick="setCompareMode('full',this)"
+        title="Año Completo: muestra los 12 meses de cada año (2026 muestra solo los meses con datos)">Año completo</button>
     </div>
     <div class="cfb-div"></div>
     <!-- ── Año ──────────────────────────────────────────────────── -->
@@ -913,34 +937,82 @@ const TMON = {}; // TMON[year][month] = [val_per_tipo_0..8]
   }
 });
 
-// ── YTD cut-off helper ────────────────────────────────────────────────────
-// Devuelve { months: [meses completos], partial: {month, factor} | null }
-// Sirve para alinear años 2024/2025/2026 al mismo período cuando se
-// visualizan comparativos sin filtro de mes explícito.
-function cfYtdMonths(){
-  // Si el usuario seleccionó meses específicos, respetar (incluyendo todos completos)
+// ── Comparativa / YTD helper (respeta CF.compareMode) ────────────────────
+// Devuelve { months: [meses completos], partial: {month, factor} | null, mode }
+//
+// Modos:
+//   - 'full': año completo (12 meses, sin factor parcial) → 2024/2025 completos
+//             y 2026 con datos disponibles (Ene-Abr reales, resto 0)
+//   - 'ytd' : corte YTD al mismo día del mes en curso para los 3 años
+//             → 2024/2025/2026 todos a "YTD Ene–20 Abr"
+//   - 'auto': YTD si 2026 está en CF.years y MTD_RAW existe; sino 'full'
+//
+// Si el usuario seleccionó meses manualmente, esa selección toma precedencia
+// (siempre es comparable porque aplica a los 3 años por igual).
+function cfCompareInfo(){
+  // 1) Selección manual de meses → respetar
   if(CF.months.size>0){
-    return { months: Array.from(CF.months).sort((a,b)=>a-b), partial: null };
+    return {
+      months: Array.from(CF.months).sort((a,b)=>a-b),
+      partial: null,
+      mode: 'manual'
+    };
   }
-  // Sin filtro → aplicar YTD automático basado en MTD_RAW
+  // 2) Resolver modo efectivo
   const cur = (typeof MTD_RAW!=='undefined' && MTD_RAW) ? MTD_RAW : null;
-  if(!cur) return { months: [1,2,3,4,5,6,7,8,9,10,11,12], partial: null };
+  let effectiveMode = CF.compareMode || 'auto';
+  if(effectiveMode==='auto'){
+    effectiveMode = (CF.years.has(2026) && cur) ? 'ytd' : 'full';
+  }
+  // 3) Modo 'full' → 12 meses, sin factor parcial
+  if(effectiveMode==='full'){
+    return { months: [1,2,3,4,5,6,7,8,9,10,11,12], partial: null, mode: 'full' };
+  }
+  // 4) Modo 'ytd' → corte al mismo día para todos los años
+  if(!cur){
+    // Sin MTD_RAW, fallback a año completo
+    return { months: [1,2,3,4,5,6,7,8,9,10,11,12], partial: null, mode: 'full' };
+  }
   const completeMonths=[];
   for(let i=1; i<cur.m; i++) completeMonths.push(i);
   const factor = cur.daysInMonth>0 ? Math.min(1, cur.d/cur.daysInMonth) : 1;
   const partial = (cur.d>0 && factor<1) ? { month: cur.m, factor } : null;
-  if(factor>=1) completeMonths.push(cur.m); // si el mes está completo, incluirlo
-  return { months: completeMonths, partial };
+  if(factor>=1) completeMonths.push(cur.m);
+  return { months: completeMonths, partial, mode: 'ytd' };
 }
 
-// Texto del badge "YTD Ene–DD Mmm" para charts comparativos sin filtro de mes.
-// Devuelve null cuando el usuario tiene filtro activo (el badge del filtro se muestra en su lugar).
+// Alias legacy (compatibilidad con código existente)
+function cfYtdMonths(){
+  const info = cfCompareInfo();
+  return { months: info.months, partial: info.partial };
+}
+
+// Texto del badge para mostrar el corte activo en chart titles.
+// - Selección manual → null (el filtro ya muestra su propio chip)
+// - Modo 'full'      → "Año completo" (o null si no se quiere mostrar)
+// - Modo 'ytd'       → "YTD Ene–DD Mmm"
 function ytdBadgeText(){
-  if(CF.months.size>0) return null;
+  const info = cfCompareInfo();
+  if(info.mode==='manual') return null;
+  if(info.mode==='full') return null; // año completo → no agregar sufijo YTD
+  // Modo YTD
   const cur = (typeof MTD_RAW!=='undefined' && MTD_RAW) ? MTD_RAW : null;
   if(!cur) return null;
   const MNS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   return `YTD Ene–${cur.d} ${MNS[cur.m-1]}`;
+}
+
+// Texto descriptivo del modo activo para el hint de filtros
+function compareModeLabel(){
+  const info = cfCompareInfo();
+  if(info.mode==='manual') return null; // el filtro de mes ya se muestra
+  if(info.mode==='full')   return 'Año completo';
+  const cur = (typeof MTD_RAW!=='undefined' && MTD_RAW) ? MTD_RAW : null;
+  if(cur){
+    const MNS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return `YTD Ene–${cur.d} ${MNS[cur.m-1]}`;
+  }
+  return null;
 }
 
 // ── Filtered aggregation helpers (ahora YTD-aware) ───────────────────────
@@ -1127,6 +1199,10 @@ const CF = {
   tipo: '',
   linea: '',
   period:  'all',     // 'all' | 'mtd' | 'week' — presets de período
+  compareMode: 'auto', // 'auto' | 'ytd' | 'full' — cómo agregar cuando no hay filtro mensual
+  //   'auto' → YTD si 2026 presente y MTD_RAW existe, sino 'full'
+  //   'ytd'  → todos los años se cortan al mismo día (comparable)
+  //   'full' → año completo (datos reales disponibles por año)
 };
 
 function initComFilters(){
@@ -1170,6 +1246,18 @@ function toggleComYear(y,btn){
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
 }
 
+// ── Toggle de modo de comparación YTD / Año completo / Auto ──────────────
+function setCompareMode(mode, btn){
+  if(!['auto','ytd','full'].includes(mode)) return;
+  CF.compareMode = mode;
+  // Sync visual: solo el botón activo queda "on"
+  document.querySelectorAll('#cfb-cmp-group .cfb-cmp-pill').forEach(b=>{
+    b.classList.toggle('on', b.dataset.cmp===mode);
+  });
+  updateCfHint();
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+}
+
 function setComFilter(key,val){
   CF[key]=val;
   updateCfHint();
@@ -1182,10 +1270,15 @@ function clearComFilters(){
   CF.doctors=new Set();
   CF.tipo=''; CF.linea='';
   CF.period='all';
+  CF.compareMode='auto';
   document.querySelectorAll('[data-year]').forEach(p=>p.classList.add('on'));
   document.querySelectorAll('[data-m]').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('[data-cq]').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.cfb-doc-pill').forEach(p=>p.classList.remove('on'));
+  // Reset compareMode buttons → Auto on, YTD/Full off
+  document.querySelectorAll('#cfb-cmp-group .cfb-cmp-pill').forEach(b=>{
+    b.classList.toggle('on', b.dataset.cmp==='auto');
+  });
   ['cfb-tipo','cfb-linea'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.value='';
@@ -1206,10 +1299,14 @@ function updateCfHint(){
     const w=getWeekRows();
     hints.push(w?'Semana '+w.week+' · '+w.from+' → '+w.to:'Semana · sin datos diarios');
   } else {
-    if(CF.years.size<3) hints.push(Array.from(CF.years).sort().map(y=>y===2026?"YTD'26":String(y)).join('+'));
+    if(CF.years.size<3) hints.push(Array.from(CF.years).sort().map(y=>y===2026?"'26":String(y)).join('+'));
     if(CF.months.size>0){
       const ma=Array.from(CF.months).sort((a,b)=>a-b).map(m=>MN[m]);
       hints.push(ma.length<=3?ma.join('+'):ma.length+' meses');
+    } else {
+      // Sin filtro de mes → mostrar el modo comparativo activo
+      const cmpLbl = compareModeLabel();
+      if(cmpLbl) hints.push(cmpLbl);
     }
   }
   if(CF.doctors.size>0){
