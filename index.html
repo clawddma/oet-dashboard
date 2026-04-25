@@ -81,17 +81,19 @@ a{text-decoration:none;color:inherit;}
 .sec{display:none;padding:20px 22px 30px;}
 .sec.active{display:block;}
 .sec-title{font-size:17px;font-weight:700;color:var(--oet-dark);margin-bottom:16px;
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.3;}
 .sec-title .st-badge{font-size:11px;font-weight:600;background:var(--oet-teal);color:var(--oet-dark);
-  padding:2px 10px;border-radius:20px;}
+  padding:3px 11px;border-radius:20px;line-height:1.4;display:inline-block;}
 
 /* ═══ KPI CARDS ═══ */
 .kpis{display:grid;gap:12px;margin-bottom:18px;}
-.kpis.k4{grid-template-columns:repeat(4,1fr);}
-.kpis.k3{grid-template-columns:repeat(3,1fr);}
-.kpis.k6{grid-template-columns:repeat(6,1fr);}
+.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr));}
+.kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr));}
+.kpis.k6{grid-template-columns:repeat(6,minmax(0,1fr));}
 .kpi{background:var(--white);border-radius:var(--radius);padding:14px 16px;
-  box-shadow:var(--shadow);border-top:3px solid var(--oet-teal);}
+  box-shadow:var(--shadow);border-top:3px solid var(--oet-teal);min-width:0;overflow:hidden;}
+.kpi-val{overflow-wrap:break-word;word-break:break-word;}
+.kpi-sub{overflow-wrap:break-word;word-break:break-word;}
 .kpi.red{border-top-color:var(--neg);}
 .kpi.orange{border-top-color:var(--warn);}
 .kpi.navy{border-top-color:var(--oet-dark);}
@@ -102,21 +104,24 @@ a{text-decoration:none;color:inherit;}
 .kpi-sub .n{color:var(--neg);font-weight:600;}
 
 /* ═══ GRID ═══ */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px;}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px;}
 .g6040{display:grid;grid-template-columns:60% 40%;gap:16px;margin-bottom:16px;}
 .g4060{display:grid;grid-template-columns:40% 60%;gap:16px;margin-bottom:16px;}
 .gfull{margin-bottom:16px;}
 
 /* ═══ CARD ═══ */
-.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;min-width:0;}
 .card-hdr{background:var(--oet-dark);color:#fff;padding:10px 15px;
-  display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.card-hdr h3{font-size:12.5px;font-weight:600;letter-spacing:.2px;}
+  display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.card-hdr h3{font-size:12.5px;font-weight:600;letter-spacing:.2px;flex:1;min-width:140px;line-height:1.35;}
 .card-hdr .badge{font-size:10px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:10px;white-space:nowrap;}
 .card-hdr .badge.teal{background:rgba(45,197,171,.3);color:var(--oet-teal);}
 .card-body{padding:14px;}
 .chart-wrap{position:relative;}
+/* Evita que charts.js o tablas dentro de cards desborden el grid */
+.card .chart-wrap canvas{max-width:100%;}
+.card .tbl-wrap{max-width:100%;}
 .zero-legend{font-size:10px;color:var(--warn);display:flex;align-items:center;gap:5px;padding:3px 0 0 2px;}
 .zero-legend::before{content:'';display:inline-block;width:18px;height:0;border-top:2px dashed var(--warn);}
 
@@ -864,6 +869,68 @@ const MTD_RAW = {y:2026,m:4,d:23,ing:1017577,cir:284,daysInMonth:30,lineas:[4433
 // ==DAILY_DATA_START==
 const DAILY_RAW = []; /* AUTO-DAILY */
 // ==DAILY_DATA_END==
+
+// ════════════════════════════════════════
+//  COMENTARIOS_MENSUALES — Comentarios oficiales asociados a cada cierre EEFF
+//  Cada cierre puede tener observaciones de la contadora (Paola) y/o del
+//  Comité Asesor. Se muestran junto al archivo descargable correspondiente.
+//
+//  Para agregar nuevo mes: push() un objeto al inicio del array (más reciente
+//  primero). Los campos archivo, archivo_periodo y archivo_fecha apuntan al
+//  Excel oficial subido a /eeff/.
+// ════════════════════════════════════════
+const COMENTARIOS_MENSUALES = [
+  {
+    periodo:'Mar-26',
+    archivo:'EEFF-OET-2026-03-Marzo.xlsx',
+    archivo_periodo:'Mar-26 · Q1 2026 acumulado',
+    archivo_fecha:'Abril 2026',
+    archivo_autora:'Elaborado por Paola / Asesores Financieros',
+    comentarios:[
+      {
+        autor:'Comité Asesor',
+        rol:'Asesores Financieros · Cierre Q1-26',
+        fecha:'Abril 2026',
+        items:[
+          'En marzo se registró una pérdida de <strong>$122 MM</strong>, lo que representa una caída del <strong class="neg">−132.2%</strong> frente al mismo período del año anterior (−$501 MM).',
+          'Los ingresos presentan una variación positiva del <strong class="pos">+46.4%</strong> (+$1.400 MM), al pasar de $3.017 MM a $4.418 MM acumulados en el trimestre.',
+          'Los costos y gastos crecieron en mayor proporción: <strong class="neg">+70.2%</strong> (+$1.863 MM), pasando de $2.639 MM a $4.502 MM. El incremento se explica principalmente por honorarios médicos, compra de insumos y gastos de operación (arrendamientos y honorarios administrativos).',
+          'Este desbalance entre ingresos y costos impactó negativamente el EBITDA, con una reducción del <strong class="neg">−74.2%</strong> (−$369 MM).',
+        ],
+        nota:'Las notas del balance (estructura de pasivos) y las variaciones del Estado de Resultados se encuentran detalladas en la hoja <em>Notas Mar-26</em> del EEFF oficial.'
+      }
+    ]
+  },
+  {
+    periodo:'Feb-26',
+    archivo:'EEFF-OET-2026-02-Febrero.xlsx',
+    archivo_periodo:'Feb-26 · Cierre 2025 + Ene-Feb 2026',
+    archivo_fecha:'Marzo 2026',
+    archivo_autora:'Elaborado por Paola / Asesores Financieros',
+    comentarios:[
+      {
+        autor:'Paola',
+        rol:'Contadora OET · Resultados 2025',
+        fecha:'Febrero 2026',
+        items:[
+          'La utilidad total 2025 fue de <strong>$566 MM</strong>, con un crecimiento del <strong class="pos">+180.88%</strong> (+$365 MM) respecto al año anterior.',
+          'En diciembre 2025 se realizó un movimiento contable de <strong>$569 MM</strong> en la cuenta de costo <em>Servicio al por mayor y al por menor</em> como menor valor — esto ayudó al incremento de utilidades vs 2024.',
+          'El <strong>Margen EBITDA</strong> pasó de <strong>9.3% a 9.67%</strong>, mejorando levemente el indicador.',
+          'Queda <strong>pendiente el cierre de Enero 2026</strong>: el balance compartido tiene saldos iniciales en la cuenta de costo y gastos, generando diferencias. En cuanto se solucione, se compartirá.',
+        ],
+        nota:'En la hoja <em>Observaciones 2025</em> del EEFF se encuentran anotaciones adicionales tanto del Balance como del Estado de Resultados con novedades encontradas.'
+      }
+    ]
+  },
+  {
+    periodo:'Ene-26',
+    archivo:'EEFF-OET-2026-01-Enero.xlsx',
+    archivo_periodo:'Ene-26 · Cierre 2025 + Ene 2026',
+    archivo_fecha:'Marzo 2026',
+    archivo_autora:'Elaborado por Paola / Asesores Financieros',
+    comentarios:[]
+  },
+];
 
 // ════════════════════════════════════════
 //  HONORARIOS — Honorarios médicos pagados por OET (cuenta 62101001 EEFF)
@@ -1839,7 +1906,8 @@ const NAVS = {
     {id:'acc-inicio',   label:'Inicio',           icon:'🏠'},
     {id:'acc-plan',     label:'Plan Estratégico', icon:'🧭'},
     {id:'acc-kpi',      label:'KPIs Objetivo',    icon:'🎯'},
-    {id:'acc-bitacora', label:'Bitácora Comités', icon:'📋'},
+    {id:'acc-actas',    label:'Editor de Actas',  icon:'📝'},
+    {id:'acc-bitacora', label:'Bitácora Comités · (en construcción)', icon:'📋'},
     {id:'acc-tareas',   label:'Tareas Activas',   icon:'✅'},
   ]
 };
@@ -2416,7 +2484,6 @@ function buildFinCostos(){
   `)}</div>
   <div class="g2">
     ${chartCard('ch-cos-pct','% Costo Total / Ingresos — ideal: por debajo del 70%','',220,`
-      <div class="insight warn">🎯 Referencia sector: costos saludables &lt;70% de ingresos. Meses en rojo = riesgo.</div>
     `)}
     ${chartCard('ch-cos-ga','% Gastos Administrativos / Ingresos — ideal: por debajo del 30%','',220,'')}
   </div>
@@ -2768,49 +2835,8 @@ function buildFinAnual(){
     ]
   },options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
 
-  // ── Bitácora de comentarios del asesor ──────────────────────────────
-  const BITACORA=[
-    {
-      periodo:'Mar-26',
-      fecha:'Abril 2026',
-      autor:'Comité Asesor',
-      items:[
-        'Se registró una pérdida de <strong>$122 MM</strong>, lo que representa una caída del <strong class="neg">−132.2%</strong> frente al mismo período del año anterior (−$501 MM).',
-        'Los ingresos presentan una variación positiva del <strong class="pos">+46.4%</strong> (+$1.400 MM), al pasar de $3.017 MM a $4.418 MM acumulados en el trimestre.',
-        'Los costos y gastos crecieron en mayor proporción: <strong class="neg">+70.2%</strong> (+$1.863 MM), pasando de $2.639 MM a $4.502 MM. El incremento se explica principalmente por honorarios médicos, compra de insumos y gastos de operación (arrendamientos y honorarios administrativos).',
-        'Este desbalance entre ingresos y costos impactó negativamente el EBITDA, con una reducción del <strong class="neg">−74.2%</strong> (−$369 MM).',
-      ],
-      nota:'Las notas del balance (estructura de pasivos) y las variaciones del Estado de Resultados se encuentran detalladas en la hoja <em>Notas Mar-26</em> del EEFF oficial.'
-    }
-  ];
-  const _bEl=document.createElement('div');
-  _bEl.className='gfull';
-  _bEl.style.marginTop='12px';
-  _bEl.innerHTML=`
-  <div class="card" style="border-left:4px solid #607d76">
-    <div class="card-hdr" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <h3 style="margin:0">📝 Bitácora — Comentarios del Asesor</h3>
-      <span style="font-size:11px;color:#607d76;margin-left:auto">Fuente: EEFF Oficial · DMA Asesorías</span>
-    </div>
-    <div class="card-body" style="padding:12px 16px">
-      ${BITACORA.map(b=>`
-        <div style="margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-            <span style="background:#1a3a2a;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">${b.periodo}</span>
-            <span style="font-size:11px;color:#607d76">${b.fecha} · ${b.autor}</span>
-          </div>
-          <ul style="margin:0 0 10px 0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
-            ${b.items.map(i=>`<li style="font-size:13px;color:#2d3f38;line-height:1.5">${i}</li>`).join('')}
-          </ul>
-          <div style="background:#f5f8f7;border-radius:8px;padding:8px 12px;font-size:12px;color:#607d76;border-left:3px solid #2dc5ab">
-            📎 ${b.nota}
-          </div>
-        </div>
-      `).join('<hr style="border:none;border-top:1px solid #e0e8e5;margin:14px 0">')}
-    </div>
-  </div>`;
-  document.getElementById('fin-anual').appendChild(_bEl);
-  requestAnimationFrame(()=>{ const c=document.getElementById('fin-anual'); if(c) c.dispatchEvent(new Event('resize')); });
+  // Los comentarios mensuales (Paola y Comité Asesor) se consolidaron en
+  // la sub-pestaña EEFF Definitivos junto al archivo descargable.
 }
 
 // ════════════════════════════════════════
@@ -2858,14 +2884,273 @@ const COMITES = [
   // }
 ];
 
+// ── Persistencia local de cambios de estado de tareas ───────────────────
+//   Cada drag & drop en "Tareas Activas" actualiza esta clave de localStorage.
+//   Los cambios persisten entre sesiones del navegador (no entre dispositivos).
+const _TASK_OVR_KEY = 'oet_task_overrides_v1';
+function _getTaskOverrides(){
+  try{ return JSON.parse(localStorage.getItem(_TASK_OVR_KEY)||'{}'); }
+  catch(e){ return {}; }
+}
+function _setTaskOverride(taskId, estado){
+  const ovr = _getTaskOverrides();
+  ovr[taskId] = { estado, ts: new Date().toISOString() };
+  localStorage.setItem(_TASK_OVR_KEY, JSON.stringify(ovr));
+}
+function _clearTaskOverrides(){
+  localStorage.removeItem(_TASK_OVR_KEY);
+}
+
 // Helper: agrega todas las tareas de todos los comités con referencia al comité origen
+// Aplica overrides de localStorage (cambios manuales por drag & drop)
 function _allTareas(){
+  const ovr = _getTaskOverrides();
   const out=[];
   COMITES.forEach(c=>{
-    c.tareas.forEach(t=>out.push({...t, comite_id:c.id, comite_fecha:c.fecha, cierre:c.cierre_periodo}));
+    c.tareas.forEach(t=>{
+      const o = ovr[t.id];
+      out.push({
+        ...t,
+        comite_id:c.id, comite_fecha:c.fecha, cierre:c.cierre_periodo,
+        estado: o ? o.estado : t.estado,
+        _overridden: !!o,
+        _ovrTs: o ? o.ts : null,
+      });
+    });
   });
   return out;
 }
+
+// ════════════════════════════════════════
+//  BUILD: ACCIONES — EDITOR DE ACTAS (localStorage)
+//  Guarda actas de comités en el navegador. Permite crear, editar,
+//  eliminar y exportar/importar como JSON. Diseñado para que un motor
+//  de IA externo (Gemini, etc.) pueda interpretar el JSON exportado.
+// ════════════════════════════════════════
+const _ACTAS_KEY = 'oet_actas_v1';
+function _getActas(){
+  try{ return JSON.parse(localStorage.getItem(_ACTAS_KEY)||'[]'); }
+  catch(e){ return []; }
+}
+function _saveActas(arr){
+  localStorage.setItem(_ACTAS_KEY, JSON.stringify(arr));
+}
+function _newActaId(){ return 'ACTA-'+Date.now(); }
+
+function buildAccActas(){
+  const el=document.getElementById('acc-actas');
+  const _actas = _getActas().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const _selId = window._actaSelectedId || (_actas[0]?_actas[0].id:null);
+  const _sel = _actas.find(a=>a.id===_selId) || null;
+  const _fmtFecha = f=>{ if(!f) return '—'; const [y,m,d]=f.split('-'); return `${d}/${m}/${y}`; };
+  const _truncate = (s,n)=> (s||'').length>n ? s.slice(0,n)+'…' : (s||'');
+
+  el.innerHTML=`
+  <div class="sec-title">Editor de Actas <span class="st-badge">${_actas.length} acta${_actas.length===1?'':'s'} guardada${_actas.length===1?'':'s'} · localStorage</span></div>
+
+  <div class="insight" style="margin-bottom:14px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.06);font-size:12px;line-height:1.55">
+    📝 <strong>Editor de actas integrado.</strong> Escribe el acta del comité directamente aquí — se guarda automáticamente en este navegador. Puedes <strong>exportar</strong> el archivo JSON para llevarlo a otro dispositivo o para que un motor de IA (Gemini, etc.) lo procese e interprete. <strong>Privacidad:</strong> los datos viven solo en este navegador, no se suben a ningún servidor.
+  </div>
+
+  <div id="actas-grid" style="display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start">
+
+    <!-- LISTA DE ACTAS -->
+    <div class="card" style="position:sticky;top:14px">
+      <div class="card-hdr" style="display:flex;align-items:center;gap:8px">
+        <h3 style="margin:0">Actas guardadas</h3>
+        <button onclick="_actaNew()" style="margin-left:auto;background:#2dc5ab;border:none;color:#fff;padding:5px 12px;border-radius:14px;font-size:11px;font-weight:700;cursor:pointer">+ Nueva</button>
+      </div>
+      <div class="card-body" style="padding:8px;max-height:520px;overflow-y:auto">
+        ${_actas.length===0 ? `
+          <div style="text-align:center;color:#9eb3ad;font-size:12px;padding:30px 14px;border:2px dashed #e0e8e5;border-radius:8px;font-style:italic">
+            No hay actas guardadas. Haz clic en <strong>+ Nueva</strong> para crear la primera.
+          </div>
+        ` : _actas.map(a=>{
+          const _isSel = a.id===_selId;
+          return `
+          <div onclick="_actaSelect('${a.id}')" style="cursor:pointer;padding:10px 12px;border-radius:8px;margin-bottom:6px;border:1px solid ${_isSel?'#2dc5ab':'#e0e8e5'};background:${_isSel?'rgba(45,197,171,.08)':'#fff'};transition:all .15s">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+              <span style="font-size:10px;color:#9eb3ad;font-weight:600">${_fmtFecha(a.fecha)}</span>
+              ${a.periodo?`<span style="font-size:9px;color:#fff;background:#1a3a2a;padding:2px 7px;border-radius:9px;font-weight:700">${a.periodo}</span>`:''}
+            </div>
+            <div style="font-size:13px;font-weight:600;color:#1a3a2a;line-height:1.3">${_truncate(a.titulo||'(sin título)',50)}</div>
+            <div style="font-size:10.5px;color:#607d76;margin-top:4px">${_truncate(a.autor||'—',40)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${_actas.length>0?`
+        <div style="padding:10px;border-top:1px solid #eef2f1;display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="_actaExport()" style="flex:1;background:#fff;border:1px solid #1a3a2a;color:#1a3a2a;padding:6px 10px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer">⬇ Export JSON</button>
+          <button onclick="_actaImport()" style="flex:1;background:#fff;border:1px solid #1a3a2a;color:#1a3a2a;padding:6px 10px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer">⬆ Import</button>
+        </div>
+      `:''}
+    </div>
+
+    <!-- EDITOR -->
+    <div class="card">
+      ${!_sel ? `
+        <div class="card-body" style="text-align:center;padding:60px 20px;color:#9eb3ad">
+          <div style="font-size:48px;margin-bottom:10px">📝</div>
+          <div style="font-size:14px">Selecciona un acta de la lista o crea una nueva.</div>
+        </div>
+      ` : `
+        <div class="card-hdr" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <h3 style="margin:0">${_sel.titulo||'(sin título)'}</h3>
+          <span style="font-size:11px;color:#607d76;margin-left:auto">Última edición: ${new Date(_sel.ts_updated||Date.now()).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'})}</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px">
+            <div>
+              <label style="font-size:11px;color:#607d76;font-weight:600;display:block;margin-bottom:4px">Título</label>
+              <input id="acta-titulo" type="text" value="${(_sel.titulo||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 10px;border:1px solid #e0e8e5;border-radius:6px;font-size:13px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#607d76;font-weight:600;display:block;margin-bottom:4px">Fecha</label>
+              <input id="acta-fecha" type="date" value="${_sel.fecha||''}" style="width:100%;padding:8px 10px;border:1px solid #e0e8e5;border-radius:6px;font-size:13px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#607d76;font-weight:600;display:block;margin-bottom:4px">Autor</label>
+              <input id="acta-autor" type="text" value="${(_sel.autor||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 10px;border:1px solid #e0e8e5;border-radius:6px;font-size:13px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#607d76;font-weight:600;display:block;margin-bottom:4px">Período de cierre</label>
+              <input id="acta-periodo" type="text" placeholder="Ej: Mar-26" value="${(_sel.periodo||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 10px;border:1px solid #e0e8e5;border-radius:6px;font-size:13px;font-family:inherit">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#607d76;font-weight:600;display:block;margin-bottom:4px">Contenido del acta</label>
+            <textarea id="acta-contenido" rows="18"
+              style="width:100%;padding:12px;border:1px solid #e0e8e5;border-radius:6px;font-size:13px;font-family:inherit;line-height:1.55;resize:vertical;min-height:300px"
+              placeholder="Escribe aquí el acta completa: asistentes, contexto, decisiones tomadas, tareas asignadas, próximos pasos…">${(_sel.contenido||'').replace(/</g,'&lt;')}</textarea>
+            <div id="acta-status" style="font-size:11px;color:#9eb3ad;margin-top:6px;height:14px"></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid #eef2f1">
+            <button onclick="_actaSave()" style="background:#1a3a2a;border:none;color:#fff;padding:9px 18px;border-radius:18px;font-size:13px;font-weight:700;cursor:pointer">💾 Guardar cambios</button>
+            <button onclick="_actaCopyJSON()" style="background:#fff;border:1px solid #2dc5ab;color:#2dc5ab;padding:9px 16px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer">📋 Copiar como JSON (para Gemini)</button>
+            <button onclick="_actaDelete()" style="background:#fff;border:1px solid #ef5350;color:#ef5350;padding:9px 16px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;margin-left:auto">🗑 Eliminar acta</button>
+          </div>
+        </div>
+      `}
+    </div>
+  </div>
+
+  <style>
+    @media(max-width:900px){ #actas-grid { grid-template-columns:1fr !important; } }
+  </style>`;
+
+  // Auto-save al editar (debounced)
+  if(_sel){
+    const inputs = ['acta-titulo','acta-fecha','acta-autor','acta-periodo','acta-contenido'].map(id=>document.getElementById(id));
+    let _saveTO;
+    inputs.forEach(inp=>{
+      if(!inp) return;
+      inp.addEventListener('input', ()=>{
+        clearTimeout(_saveTO);
+        document.getElementById('acta-status').textContent='✏️ Editando…';
+        _saveTO = setTimeout(()=>{ _actaSaveSilent(); }, 800);
+      });
+    });
+  }
+}
+
+// ── Handlers globales del editor de actas ─────────────────────────────
+window._actaSelectedId = null;
+window._actaSelect = function(id){
+  window._actaSelectedId = id;
+  buildAccActas();
+};
+window._actaNew = function(){
+  const arr = _getActas();
+  const today = new Date().toISOString().slice(0,10);
+  const a = {
+    id: _newActaId(),
+    titulo: 'Nueva acta',
+    fecha: today,
+    autor: '',
+    periodo: '',
+    contenido: '',
+    ts_created: new Date().toISOString(),
+    ts_updated: new Date().toISOString(),
+  };
+  arr.unshift(a);
+  _saveActas(arr);
+  window._actaSelectedId = a.id;
+  buildAccActas();
+};
+window._actaSave = function(){
+  _actaSaveSilent();
+  const st=document.getElementById('acta-status'); if(st){ st.textContent='✅ Guardada'; setTimeout(()=>{ if(st) st.textContent=''; }, 1500); }
+};
+window._actaSaveSilent = function(){
+  const id = window._actaSelectedId;
+  if(!id) return;
+  const arr = _getActas();
+  const idx = arr.findIndex(a=>a.id===id);
+  if(idx<0) return;
+  arr[idx].titulo    = document.getElementById('acta-titulo')?.value || '';
+  arr[idx].fecha     = document.getElementById('acta-fecha')?.value || '';
+  arr[idx].autor     = document.getElementById('acta-autor')?.value || '';
+  arr[idx].periodo   = document.getElementById('acta-periodo')?.value || '';
+  arr[idx].contenido = document.getElementById('acta-contenido')?.value || '';
+  arr[idx].ts_updated = new Date().toISOString();
+  _saveActas(arr);
+  const st=document.getElementById('acta-status'); if(st) st.textContent='💾 Guardado automático · '+new Date().toLocaleTimeString('es-CO');
+};
+window._actaDelete = function(){
+  const id = window._actaSelectedId;
+  if(!id) return;
+  if(!confirm('¿Eliminar esta acta? Esta acción no se puede deshacer (a menos que tengas un export reciente).')) return;
+  const arr = _getActas().filter(a=>a.id!==id);
+  _saveActas(arr);
+  window._actaSelectedId = arr[0]?arr[0].id:null;
+  buildAccActas();
+};
+window._actaExport = function(){
+  const arr = _getActas();
+  const blob = new Blob([JSON.stringify(arr,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'oet-actas-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+window._actaImport = function(){
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='application/json,.json';
+  inp.onchange = (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = (ev)=>{
+      try{
+        const data = JSON.parse(ev.target.result);
+        if(!Array.isArray(data)) throw new Error('Formato inválido');
+        if(!confirm(`Importar ${data.length} acta${data.length===1?'':'s'}?\n\n• "Combinar": agrega las nuevas a las existentes (no duplica IDs).\n• "Cancelar": no importa nada.\n\n¿Combinar?`)) return;
+        const existing = _getActas();
+        const ids = new Set(existing.map(a=>a.id));
+        const merged = [...existing, ...data.filter(a=>a.id && !ids.has(a.id))];
+        _saveActas(merged);
+        buildAccActas();
+        alert('✅ Importadas correctamente.');
+      }catch(err){ alert('❌ Error al importar: '+err.message); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+};
+window._actaCopyJSON = function(){
+  const id = window._actaSelectedId;
+  if(!id) return;
+  const a = _getActas().find(x=>x.id===id);
+  if(!a) return;
+  const json = JSON.stringify(a, null, 2);
+  navigator.clipboard.writeText(json).then(()=>{
+    const st=document.getElementById('acta-status');
+    if(st){ st.textContent='📋 JSON copiado al portapapeles · pégalo en Gemini'; setTimeout(()=>{ if(st) st.textContent=''; }, 3000); }
+  }).catch(()=>{
+    alert('No se pudo copiar al portapapeles. Copia manualmente:\n\n'+json);
+  });
+};
 
 // ════════════════════════════════════════
 //  BUILD: ACCIONES — BITÁCORA DE COMITÉS
@@ -2893,7 +3178,10 @@ function buildAccBitacora(){
   };
 
   el.innerHTML=`
-  <div class="sec-title">Bitácora de Comités Estratégicos <span class="st-badge">${COMITES.length} ${COMITES.length===1?'reunión registrada':'reuniones registradas'}</span></div>
+  <div class="sec-title">Bitácora de Comités Estratégicos <span class="st-badge" style="background:#ff9800;color:#fff">🚧 En construcción</span></div>
+  <div class="insight" style="margin-bottom:14px;border-left:4px solid #ff9800;background:rgba(255,152,0,.08)">
+    🚧 <strong>Sección en construcción.</strong> El espacio de bitácora se está integrando con el Editor de Actas para que cada comité pueda registrarse, editarse y consultarse desde el dashboard. Por ahora aquí se muestra el primer registro de referencia.
+  </div>
 
   <!-- KPIs de seguimiento -->
   <div class="kpis k4">
@@ -2969,96 +3257,184 @@ function buildAccBitacora(){
 }
 
 // ════════════════════════════════════════
-//  BUILD: ACCIONES — TAREAS ACTIVAS (Kanban-lite)
+//  BUILD: ACCIONES — TAREAS ACTIVAS (Kanban con drag & drop)
+//  Las tarjetas son arrastrables entre columnas. Cada cambio se persiste
+//  en localStorage (sin servidor). Para resetear: botón de la cabecera.
 // ════════════════════════════════════════
 function buildAccTareas(){
   const el=document.getElementById('acc-tareas');
-  const _estadoColor={
-    PENDIENTE:'#9eb3ad',
-    EN_CURSO:'#ff9800',
-    COMPLETADA:'#2dc5ab',
-    CANCELADA:'#999',
-    EN_RIESGO:'#ef5350',
-  };
   const _prioridadColor={ALTA:'#ef5350',MEDIA:'#ff9800',BAJA:'#9eb3ad'};
   const _fmtFecha=f=>{const [y,m,d]=f.split('-');return `${d}/${m}/${y}`;};
   const _all=_allTareas();
   const _columns=[
-    {key:'PENDIENTE',  title:'Pendiente',  color:'#9eb3ad'},
-    {key:'EN_CURSO',   title:'En curso',   color:'#ff9800'},
-    {key:'EN_RIESGO',  title:'En riesgo',  color:'#ef5350'},
-    {key:'COMPLETADA', title:'Completada', color:'#2dc5ab'},
+    {key:'PENDIENTE',  title:'Pendiente',  icon:'📋', color:'#9eb3ad'},
+    {key:'EN_CURSO',   title:'En curso',   icon:'⚙️', color:'#ff9800'},
+    {key:'EN_RIESGO',  title:'En riesgo',  icon:'🚨', color:'#ef5350'},
+    {key:'COMPLETADA', title:'Completada', icon:'✅', color:'#2dc5ab'},
   ];
+  const _ovrCount = _all.filter(t=>t._overridden).length;
+
   el.innerHTML=`
-  <div class="sec-title">Tareas Activas <span class="st-badge">Vista Kanban · ${_all.length} tareas totales</span></div>
-  <div class="insight" style="margin-bottom:14px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.06)">
-    📊 Vista consolidada de todas las tareas definidas en los comités. Cada tarjeta muestra responsable, deadline, prioridad e impacto estimado. Para cambiar el estado de una tarea, se actualiza en la <strong>Bitácora de Comités</strong>.
+  <div class="sec-title">Tareas Activas <span class="st-badge">Kanban · ${_all.length} tareas · arrastra para mover</span></div>
+  <div class="insight" style="margin-bottom:14px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.06);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px">
+      🖱️ <strong>Vista Kanban interactiva.</strong> Arrastra cualquier tarjeta y suéltala en otra columna para cambiar su estado. Los cambios se guardan automáticamente en este navegador.
+      ${_ovrCount>0?`<br><span style="font-size:11px;color:#607d76">${_ovrCount} tarea${_ovrCount===1?'':'s'} con cambio local respecto al comité.</span>`:''}
+    </div>
+    ${_ovrCount>0?`<button onclick="_resetTaskOverrides()" style="background:#fff;border:1px solid #ef5350;color:#ef5350;padding:6px 14px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">↺ Restaurar al comité</button>`:''}
   </div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+  <div id="kanban-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
     ${_columns.map(col=>{
       const tareas=_all.filter(t=>t.estado===col.key);
       return `
-      <div style="background:#f5f8f7;border-radius:10px;padding:10px;min-height:300px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ${col.color}">
-          <div style="width:8px;height:8px;border-radius:50%;background:${col.color}"></div>
+      <div class="kanban-col" data-col="${col.key}"
+           ondragover="_taskDragOver(event)"
+           ondragleave="_taskDragLeave(event)"
+           ondrop="_taskDrop(event,'${col.key}')"
+           style="background:#f5f8f7;border-radius:12px;padding:12px;min-height:340px;border:2px dashed transparent;transition:all .2s ease">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:9px;border-bottom:2px solid ${col.color}">
+          <span style="font-size:16px">${col.icon}</span>
           <strong style="font-size:13px;color:#1a3a2a">${col.title}</strong>
-          <span style="background:${col.color};color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:10px;margin-left:auto">${tareas.length}</span>
+          <span style="background:${col.color};color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:11px;margin-left:auto">${tareas.length}</span>
         </div>
-        ${tareas.length===0?`<div style="text-align:center;color:#9eb3ad;font-size:11px;padding:20px 0">Sin tareas en esta columna</div>`:''}
+        <div class="kanban-cards" style="min-height:240px">
+        ${tareas.length===0?`<div style="text-align:center;color:#9eb3ad;font-size:11px;padding:30px 10px;border:2px dashed #e0e8e5;border-radius:8px;font-style:italic">Suelta tareas aquí</div>`:''}
         ${tareas.map(t=>`
-          <div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);border-top:3px solid ${_prioridadColor[t.prioridad]}">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-              <span style="font-size:9px;color:#9eb3ad">${t.id}</span>
-              <span style="font-size:9px;color:#fff;background:${_prioridadColor[t.prioridad]};padding:1px 6px;border-radius:8px;font-weight:700">${t.prioridad}</span>
+          <div class="kanban-card"
+               draggable="true"
+               data-task-id="${t.id}"
+               ondragstart="_taskDragStart(event,'${t.id}')"
+               ondragend="_taskDragEnd(event)"
+               style="background:#fff;border-radius:10px;padding:11px 13px;margin-bottom:9px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-top:3px solid ${_prioridadColor[t.prioridad]};cursor:grab;transition:transform .12s ease,box-shadow .12s ease">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <span style="font-size:9px;color:#9eb3ad;font-weight:600">${t.id}</span>
+              <span style="font-size:9px;color:#fff;background:${_prioridadColor[t.prioridad]};padding:2px 7px;border-radius:9px;font-weight:700">${t.prioridad}</span>
+              ${t._overridden?'<span title="Modificado localmente" style="font-size:9px;color:#fff;background:#1a3a2a;padding:2px 7px;border-radius:9px;font-weight:700;margin-left:auto">✓ local</span>':''}
             </div>
-            <div style="font-size:12px;font-weight:600;color:#1a3a2a;margin-bottom:6px;line-height:1.3">${t.titulo}</div>
-            <div style="font-size:10px;color:#607d76;margin-bottom:4px">👤 ${t.resp}</div>
-            <div style="font-size:10px;color:#607d76;margin-bottom:4px">📅 ${_fmtFecha(t.deadline)}</div>
-            <div style="font-size:10px;color:#9eb3ad;border-top:1px solid #eef2f1;padding-top:4px;margin-top:6px">📋 ${t.cierre} · ${t.comite_id}</div>
+            <div style="font-size:12.5px;font-weight:600;color:#1a3a2a;margin-bottom:6px;line-height:1.3">${t.titulo}</div>
+            <div style="font-size:10.5px;color:#607d76;margin-bottom:3px">👤 ${t.resp}</div>
+            <div style="font-size:10.5px;color:#607d76;margin-bottom:3px">📅 ${_fmtFecha(t.deadline)}</div>
+            <div style="font-size:10px;color:#9eb3ad;border-top:1px solid #eef2f1;padding-top:5px;margin-top:6px">📋 ${t.cierre} · ${t.comite_id}</div>
           </div>`).join('')}
+        </div>
       </div>`;
     }).join('')}
   </div>
   <style>
-    @media(max-width:1024px){ #acc-tareas > div[style*="grid-template-columns"] { grid-template-columns:repeat(2,1fr) !important; } }
-    @media(max-width:600px){ #acc-tareas > div[style*="grid-template-columns"] { grid-template-columns:1fr !important; } }
+    .kanban-col.dragging-over { background:#e8f7f3 !important; border-color:#2dc5ab !important; }
+    .kanban-card:hover { transform:translateY(-1px); box-shadow:0 4px 10px rgba(0,0,0,.08); }
+    .kanban-card.dragging { opacity:.4; cursor:grabbing; }
+    @media(max-width:1024px){ #kanban-grid { grid-template-columns:repeat(2,1fr) !important; } }
+    @media(max-width:600px){ #kanban-grid { grid-template-columns:1fr !important; } }
   </style>`;
   requestAnimationFrame(()=>{ if(el) el.dispatchEvent(new Event('resize')); });
 }
+
+// ── Handlers globales drag & drop (estado en localStorage) ─────────────
+window._taskDragStart = function(ev, taskId){
+  ev.dataTransfer.effectAllowed = 'move';
+  ev.dataTransfer.setData('text/task-id', taskId);
+  ev.currentTarget.classList.add('dragging');
+};
+window._taskDragEnd = function(ev){
+  ev.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.kanban-col.dragging-over').forEach(c=>c.classList.remove('dragging-over'));
+};
+window._taskDragOver = function(ev){
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = 'move';
+  ev.currentTarget.classList.add('dragging-over');
+};
+window._taskDragLeave = function(ev){
+  // Solo quitar si realmente salimos de la columna (no de un hijo)
+  if(!ev.currentTarget.contains(ev.relatedTarget)){
+    ev.currentTarget.classList.remove('dragging-over');
+  }
+};
+window._taskDrop = function(ev, newEstado){
+  ev.preventDefault();
+  const taskId = ev.dataTransfer.getData('text/task-id');
+  if(!taskId) return;
+  ev.currentTarget.classList.remove('dragging-over');
+  _setTaskOverride(taskId, newEstado);
+  buildAccTareas();
+};
+window._resetTaskOverrides = function(){
+  if(confirm('¿Restaurar todas las tareas al estado original definido en los comités?\n\nLos cambios manuales se perderán.')){
+    _clearTaskOverrides();
+    buildAccTareas();
+  }
+};
 
 // ════════════════════════════════════════
 //  BUILD: EEFF DEFINITIVOS
 // ════════════════════════════════════════
 function buildFinEeff(){
   const el=document.getElementById('fin-eeff');
-  const BASE='https://clawddma.github.io/oet-dashboard/eeff/';
-  const archivos=[
-    {nombre:'EEFF Marzo 2026',  archivo:'EEFF-OET-2026-03-Marzo.xlsx',  periodo:'Mar-26 (Q1 2026 acumulado)',fecha:'Abril 2026', autora:'Elaborado por Paola / Asesores Financieros'},
-    {nombre:'EEFF Febrero 2026',archivo:'EEFF-OET-2026-02-Febrero.xlsx',periodo:'Feb-26 (Ene-Feb acumulado)',fecha:'Marzo 2026',  autora:'Elaborado por Paola / Asesores Financieros'},
-    {nombre:'EEFF Enero 2026',  archivo:'EEFF-OET-2026-01-Enero.xlsx',  periodo:'Ene-26 (cierre 2025 + Ene)',fecha:'Marzo 2026', autora:'Elaborado por Paola / Asesores Financieros'},
-  ];
+  const BASE='./eeff/';
+  const _autorBadge = (autor) => {
+    const colors = {
+      'Paola':         {bg:'#1a3a2a', fg:'#fff',     icon:'📊'},
+      'Comité Asesor': {bg:'#ffc107', fg:'#1a3a2a',  icon:'💼'},
+    };
+    const c = colors[autor] || {bg:'#607d76', fg:'#fff', icon:'📝'};
+    return `<span style="background:${c.bg};color:${c.fg};font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px;display:inline-flex;align-items:center;gap:5px">${c.icon} ${autor}</span>`;
+  };
+
   el.innerHTML=`
-  <div class="sec-title">Estados Financieros Definitivos</div>
+  <div class="sec-title">Estados Financieros Definitivos <span class="st-badge">${COMENTARIOS_MENSUALES.length} cierres oficiales</span></div>
+
+  <div class="insight" style="margin-bottom:14px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.06);font-size:12px">
+    📂 <strong>Archivo y comentarios mensuales.</strong> Cada mes incluye el Excel oficial entregado por la contadora junto con los comentarios al cierre — tanto de la contadora (Paola) como del Comité Asesor (asesores financieros). El más reciente aparece primero. Uso interno.
+  </div>
+
   <div class="gfull">
-    <div class="card">
-      <div class="card-hdr"><h3>Archivos oficiales emitidos por la contadora</h3></div>
-      <div class="card-body">
-        <table class="tbl">
-          <thead><tr><th>Documento</th><th>Período</th><th>Emitido</th><th>Autora</th><th></th></tr></thead>
-          <tbody>
-          ${archivos.map(a=>`
-            <tr>
-              <td style="font-weight:600">📊 ${a.nombre}</td>
-              <td>${a.periodo}</td>
-              <td>${a.fecha}</td>
-              <td style="color:#607d76">${a.autora}</td>
-              <td><a href="${BASE}${a.archivo}" download style="display:inline-block;background:#1a3a2a;color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">⬇ Descargar</a></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-        <p style="font-size:11px;color:#9eb3ad;margin-top:14px">Los archivos corresponden a los estados financieros oficiales entregados por la contadora. Uso interno.</p>
-      </div>
-    </div>
+    ${COMENTARIOS_MENSUALES.map((m, idx) => {
+      const _isLatest = idx === 0;
+      const _hasComments = m.comentarios && m.comentarios.length > 0;
+      return `
+      <div class="card" style="margin-bottom:14px;border-left:4px solid ${_isLatest?'#2dc5ab':'#9eb3ad'}">
+        <div class="card-hdr" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h3 style="margin:0">📅 Cierre ${m.periodo}</h3>
+          <span style="background:#1a3a2a;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px">${m.archivo_periodo}</span>
+          ${_isLatest?'<span style="background:#2dc5ab;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:14px;margin-left:auto">MÁS RECIENTE</span>':''}
+        </div>
+        <div class="card-body">
+          <!-- Bloque de descarga -->
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#f5f8f7;border-radius:10px;padding:12px 16px;margin-bottom:${_hasComments?'14px':'0'}">
+            <div style="font-size:24px">📥</div>
+            <div style="flex:1;min-width:200px">
+              <div style="font-weight:600;font-size:13px;color:#1a3a2a">Archivo oficial · ${m.archivo}</div>
+              <div style="font-size:11px;color:#607d76;margin-top:2px">Emitido en ${m.archivo_fecha} · ${m.archivo_autora}</div>
+            </div>
+            <a href="${BASE}${m.archivo}" download style="display:inline-flex;align-items:center;gap:6px;background:#1a3a2a;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">
+              ⬇ Descargar Excel
+            </a>
+          </div>
+
+          ${_hasComments ? m.comentarios.map(c => `
+            <div style="border:1px solid #e0e8e5;border-radius:10px;padding:14px 16px;margin-top:10px;background:#fff">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+                ${_autorBadge(c.autor)}
+                <span style="font-size:11px;color:#607d76">${c.rol} · ${c.fecha}</span>
+              </div>
+              <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px">
+                ${c.items.map(i=>`<li style="font-size:13px;color:#2d3f38;line-height:1.55">${i}</li>`).join('')}
+              </ul>
+              ${c.nota ? `
+                <div style="background:#f5f8f7;border-radius:8px;padding:9px 13px;margin-top:12px;font-size:12px;color:#607d76;border-left:3px solid #2dc5ab">
+                  📎 ${c.nota}
+                </div>
+              ` : ''}
+            </div>
+          `).join('') : `
+            <div style="padding:12px 16px;background:#fffbeb;border-radius:8px;border-left:3px solid #ff9800;font-size:12px;color:#5a4a00;margin-top:6px">
+              ⏳ Comentarios al cierre de ${m.periodo} pendientes. Cuando los asesores o la contadora emitan observaciones, se publicarán aquí.
+            </div>
+          `}
+        </div>
+      </div>`;
+    }).join('')}
   </div>`;
   requestAnimationFrame(()=>{ if(el) el.dispatchEvent(new Event('resize')); });
 }
@@ -4194,33 +4570,35 @@ function buildAccKpi(){
   const el=document.getElementById('acc-kpi');
   const ytdIng=sum(ytd26,'ing');
   el.innerHTML=`
-  <div class="sec-title">KPIs Objetivo 2026 vs Real</div>
+  <div class="sec-title">KPIs OET — Seguimiento Interno</div>
   <div class="kpis k3">
     ${kpiCard('Meta Facturación 2026', fv(COM.meta26), 'Logrado YTD: '+fv(ytdIng))}
-    ${kpiCard('Meta Cirugías Anuales', '5.000+', 'Base 2025: 3.918 (+28% mín.)', 'orange')}
-    ${kpiCard('Margen EBITDA Objetivo', '12–15%', 'Actual 2025: '+ANN[2025].mep.toFixed(1)+'%', ANN[2025].mep>=12?'':'red')}
+    ${kpiCard('Meta Cirugías Anuales', '5.000+', 'Base 2025: 3.918', 'orange')}
+    ${kpiCard('Margen EBITDA 2025',  ANN[2025].mep.toFixed(1)+'%', 'Mejora desde '+ANN[2024].mep.toFixed(1)+'% en 2024')}
   </div>
   <div class="gfull">
     <div class="card">
-      <div class="card-hdr"><h3>Semáforo de KPIs — Estado Actual vs Objetivo</h3></div>
+      <div class="card-hdr"><h3>Estado Interno de KPIs OET</h3></div>
       <div class="card-body">
         ${[
-          ['🟢','Crecimiento facturación 2025',fp(pctVar(ANN[2025].ing,ANN[2024].ing)),'≥40%','CUMPLIDO'],
-          ['🟢','Margen bruto 2025',ANN[2025].mbp.toFixed(1)+'%','≥35%','CUMPLIDO'],
-          ['🟡','Margen EBITDA 2025',ANN[2025].mep.toFixed(1)+'%','12–15%','EN RIESGO'],
-          ['🔴','Control costos (meses negativos)','3 meses bajo $0','0 meses bajo $0','REQUIERE ACCIÓN'],
-          ['🟡','Facturación YTD 2026 vs meta',((ytdIng/COM.meta26)*100).toFixed(1)+'%','proporcional','MONITOR'],
-          ['🟡','Diversificación ingresos','LIOs 20.4%','25%+','EN PROCESO'],
-          ['🔴','Margen neto 2025',ANN[2025].mnp.toFixed(1)+'%','8–10%','REQUIERE ACCIÓN'],
-        ].map(([s,kpi,actual,meta,estado])=>`
+          ['🟢','Crecimiento facturación 2025 vs 2024', fp(pctVar(ANN[2025].ing,ANN[2024].ing)), 'CRECIMIENTO SOSTENIDO'],
+          ['🟢','Margen bruto 2025',                    ANN[2025].mbp.toFixed(1)+'%',           'POSITIVO'],
+          ['🟡','Margen EBITDA 2025',                   ANN[2025].mep.toFixed(1)+'%',           'EN MONITOREO'],
+          ['🔴','Meses con utilidad negativa 2025',     '3 meses bajo $0',                       'REQUIERE ACCIÓN'],
+          ['🟡','Facturación YTD 2026 vs meta',         ((ytdIng/COM.meta26)*100).toFixed(1)+'%','MONITOR'],
+          ['🟡','Diversificación ingresos · LIOs ★',    'LIOs 20.4% del total',                  'EN PROCESO'],
+          ['🔴','Margen neto 2025',                     ANN[2025].mnp.toFixed(1)+'%',           'REQUIERE ACCIÓN'],
+        ].map(([s,kpi,actual,estado])=>`
           <div style="display:flex;align-items:center;gap:14px;padding:9px 0;border-bottom:1px solid #eef2f1;font-size:12px">
             <span style="font-size:18px">${s}</span>
             <div style="flex:1"><strong>${kpi}</strong></div>
-            <div style="min-width:80px;text-align:center;font-weight:600">${actual}</div>
-            <div style="min-width:80px;text-align:center;color:#607d76">${meta}</div>
-            <div style="min-width:110px;text-align:right;font-size:11px;font-weight:600;
+            <div style="min-width:140px;text-align:center;font-weight:600">${actual}</div>
+            <div style="min-width:170px;text-align:right;font-size:11px;font-weight:600;
               color:${s==='🟢'?'#2dc5ab':s==='🟡'?'#ff9800':'#ef5350'}">${estado}</div>
           </div>`).join('')}
+        <div style="margin-top:12px;font-size:11px;color:#9eb3ad;font-style:italic">
+          Indicadores de seguimiento interno OET. Las señales de estado se derivan de la evolución propia de la clínica, no de benchmarks externos.
+        </div>
       </div>
     </div>
   </div>`;
@@ -4711,7 +5089,7 @@ function buildFinBalance(){
   <!-- ALERTA / DIAGNÓSTICO DINÁMICO -->
   <div class="insight ${liqStatus==='critical'?'warn':''}" style="margin-bottom:16px;border-left:4px solid ${_alertColor};background:${liqStatus==='critical'?'rgba(239,83,80,.08)':liqStatus==='warn'?'rgba(255,152,0,.08)':'rgba(45,197,171,.08)'}">
     ${liqStatus==='critical'?'🚨':liqStatus==='warn'?'⚠️':'✅'} <strong>${liqStatus==='critical'?'Alerta de Liquidez Crítica':liqStatus==='warn'?'Liquidez en Recuperación':'Liquidez Saludable'} (${LP}):</strong>
-    Razón corriente = <strong>${lastCurr}x</strong> ${_trendIco} (vs ${SS[LI-1]?currRatio[LI-1].toFixed(2)+'x ('+SS[LI-1].periodo+')':'—'}; mínimo recomendado: 1.0x).
+    Razón corriente = <strong>${lastCurr}x</strong> ${_trendIco} (vs ${SS[LI-1]?currRatio[LI-1].toFixed(2)+'x ('+SS[LI-1].periodo+')':'—'}).
     Caja ${LP} = <strong style="color:${cashStatus==='pos'?'#2dc5ab':'#ef5350'}">${fv(LAST.cash)}</strong> ${cashStatus==='pos'?'(positiva)':'(negativa)'}.
     Pasivo Corriente ${gaps[LI]<0?'supera':'es inferior a'} el Activo Corriente por <strong>${fv(Math.abs(gaps[LI]))}</strong>.
     CxC ${LP} = <strong>${fv(LAST.cxc)}</strong> (${fp(cxcGrowth)} desde ${FP}).
@@ -4735,6 +5113,23 @@ function buildFinBalance(){
     <div class="card">
       <div class="card-hdr"><h3>Composición del Pasivo Corriente</h3><span class="badge">${LP}</span></div>
       <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-bss-pasdist"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- GRÁFICO CRUZADO CxC vs CxP — BALANCE DE TESORERÍA -->
+  <div class="gfull" style="margin-top:14px">
+    <div class="card" style="border-left:4px solid #ffc107">
+      <div class="card-hdr">
+        <h3>⚖️ ¿Qué nos deben vs qué debemos? — Balance de Tesorería</h3>
+        <span class="badge" style="background:#ffc107;color:#1a3a2a">Cuentas por cobrar vs cuentas por pagar</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:320px"><canvas id="ch-bss-cxccxp"></canvas></div>
+        <div style="margin-top:12px;font-size:12px;color:#2d3f38;background:#f5f8f7;padding:11px 14px;border-radius:8px;border-left:3px solid #2dc5ab;line-height:1.5">
+          📖 <strong>Cómo leer:</strong> en cada período, la barra <span style="color:#2dc5ab;font-weight:700">verde</span> es lo que <strong>nos deben pagar</strong> (cuentas por cobrar a clientes — dinero pendiente de ingresar a OET). La barra <span style="color:#ef5350;font-weight:700">roja</span> es lo que <strong>debemos pagar</strong> (cuentas por pagar a proveedores y otros — dinero pendiente de salir). La línea <span style="color:#ff9800;font-weight:700">naranja</span> es la <strong>diferencia neta</strong>: si está por encima de cero, OET tiene saldo a favor en tesorería; si está por debajo, OET debe más de lo que le deben.
+        </div>
+        <div id="bss-cxccxp-insight" style="margin-top:10px"></div>
+      </div>
     </div>
   </div>
 
@@ -4845,6 +5240,74 @@ function buildFinBalance(){
       }}
   });
 
+  // ─── Chart: Balance de tesorería (CxC vs CxP corrientes)
+  // Para CxP usamos el pasivo corriente comercial (excluyendo obligaciones financieras puras)
+  // como aproximación al "lo que debemos pagar a corto plazo en operación"
+  const _cxpComercial = SS.map(s => s.pasCorr - s.deudaBco);
+  const _diferenciaNeta = SS.map((s, i) => s.cxc - _cxpComercial[i]);
+  new Chart(document.getElementById('ch-bss-cxccxp'),{
+    type:'bar',
+    data:{
+      labels: BSS.labels,
+      datasets:[
+        {label:'💚 Nos deben (CxC clientes)', data:SS.map(s=>s.cxc),
+         backgroundColor:'rgba(45,197,171,0.85)', borderColor:'rgba(45,197,171,1)', borderWidth:1, borderRadius:4, order:2},
+        {label:'❤️ Debemos pagar (CxP corriente)', data:_cxpComercial,
+         backgroundColor:'rgba(239,83,80,0.85)', borderColor:'rgba(239,83,80,1)', borderWidth:1, borderRadius:4, order:2},
+        {type:'line', label:'⚖️ Diferencia neta (CxC − CxP)', data:_diferenciaNeta,
+         borderColor:'#ff9800', backgroundColor:'rgba(255,152,0,0.15)', borderWidth:2.5, fill:false,
+         pointBackgroundColor:_diferenciaNeta.map(v=>v>=0?'#2dc5ab':'#ef5350'),
+         pointRadius:7, pointHoverRadius:9, order:1, tension:0.2}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
+        tooltip:{
+          backgroundColor:'rgba(12,48,40,.95)',padding:11,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
+          callbacks:{
+            label:(c)=>` ${c.dataset.label}: ${fv(c.parsed.y)}`,
+            afterBody:(items)=>{
+              const i=items[0].dataIndex;
+              const cxc=SS[i].cxc, cxp=_cxpComercial[i], dif=_diferenciaNeta[i];
+              const ratio=cxp>0?(cxc/cxp).toFixed(2):'∞';
+              return ['',
+                'Ratio CxC/CxP: '+ratio+'x',
+                'Cobertura: '+(cxp>0?(cxc/cxp*100).toFixed(0)+'%':'—'),
+                dif>=0?'OET tiene saldo a favor':'OET tiene déficit en tesorería'
+              ];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{font:{size:12,weight:'600'},color:'#1a3a2a'},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'},
+           title:{display:true,text:'Miles de COP',font:{size:11,weight:'600'},color:'#1a3a2a'}}
+      }
+    }
+  });
+
+  // Insight automático sobre el balance de tesorería del último período
+  {
+    const lastCxc = LAST.cxc;
+    const lastCxp = _cxpComercial[LI];
+    const lastDif = _diferenciaNeta[LI];
+    const ratioL  = lastCxp>0 ? (lastCxc/lastCxp).toFixed(2) : null;
+    const _favor  = lastDif >= 0;
+    const _icon   = _favor ? '✅' : '⚠️';
+    const _color  = _favor ? '#2dc5ab' : '#ef5350';
+    const _bg     = _favor ? 'rgba(45,197,171,.08)' : 'rgba(239,83,80,.08)';
+    const _msg    = _favor
+      ? `En ${LP} las cuentas por cobrar (${fv(lastCxc)}) <strong>superan</strong> a las cuentas por pagar de operación (${fv(lastCxp)}) en <strong>${fv(lastDif)}</strong>. OET tiene <strong>saldo a favor en tesorería</strong>: si se cobra la cartera a tiempo, hay margen para cubrir las obligaciones corrientes.`
+      : `En ${LP} las cuentas por pagar de operación (${fv(lastCxp)}) <strong>superan</strong> a las cuentas por cobrar (${fv(lastCxc)}) en <strong>${fv(Math.abs(lastDif))}</strong>. OET tiene <strong>déficit en tesorería</strong>: aunque cobre toda la cartera, no alcanza a cubrir las obligaciones corrientes con la sola operación. Se requiere apoyo de caja, financiamiento o aceleración del cobro.`;
+    document.getElementById('bss-cxccxp-insight').innerHTML = `
+      <div class="insight" style="border-left:4px solid ${_color};background:${_bg}">
+        ${_icon} <strong>Diagnóstico ${LP}:</strong> ${_msg}
+        ${ratioL ? `<br><span style="font-size:11px;color:#607d76">Por cada $1 que OET debe pagar, le deben pagar $${ratioL} (ratio ${ratioL}x).</span>`:''}
+      </div>`;
+  }
+
   // ─── Chart: Composición pasivo corriente del último período (doughnut)
   new Chart(document.getElementById('ch-bss-pasdist'),{
     type:'doughnut',
@@ -4905,7 +5368,7 @@ function buildFinBalance(){
     if(gap>=0){
       return `<div class="insight" style="margin-top:12px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.08)">
         ✅ <strong>Diagnóstico (${LP}):</strong> El activo corriente supera al pasivo corriente por <strong>${fv(gap)}</strong>.
-        La razón corriente (${lastCurr}x) ${currRatio[LI]>=1?'cumple el mínimo recomendado de 1.0x':'está por debajo del mínimo de 1.0x'}.
+        La razón corriente es <strong>${lastCurr}x</strong>${LI>0?` (vs ${currRatio[LI-1].toFixed(2)}x en ${SS[LI-1].periodo})`:''}.
         ${cxcPctLast>50?`La CxC representa ${cxcPctLast.toFixed(0)}% del activo corriente — sigue siendo la palanca principal de gestión de cartera.`:''}
       </div>`;
     } else {
@@ -4997,6 +5460,7 @@ const BUILDERS = {
   'acc-inicio':   buildAccInicio,
   'acc-plan':     buildAccPlan,
   'acc-kpi':      buildAccKpi,
+  'acc-actas':    buildAccActas,
   'acc-bitacora': buildAccBitacora,
   'acc-tareas':   buildAccTareas,
 };
