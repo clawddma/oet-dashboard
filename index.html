@@ -935,35 +935,79 @@ const COMENTARIOS_MENSUALES = [
 // ════════════════════════════════════════
 //  HONORARIOS — Honorarios médicos pagados por OET (cuenta 62101001 EEFF)
 //  Es el COSTO de los honorarios. NO se mezcla con la facturación generada
-//  por el cirujano (CIR.bill), que es un INGRESO. Las dos vistas son
-//  independientes y no comparables sin contexto explícito.
+//  por el cirujano (CIR.bill), que es un INGRESO.
 //
-//  IMPORTANTE — Comparabilidad temporal:
-//  Las cifras `q1_2025` y `q1_2026` corresponden al MISMO período
-//  (enero + febrero + marzo). El total anual 2025 se incluye solo
-//  como referencia de contexto, NUNCA para comparar contra Q1-26.
+//  ESTRUCTURA UNIFICADA con el resto del dashboard:
+//  - Datos mensuales completos (m24, m25, m26) → respetan CF.months/CF.years
+//  - Detalle por proveedor solo Q1-25 y Q1-26 (de Notas Mar-26 EEFF)
+//
+//  Cifras en miles COP (igual que el resto del dashboard).
 // ════════════════════════════════════════
 const HONORARIOS = {
-  // Períodos disponibles (definidos como rango de meses para futura granularidad)
-  periodos: [
-    {key:'q1_2025', label:'Q1-25', y:2025, meses:[1,2,3]},
-    {key:'q1_2026', label:'Q1-26', y:2026, meses:[1,2,3]},
-  ],
-  // Total cuenta 62101001 - Honorarios Oftalmología
-  totales: {
-    q1_2025: 522608,     // Total Q1-25 (Ene+Feb+Mar) — derivado de variación nota Mar-26
-    q1_2026: 874608,     // Total Q1-26 (Ene+Feb+Mar)
-    anual_2025: 3050555, // Solo referencia: total 2025 completo (NO comparable contra Q1)
-  },
-  // Detalle de top prestadores. q1_2025 y q1_2026 son el mismo período (Q1).
+  // Totales mensuales de la cuenta 62101001 (Honorarios Oftalmología)
+  // Disponibles para los 3 años → respetan filtros CF.years y CF.months
+  m24: [174028, 201199, 123042, 378510, 243435, 138265, 127360, 197039, 263940, 236897, 656510, 310331],
+  m25: [205757, 340051, 328800, 248603, 368833, 301734, 441420, 174555, 560887, 566904, 459267, 496854],
+  m26: [401963, 321287, 503369, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+
+  // Detalle por proveedor — SOLO Q1-25 y Q1-26 (de las Notas Mar-26 del EEFF)
+  // Cuando el filtro mensual no es Q1, se muestra mensaje aclaratorio.
   proveedores: [
-    {nit:'1127941794', nombre:'Dr. M.A. Jaramillo Noguera', cargo:'Cirujano staff · Presidente', esStaff:true,  q1_2025:326929, q1_2026:391518, esNuevo:false, ligaCirName:'Dr. M.A. Jaramillo N.'},
-    {nit:'80550424',   nombre:'Dr. M.A. Jaramillo Martínez',cargo:'Cirujano staff',                esStaff:true,  q1_2025:96468,  q1_2026:226195, esNuevo:false, ligaCirName:'Dr. M. Jaramillo M.'},
-    {nit:'901588752',  nombre:'OFTAMEDIC SAS',              cargo:'Sociedad médica externa',       esStaff:false, q1_2025:43061,  q1_2026:89935,  esNuevo:false},
-    {nit:'1144068250', nombre:'Dr. Juan S. Guerrero Rey',   cargo:'Cirujano externo',              esStaff:false, q1_2025:0,      q1_2026:88067,  esNuevo:true},
-    {nit:'1017192980', nombre:'Sara Chica Calderón',        cargo:'Especialista médica',           esStaff:false, q1_2025:36508,  q1_2026:67125,  esNuevo:false},
+    {nit:'1127941794', nombre:'Dr. M.A. Jaramillo Noguera', cargo:'Cirujano staff · Presidente', esStaff:true,  q1_2025:326929, q1_2026:391518, ligaCirName:'Dr. M.A. Jaramillo N.'},
+    {nit:'80550424',   nombre:'Dr. M.A. Jaramillo Martínez',cargo:'Cirujano staff',                esStaff:true,  q1_2025:96468,  q1_2026:226195, ligaCirName:'Dr. M. Jaramillo M.'},
+    {nit:'901588752',  nombre:'OFTAMEDIC SAS',              cargo:'Sociedad médica externa',       esStaff:false, q1_2025:43061,  q1_2026:89935},
+    {nit:'1144068250', nombre:'Dr. Juan S. Guerrero Rey',   cargo:'Cirujano externo',              esStaff:false, q1_2025:0,      q1_2026:88067},
+    {nit:'1017192980', nombre:'Sara Chica Calderón',        cargo:'Especialista médica',           esStaff:false, q1_2025:36508,  q1_2026:67125},
   ],
 };
+
+// Helper: suma honorarios mensuales por año respetando filtro CF.months
+function _honSum(y){
+  const arr = y===2024 ? HONORARIOS.m24 : y===2025 ? HONORARIOS.m25 : y===2026 ? HONORARIOS.m26 : null;
+  if(!arr) return 0;
+  // Si hay filtro mensual, usar esos meses
+  if(CF.months.size>0){
+    return [...CF.months].reduce((s,m)=>s+(arr[m-1]||0),0);
+  }
+  // Si modo YTD comparable y 2026 está parcial: cortar a los meses cerrados de 2026
+  const info = ffCompareInfo();  // reutilizamos la lógica financiera de comparable
+  // CF tiene su propio compareMode; ytdBadgeText() ya lo refleja
+  const _ytd = ytdBadgeText();   // 'Q1-26 EEFF' si aplica corte automático
+  if(_ytd){
+    // Cortar al mismo período cerrado de 2026
+    const _lemMonths = HONORARIOS.m26.map((v,i)=>v>0?i+1:null).filter(x=>x!==null);
+    return _lemMonths.reduce((s,m)=>s+(arr[m-1]||0),0);
+  }
+  // Año completo
+  return arr.reduce((s,v)=>s+(v||0),0);
+}
+
+// Lista de meses activos (según CF) para etiquetas
+function _honActiveMonths(){
+  if(CF.months.size>0) return [...CF.months].sort((a,b)=>a-b);
+  if(ytdBadgeText()) return HONORARIOS.m26.map((v,i)=>v>0?i+1:null).filter(x=>x!==null);
+  return [1,2,3,4,5,6,7,8,9,10,11,12];
+}
+
+// Etiqueta del período activo (ej: "Q1-25", "Ene-Feb 25", "2025 (12m)")
+function _honPeriodLabel(y){
+  const ms = _honActiveMonths();
+  const MN=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const yy = String(y).slice(-2);
+  if(ms.length===12) return String(y)+' (12m)';
+  if(ms.length===3 && ms[0]===1 && ms[1]===2 && ms[2]===3) return 'Q1-'+yy;
+  if(ms.length===3 && ms[0]===4 && ms[1]===5 && ms[2]===6) return 'Q2-'+yy;
+  if(ms.length===3 && ms[0]===7 && ms[1]===8 && ms[2]===9) return 'Q3-'+yy;
+  if(ms.length===3 && ms[0]===10 && ms[1]===11 && ms[2]===12) return 'Q4-'+yy;
+  if(ms.length===1) return MN[ms[0]]+'-'+yy;
+  return MN[ms[0]]+'–'+MN[ms[ms.length-1]]+'-'+yy;
+}
+
+// ¿Los meses activos coinciden con Q1 (donde tenemos detalle por proveedor)?
+function _honIsQ1Period(){
+  const ms = _honActiveMonths();
+  return ms.length===3 && ms[0]===1 && ms[1]===2 && ms[2]===3;
+}
 
 // Balance Sheet Snapshots (miles de COP) — Fuente: EEFF oficiales del contador
 // Estructura data-driven: cada snapshot es un objeto independiente.
@@ -1510,7 +1554,7 @@ function updateFilterBarHeight(){
 }
 /* Destruye los charts de las secciones comerciales y limpia el caché
    de 'built', para forzar re-render completo cuando cambia un filtro */
-const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-trend','com-meta'];
+const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-honorarios','com-trend','com-meta'];
 function clearComBuilt(){
   COM_SECS.forEach(sid=>{
     const el=document.getElementById(sid);
@@ -4898,240 +4942,216 @@ function buildComCirujanos(){
 //  Antonio Noguera, Miguel Antonio Martínez) muestra vista cruzada:
 //  qué generan en facturación vs qué reciben en honorarios.
 // ════════════════════════════════════════
-// ── Estado del filtro de comparación (persistente entre renders) ─────
-window._honFilter = window._honFilter || { left:'q1_2025', right:'q1_2026' };
-
 function buildComHonorarios(){
   const el=document.getElementById('com-honorarios');
   const HP = HONORARIOS.proveedores;
-  const PERIODOS = HONORARIOS.periodos;
-  const TOT = HONORARIOS.totales;
-  const F = window._honFilter;
+  const MN=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-  // Aseguro que los periodos seleccionados sean válidos
-  const _validKey = k => PERIODOS.some(p=>p.key===k);
-  if(!_validKey(F.left))  F.left  = PERIODOS[0].key;
-  if(!_validKey(F.right)) F.right = PERIODOS[PERIODOS.length-1].key;
+  // ── Estado derivado de CF (filtros generales del Tab Comercial) ──────
+  const ms = _honActiveMonths();
+  const yrsActivos = [...CF.years].sort();
+  const isQ1 = _honIsQ1Period();
+  const cmpLbl = compareModeLabel();   // 'YTD comparable', 'Año completo', etc.
 
-  const _periodLabel = k => PERIODOS.find(p=>p.key===k)?.label || k;
-  const _honAt = (p, key) => (p[key] !== undefined ? p[key] : 0);
+  // Totales por año respetando el filtro CF actual
+  const tot24 = _honSum(2024);
+  const tot25 = _honSum(2025);
+  const tot26 = _honSum(2026);
 
-  const Lk = F.left, Rk = F.right;
-  const Llb = _periodLabel(Lk), Rlb = _periodLabel(Rk);
-  const totL = TOT[Lk] ?? 0;
-  const totR = TOT[Rk] ?? 0;
-  const varTot = totL>0 ? pctVar(totR, totL) : null;
-  const top = [...HP].sort((a,b)=>_honAt(b,Rk)-_honAt(a,Rk))[0];
-  const nuevos = HP.filter(p=>_honAt(p,Lk)===0 && _honAt(p,Rk)>0);
+  // Etiquetas dinámicas por año
+  const lbl24 = _honPeriodLabel(2024);
+  const lbl25 = _honPeriodLabel(2025);
+  const lbl26 = _honPeriodLabel(2026);
 
-  // Vista cruzada: cirujanos staff con su facturación generada vs honorarios recibidos
-  // (siempre se muestra del período más reciente — 2026 — porque la facturación
-  // CIR.bill26 es Q1-26 YTD; mantener mismo período es lo correcto)
+  // Variación 2026 vs 2025 sobre el período activo
+  const var26vs25 = (CF.years.has(2025)&&CF.years.has(2026)&&tot25>0) ? pctVar(tot26, tot25) : null;
+  const var25vs24 = (CF.years.has(2024)&&CF.years.has(2025)&&tot24>0) ? pctVar(tot25, tot24) : null;
+
+  // Top prestador (siempre Q1-26 ya que el detalle solo está disponible para ese período)
+  const top = [...HP].sort((a,b)=>(b.q1_2026||0)-(a.q1_2026||0))[0];
+  const nuevos = HP.filter(p=>(p.q1_2025||0)===0 && (p.q1_2026||0)>0);
+
+  // Vista cruzada: cirujanos staff (siempre Q1-26)
   const staffCruzado = HP.filter(p=>p.esStaff && p.ligaCirName).map(p=>{
     const cir = CIR.cirujanos.find(c=>c.name===p.ligaCirName);
-    const billQ1 = cir ? cir.bill26 : 0;     // facturación generada Q1-26
-    const honQ1  = _honAt(p, 'q1_2026');      // honorarios recibidos Q1-26
+    const billQ1 = cir ? cir.bill26 : 0;
+    const honQ1  = p.q1_2026 || 0;
     const margen = billQ1 - honQ1;
     const honPct = billQ1>0 ? (honQ1/billQ1*100) : 0;
     return {nombre:p.nombre, cargo:p.cargo, billQ1, honQ1, margen, honPct};
   });
 
-  // Colores
-  const C_R = 'rgba(239,83,80,0.85)', B_R = 'rgba(239,83,80,1)';      // período derecho (más reciente)
-  const C_L = 'rgba(239,83,80,0.32)', B_L = 'rgba(239,83,80,0.55)';   // período izquierdo (anterior)
+  // Colores por año (consistentes con el resto del dashboard)
+  const C24='rgba(68,108,179,0.85)',  B24='rgba(68,108,179,1)';
+  const C25='rgba(45,197,171,0.85)',  B25='rgba(45,197,171,1)';
+  const C26='rgba(255,152,0,0.85)',   B26='rgba(255,152,0,1)';
 
-  // Opciones del selector (botones)
-  const _selectorBtns = (current, side) => PERIODOS.map(p=>`
-    <button onclick="_setHonFilter('${side}','${p.key}')"
-      style="background:${current===p.key?'#1a3a2a':'#fff'};color:${current===p.key?'#fff':'#1a3a2a'};border:1px solid #1a3a2a;padding:5px 12px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer">${p.label}</button>
-  `).join(' ');
-
+  // ── Render ───────────────────────────────────────────────────────────
   el.innerHTML=`
-  <div class="sec-title">Honorarios Médicos <span class="st-badge">Cuenta 62101001 · ${Llb} vs ${Rlb}</span></div>
+  <div class="sec-title">Honorarios Médicos <span class="st-badge">Cuenta 62101001 · ${cmpLbl?cmpLbl+' · ':''}${ms.length===12?'Año':ms.length+'m'}: ${ms.map(m=>MN[m]).join('+')}</span></div>
 
-  <!-- Aviso de contexto -->
   <div class="insight" style="margin-bottom:14px;border-left:4px solid #ff9800;background:rgba(255,152,0,0.06);font-size:12px">
-    💡 <strong>¿Qué muestra esta vista?</strong> Los <strong>honorarios médicos</strong> son el costo que paga OET a cada prestador (cirujano staff, sociedades médicas externas, especialistas). Esta cuenta es independiente de la <strong>facturación generada por las cirugías</strong> que aparece en la pestaña <em>Cirujanos</em> — son dos métricas separadas que nunca se deben mezclar.
+    💡 <strong>Esta sección respeta los filtros del Tab Comercial</strong> (años, meses, modo de comparación). Los honorarios médicos son el costo que paga OET a cada prestador (cirujano staff, sociedades médicas externas, especialistas). <strong>Independiente de la facturación</strong> generada en cirugías (pestaña <em>Cirujanos</em>) — son métricas separadas.
   </div>
 
-  <!-- Selector de comparativa -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="card-hdr"><h3>🔍 Comparativa de períodos</h3><span class="badge">Selecciona qué períodos comparar</span></div>
-    <div class="card-body" style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">
-      <div>
-        <div style="font-size:11px;color:#607d76;margin-bottom:5px;font-weight:600">Período base</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap">${_selectorBtns(Lk,'left')}</div>
-      </div>
-      <div style="font-size:18px;color:#9eb3ad">→</div>
-      <div>
-        <div style="font-size:11px;color:#607d76;margin-bottom:5px;font-weight:600">Período comparado</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap">${_selectorBtns(Rk,'right')}</div>
-      </div>
-      <div style="margin-left:auto;font-size:11px;color:#607d76;font-style:italic;max-width:280px">
-        ⚖️ Los períodos disponibles tienen el <strong>mismo número de meses</strong>, así la comparación es siempre equiparable.
-      </div>
-    </div>
+  <!-- KPIs por año (respetan filtro CF) -->
+  <div class="kpis k${yrsActivos.length===1?3:yrsActivos.length===2?3:4}">
+    ${CF.years.has(2024) ? kpiCard('Honorarios '+lbl24, fv(tot24), 'Total cuenta 62101001') : ''}
+    ${CF.years.has(2025) ? kpiCard('Honorarios '+lbl25, fv(tot25), var25vs24!==null ? fp(var25vs24)+' vs '+lbl24 : 'Total del período', var25vs24!==null && var25vs24>30?'red':'') : ''}
+    ${CF.years.has(2026) ? kpiCard('Honorarios '+lbl26, fv(tot26), var26vs25!==null ? fp(var26vs25)+' vs '+lbl25 : 'Total del período', var26vs25!==null && var26vs25>30?'red':'') : ''}
+    ${kpiCard('Top prestador Q1-26', top?top.nombre.split('·')[0].trim():'—', top?fv(top.q1_2026||0)+' · '+top.cargo:'')}
   </div>
 
-  <!-- KPIs de contexto -->
-  <div class="kpis k4">
-    ${kpiCard('Total ' + Rlb, fv(totR), varTot!==null?fp(varTot)+' vs '+Llb+' ('+fv(totL)+')':'Sin base de comparación', varTot!==null && varTot>30?'red':varTot!==null && varTot>15?'warn':'')}
-    ${kpiCard('Total ' + Llb,        fv(totL), 'Período base de la comparación')}
-    ${kpiCard('Top prestador ' + Rlb, top?top.nombre.split('·')[0].trim():'—', top?fv(_honAt(top,Rk))+' · '+top.cargo:'')}
-    ${kpiCard('Nuevos prestadores ' + Rlb, String(nuevos.length), nuevos.length>0?nuevos.map(n=>n.nombre.split('·')[0]).join(', ')+' (sin pago en '+Llb+')':'Sin nuevos','warn')}
-  </div>
-
-  <!-- Referencia anual 2025 (informativa, NO comparativa) -->
-  <div style="font-size:11px;color:#9eb3ad;margin-bottom:14px;font-style:italic;padding:8px 12px;background:#f5f8f7;border-radius:6px">
-    ℹ️ Solo como referencia: el total de honorarios anual 2025 fue de <strong>${fv(TOT.anual_2025)}</strong> (12 meses) — promedio mensual <strong>${fv(TOT.anual_2025/12)}</strong>. <em>No se usa en comparaciones porque no es equiparable a un trimestre.</em>
-  </div>
-
-  <!-- Gráfica top honorarios -->
+  <!-- Gráfica 1: Honorarios mensuales por año (respeta CF) -->
   <div class="gfull" style="margin-top:14px">
     <div class="card">
-      <div class="card-hdr"><h3>💵 ¿A quién le paga OET más en honorarios?</h3><span class="badge">${Llb} vs ${Rlb} · Top prestadores</span></div>
+      <div class="card-hdr"><h3>📅 ¿Cómo evolucionan los honorarios mes a mes?</h3><span class="badge">Mensual · Años seleccionados</span></div>
       <div class="card-body">
-        <div class="chart-wrap" style="height:330px"><canvas id="ch-hon-top"></canvas></div>
+        <div class="chart-wrap" style="height:300px"><canvas id="ch-hon-mensual"></canvas></div>
         <div style="margin-top:10px;font-size:12px;color:#2d3f38;background:#f5f8f7;padding:10px 14px;border-radius:8px;border-left:3px solid #2dc5ab">
-          📖 <strong>Cómo leer:</strong> ambas barras representan <strong>el mismo período del año</strong> (${Llb.replace(/-.*$/,'')} de cada año). La barra <span style="color:${B_L};font-weight:700">rosada clara</span> es <strong>${Llb}</strong>; la barra <span style="color:${B_R};font-weight:700">roja</span> es <strong>${Rlb}</strong>. La diferencia muestra la variación real con el mismo número de meses.
+          📖 <strong>Cómo leer:</strong> cada mes muestra los honorarios pagados por la clínica a todos los médicos (cuenta 62101001). Los meses resaltados corresponden al filtro activo. Cambia los filtros en la barra superior (años, meses, trimestre, comparativa) y la gráfica se actualizará.
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Tabla detallada -->
-  <div class="gfull" style="margin-top:14px">
-    <div class="card">
-      <div class="card-hdr"><h3>Detalle por Prestador</h3><span class="badge teal">Comparativa equiparable ${Llb} vs ${Rlb}</span></div>
-      <div class="card-body">
-        <div class="tbl-wrap"><table class="tbl">
-          <thead><tr>
-            <th style="text-align:left">Prestador</th>
-            <th style="text-align:left">Tipo</th>
-            <th>${Llb}</th>
-            <th>${Rlb}</th>
-            <th>Variación $</th>
-            <th>Variación %</th>
-          </tr></thead>
-          <tbody>
-          ${[...HP].sort((a,b)=>_honAt(b,Rk)-_honAt(a,Rk)).map(p=>{
-            const vL = _honAt(p,Lk), vR = _honAt(p,Rk);
-            const v  = vR - vL;
-            const vp = vL>0 ? pctVar(vR, vL) : null;
-            const tipoBadge = p.esStaff
-              ? '<span style="background:#1a3a2a;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">Cirujano staff</span>'
-              : '<span style="background:#9eb3ad;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">Externo</span>';
-            const nuevoBadge = (vL===0 && vR>0) ? '<span style="background:#ff9800;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:4px">Nuevo en '+Rlb+'</span>' : '';
-            return `<tr>
-              <td style="font-weight:500"><div>${p.nombre}</div><div style="font-size:10px;color:#9eb3ad">NIT ${p.nit}</div></td>
-              <td>${tipoBadge}${nuevoBadge}<div style="font-size:10px;color:#607d76;margin-top:3px">${p.cargo}</div></td>
-              <td>${fv(vL)}</td>
-              <td style="font-weight:700;color:#1a3a2a">${fv(vR)}</td>
-              <td class="${tdCls(v)}">${v>=0?'+':''}${fv(v)}</td>
-              <td class="${tdCls(vp||1000)}">${vp!==null?fp(vp):'<span style="color:#ff9800;font-weight:700">Nuevo</span>'}</td>
-            </tr>`;
-          }).join('')}
-          </tbody>
-        </table></div>
+  <!-- Detalle por proveedor: solo disponible para Q1 -->
+  ${isQ1 ? `
+    <!-- Gráfica top prestadores Q1-25 vs Q1-26 -->
+    <div class="gfull" style="margin-top:14px">
+      <div class="card">
+        <div class="card-hdr"><h3>💵 Top prestadores · Q1-25 vs Q1-26 (comparable)</h3><span class="badge">Detalle por proveedor · NIT</span></div>
+        <div class="card-body">
+          <div class="chart-wrap" style="height:330px"><canvas id="ch-hon-top"></canvas></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- VISTA CRUZADA: cirujanos staff -->
-  ${staffCruzado.length ? `
-  <div class="gfull" style="margin-top:14px">
-    <div class="card" style="border-left:4px solid #ffc107">
-      <div class="card-hdr"><h3>🔄 Vista Cruzada — Cirujanos Staff</h3><span class="badge" style="background:#ffc107;color:#1a3a2a">Q1-26 · Genera vs Recibe</span></div>
-      <div class="card-body">
-        <div class="insight" style="margin-bottom:14px;font-size:12px">
-          ℹ️ Para los cirujanos staff (vinculados como prestadores con honorarios), comparamos lo que generan en facturación con sus cirugías vs lo que la clínica les paga en honorarios. Ambas cifras son del mismo período (Q1-26). <strong>El margen es el ingreso neto que queda para OET</strong> (antes de costos directos como insumos, sala, personal).
+    <!-- Tabla detallada Q1-25 vs Q1-26 -->
+    <div class="gfull" style="margin-top:14px">
+      <div class="card">
+        <div class="card-hdr"><h3>Detalle por Prestador · Q1-25 vs Q1-26</h3><span class="badge teal">Mismo período (Ene+Feb+Mar)</span></div>
+        <div class="card-body">
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr>
+              <th style="text-align:left">Prestador</th>
+              <th style="text-align:left">Tipo</th>
+              <th>Q1-25</th>
+              <th>Q1-26</th>
+              <th>Variación $</th>
+              <th>Variación %</th>
+            </tr></thead>
+            <tbody>
+            ${[...HP].sort((a,b)=>(b.q1_2026||0)-(a.q1_2026||0)).map(p=>{
+              const vL = p.q1_2025||0, vR = p.q1_2026||0;
+              const v  = vR - vL;
+              const vp = vL>0 ? pctVar(vR, vL) : null;
+              const tipoBadge = p.esStaff
+                ? '<span style="background:#1a3a2a;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">Cirujano staff</span>'
+                : '<span style="background:#9eb3ad;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">Externo</span>';
+              const nuevoBadge = (vL===0 && vR>0) ? '<span style="background:#ff9800;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:4px">Nuevo Q1-26</span>' : '';
+              return `<tr>
+                <td style="font-weight:500"><div>${p.nombre}</div><div style="font-size:10px;color:#9eb3ad">NIT ${p.nit}</div></td>
+                <td>${tipoBadge}${nuevoBadge}<div style="font-size:10px;color:#607d76;margin-top:3px">${p.cargo}</div></td>
+                <td>${fv(vL)}</td>
+                <td style="font-weight:700;color:#1a3a2a">${fv(vR)}</td>
+                <td class="${tdCls(v)}">${v>=0?'+':''}${fv(v)}</td>
+                <td class="${tdCls(vp||1000)}">${vp!==null?fp(vp):'<span style="color:#ff9800;font-weight:700">Nuevo</span>'}</td>
+              </tr>`;
+            }).join('')}
+            </tbody>
+          </table></div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(${Math.min(staffCruzado.length,2)},minmax(0,1fr));gap:14px">
-          ${staffCruzado.map(s=>{
-            const _color = s.honPct>50?'#ef5350':s.honPct>35?'#ff9800':'#2dc5ab';
-            return `<div style="border:1px solid #e0e8e5;border-radius:12px;padding:16px;background:#fff;min-width:0">
-              <div style="font-weight:700;font-size:14px;color:#1a3a2a;margin-bottom:2px">${s.nombre}</div>
-              <div style="font-size:11px;color:#607d76;margin-bottom:14px">${s.cargo}</div>
+      </div>
+    </div>
 
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;flex-wrap:wrap">
-                <span style="font-size:12px;color:#2dc5ab;font-weight:600">💰 Genera (facturación Q1-26)</span>
-                <span style="font-size:18px;font-weight:700;color:#2dc5ab">${fv(s.billQ1)}</span>
-              </div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;flex-wrap:wrap">
-                <span style="font-size:12px;color:#ef5350;font-weight:600">💵 Recibe (honorarios Q1-26)</span>
-                <span style="font-size:18px;font-weight:700;color:#ef5350">${fv(s.honQ1)}</span>
-              </div>
-              <div style="height:1px;background:#e0e8e5;margin:8px 0"></div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:10px;flex-wrap:wrap">
-                <span style="font-size:12px;color:#1a3a2a;font-weight:600">Margen para OET</span>
-                <span style="font-size:20px;font-weight:700;color:${_color}">${fv(s.margen)}</span>
-              </div>
-              <div style="margin-top:10px;padding:8px 12px;background:#f5f8f7;border-radius:8px">
-                <div style="font-size:11px;color:#607d76">Honorario / Facturación</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-                  <div style="flex:1;height:10px;background:#e0e8e5;border-radius:5px;overflow:hidden;min-width:0">
-                    <div style="height:100%;width:${Math.min(s.honPct,100)}%;background:${_color}"></div>
-                  </div>
-                  <span style="font-weight:700;font-size:14px;color:${_color}">${s.honPct.toFixed(1)}%</span>
+    <!-- VISTA CRUZADA: cirujanos staff (siempre Q1-26) -->
+    ${staffCruzado.length ? `
+    <div class="gfull" style="margin-top:14px">
+      <div class="card" style="border-left:4px solid #ffc107">
+        <div class="card-hdr"><h3>🔄 Vista Cruzada — Cirujanos Staff Q1-26</h3><span class="badge" style="background:#ffc107;color:#1a3a2a">Genera vs Recibe</span></div>
+        <div class="card-body">
+          <div class="insight" style="margin-bottom:14px;font-size:12px">
+            ℹ️ Para cirujanos staff vinculados como prestadores, comparamos lo que generan en facturación con sus cirugías vs lo que la clínica les paga en honorarios. Ambas cifras del mismo período (Q1-26). <strong>El margen es el ingreso neto que queda para OET</strong> antes de costos directos.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(${Math.min(staffCruzado.length,2)},minmax(0,1fr));gap:14px">
+            ${staffCruzado.map(s=>{
+              const _color = s.honPct>50?'#ef5350':s.honPct>35?'#ff9800':'#2dc5ab';
+              return `<div style="border:1px solid #e0e8e5;border-radius:12px;padding:16px;background:#fff;min-width:0">
+                <div style="font-weight:700;font-size:14px;color:#1a3a2a;margin-bottom:2px">${s.nombre}</div>
+                <div style="font-size:11px;color:#607d76;margin-bottom:14px">${s.cargo}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;flex-wrap:wrap">
+                  <span style="font-size:12px;color:#2dc5ab;font-weight:600">💰 Genera (facturación Q1-26)</span>
+                  <span style="font-size:18px;font-weight:700;color:#2dc5ab">${fv(s.billQ1)}</span>
                 </div>
-              </div>
-            </div>`;
-          }).join('')}
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;flex-wrap:wrap">
+                  <span style="font-size:12px;color:#ef5350;font-weight:600">💵 Recibe (honorarios Q1-26)</span>
+                  <span style="font-size:18px;font-weight:700;color:#ef5350">${fv(s.honQ1)}</span>
+                </div>
+                <div style="height:1px;background:#e0e8e5;margin:8px 0"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:10px;flex-wrap:wrap">
+                  <span style="font-size:12px;color:#1a3a2a;font-weight:600">Margen para OET</span>
+                  <span style="font-size:20px;font-weight:700;color:${_color}">${fv(s.margen)}</span>
+                </div>
+                <div style="margin-top:10px;padding:8px 12px;background:#f5f8f7;border-radius:8px">
+                  <div style="font-size:11px;color:#607d76">Honorario / Facturación</div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                    <div style="flex:1;height:10px;background:#e0e8e5;border-radius:5px;overflow:hidden;min-width:0">
+                      <div style="height:100%;width:${Math.min(s.honPct,100)}%;background:${_color}"></div>
+                    </div>
+                    <span style="font-weight:700;font-size:14px;color:${_color}">${s.honPct.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
         </div>
       </div>
+    </div>` : ''}
+  ` : `
+    <!-- Filtro fuera de Q1: detalle por proveedor no disponible -->
+    <div class="insight warn" style="margin-top:14px;border-left:4px solid #ff9800">
+      ℹ️ <strong>Detalle por prestador no disponible para este período.</strong> Las gráficas y la tabla de prestadores individuales (con NIT) solo están disponibles para <strong>Q1</strong> (Ene-Feb-Mar) ya que es el detalle que entrega el contador en las Notas del último cierre EEFF (Mar-26).
+      <br><br>
+      Para ver el detalle por proveedor, ajusta el filtro mensual a los meses 1-2-3 (Q1) o cambia el modo de comparación a <em>YTD comparable</em>.
     </div>
-  </div>` : ''}
+  `}
 
-  <!-- Insight de cierre -->
+  <!-- Insight de cierre dinámico -->
   ${(()=>{
-    if(varTot===null) return '';
-    const _crece = varTot>0;
+    if(var26vs25===null) return '';
+    const _crece = var26vs25>0;
     const _color = _crece ? '#ef5350' : '#2dc5ab';
     const _bg = _crece ? 'rgba(239,83,80,0.06)' : 'rgba(45,197,171,0.06)';
     const _icon = _crece ? '🚨' : '✅';
     const _verbo = _crece ? 'crecieron' : 'se redujeron';
-    // Top 3 con mayor variación absoluta
-    const top3 = [...HP]
-      .map(p=>({...p,_var:_honAt(p,Rk)-_honAt(p,Lk),_pct:_honAt(p,Lk)>0?pctVar(_honAt(p,Rk),_honAt(p,Lk)):null,_nuevo:_honAt(p,Lk)===0&&_honAt(p,Rk)>0}))
-      .sort((a,b)=>Math.abs(b._var)-Math.abs(a._var))
-      .slice(0,3);
     return `<div class="insight" style="margin-top:14px;border-left:4px solid ${_color};background:${_bg}">
-      ${_icon} <strong>Variación clave ${Llb} → ${Rlb}:</strong> los honorarios ${_verbo} <strong>${fp(varTot)}</strong> (mismo período comparable). Las palancas principales:
-      <ul style="margin:6px 0 0 18px;padding:0;font-size:12px;line-height:1.6">
-        ${top3.map(p=>`
-          <li><strong>${p.nombre.split('·')[0].trim()}</strong>: ${p._nuevo?'prestador nuevo en '+Rlb+', '+fv(p._var):fp(p._pct)+' (de '+fv(_honAt(p,Lk))+' a '+fv(_honAt(p,Rk))+')'}</li>
-        `).join('')}
-      </ul>
+      ${_icon} <strong>Variación ${lbl25} → ${lbl26}:</strong> los honorarios totales ${_verbo} <strong>${fp(var26vs25)}</strong> (mismo período comparable, mismos meses).
     </div>`;
   })()}`;
 
-  // ─── Gráfica top honorarios — barras verticales con períodos comparables
-  const topSort = [...HP].sort((a,b)=>_honAt(b,Rk)-_honAt(a,Rk));
-  const _shortName = (n) => n.replace(/^Dr[a]?\. /,'').replace(/M\.A\. /,'M.A.\n').slice(0,22);
-  mkChart('ch-hon-top',{
+  // ─── Chart 1: Evolución mensual (respeta CF) ────────────────────────
+  const _msSet = new Set(ms);
+  const _highlight = (mi, baseRGBA, alphaFull, alphaDim) => _msSet.has(mi+1) ? baseRGBA.replace(/[\d.]+\)$/, alphaFull+')') : baseRGBA.replace(/[\d.]+\)$/, alphaDim+')');
+  const _ds = [];
+  if(CF.years.has(2024)) _ds.push({label:'2024', data:HONORARIOS.m24, backgroundColor:HONORARIOS.m24.map((_,i)=>_highlight(i,'rgba(68,108,179,0.85)','0.85','0.25')), borderColor:B24, borderWidth:1, borderRadius:3});
+  if(CF.years.has(2025)) _ds.push({label:'2025', data:HONORARIOS.m25, backgroundColor:HONORARIOS.m25.map((_,i)=>_highlight(i,'rgba(45,197,171,0.85)','0.85','0.25')), borderColor:B25, borderWidth:1, borderRadius:3});
+  if(CF.years.has(2026)) _ds.push({label:'2026', data:HONORARIOS.m26, backgroundColor:HONORARIOS.m26.map((v,i)=> v===0 ? 'rgba(255,152,0,0.05)' : _highlight(i,'rgba(255,152,0,0.85)','0.85','0.25')), borderColor:B26, borderWidth:1, borderRadius:3});
+
+  mkChart('ch-hon-mensual',{
     type:'bar',
-    data:{
-      labels:topSort.map(p=>_shortName(p.nombre)),
-      datasets:[
-        {label:Llb, data:topSort.map(p=>_honAt(p,Lk)), backgroundColor:C_L, borderColor:B_L, borderWidth:1, borderRadius:4},
-        {label:Rlb, data:topSort.map(p=>_honAt(p,Rk)), backgroundColor:C_R, borderColor:B_R, borderWidth:1, borderRadius:4},
-      ]
-    },
+    data:{labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],datasets:_ds},
     options:{
       plugins:{
         legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
         tooltip:{
-          backgroundColor:'rgba(12,48,40,.95)',
-          padding:10, titleFont:{size:13,weight:'600'}, bodyFont:{size:12},
+          backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
           callbacks:{
-            title:(items)=>topSort[items[0].dataIndex].nombre,
             label:(c)=>` ${c.dataset.label}: ${fv(c.parsed.y)}`,
             afterBody:(items)=>{
-              const p = topSort[items[0].dataIndex];
-              const vL = _honAt(p,Lk), vR = _honAt(p,Rk);
-              const v = vR - vL;
-              const vp = vL>0 ? pctVar(vR, vL) : null;
-              return ['', 'Variación: '+(v>=0?'+':'')+fv(v), vp!==null?fp(vp)+' '+Llb+' → '+Rlb : 'Prestador nuevo en '+Rlb];
+              const mi = items[0].dataIndex;
+              const inFilter = _msSet.has(mi+1);
+              return inFilter ? ['', '✓ Mes incluido en el filtro activo'] : ['', '○ Mes fuera del filtro activo (atenuado)'];
             }
           }
         }
@@ -5143,15 +5163,49 @@ function buildComHonorarios(){
       }
     }
   });
+
+  // ─── Chart 2: Top prestadores Q1 (solo si filtro activo es Q1) ──────
+  if(isQ1){
+    const C_R='rgba(239,83,80,0.85)', B_R='rgba(239,83,80,1)';
+    const C_L='rgba(239,83,80,0.32)', B_L='rgba(239,83,80,0.55)';
+    const topSort = [...HP].sort((a,b)=>(b.q1_2026||0)-(a.q1_2026||0));
+    const _shortName = (n) => n.replace(/^Dr[a]?\. /,'').replace(/M\.A\. /,'M.A.\n').slice(0,22);
+    mkChart('ch-hon-top',{
+      type:'bar',
+      data:{
+        labels:topSort.map(p=>_shortName(p.nombre)),
+        datasets:[
+          {label:'Q1-25', data:topSort.map(p=>p.q1_2025||0), backgroundColor:C_L, borderColor:B_L, borderWidth:1, borderRadius:4},
+          {label:'Q1-26', data:topSort.map(p=>p.q1_2026||0), backgroundColor:C_R, borderColor:B_R, borderWidth:1, borderRadius:4},
+        ]
+      },
+      options:{
+        plugins:{
+          legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
+          tooltip:{
+            backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
+            callbacks:{
+              title:(items)=>topSort[items[0].dataIndex].nombre,
+              label:(c)=>` ${c.dataset.label}: ${fv(c.parsed.y)}`,
+              afterBody:(items)=>{
+                const p = topSort[items[0].dataIndex];
+                const vL = p.q1_2025||0, vR = p.q1_2026||0, v = vR-vL;
+                const vp = vL>0 ? pctVar(vR, vL) : null;
+                return ['', 'Variación: '+(v>=0?'+':'')+fv(v), vp!==null?fp(vp)+' Q1-25 → Q1-26':'Prestador nuevo en Q1-26'];
+              }
+            }
+          }
+        },
+        scales:{
+          x:{ticks:{font:{size:11,weight:'600'},color:'#1a3a2a'},grid:{display:false}},
+          y:{ticks:{callback:v=>fv(v),font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'},
+             title:{display:true,text:'Honorarios pagados (miles COP)',font:{size:11,weight:'600'},color:'#1a3a2a'}}
+        }
+      }
+    });
+  }
   requestAnimationFrame(()=>{ if(el) el.dispatchEvent(new Event('resize')); });
 }
-
-// Handler global del filtro de comparación
-window._setHonFilter = function(side, key){
-  window._honFilter = window._honFilter || { left:'q1_2025', right:'q1_2026' };
-  window._honFilter[side] = key;
-  buildComHonorarios();
-};
 
 function buildFinBalance(){
   const el=document.getElementById('fin-balance');
