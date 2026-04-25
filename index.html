@@ -1615,7 +1615,7 @@ function periodLabel(){
   return qLabel+(names.length<=4?names.join('+'):names.length+' meses');
 }
 
-const FIN_SECS_ALL=['fin-inicio','fin-pnl','fin-ebitda','fin-margen','fin-costos','fin-flujo','fin-balance','fin-anual'];
+const FIN_SECS_ALL=['fin-inicio','fin-pnl','fin-ebitda','fin-margen','fin-costos','fin-flujo','fin-balance','fin-anual','fin-eeff'];
 function clearFinBuilt(){
   FIN_SECS_ALL.forEach(sid=>{
     const el=document.getElementById(sid);
@@ -1761,6 +1761,7 @@ const NAVS = {
     {id:'fin-flujo',   label:'Flujo de Caja',    icon:'🔄'},
     {id:'fin-balance', label:'Balance/Liquidez', icon:'🏦'},
     {id:'fin-anual',   label:'Resumen Anual',    icon:'📋'},
+    {id:'fin-eeff',    label:'EEFF Definitivos',  icon:'📄'},
   ],
   com:[
     {id:'com-inicio',    label:'Inicio',          icon:'🏠'},
@@ -2693,7 +2694,7 @@ function buildFinAnual(){
     {
       periodo:'Mar-26',
       fecha:'Abril 2026',
-      autor:'Contadora — DMA Asesorías',
+      autor:'Comité Asesor',
       items:[
         'Se registró una pérdida de <strong>$122 MM</strong>, lo que representa una caída del <strong class="neg">−132.2%</strong> frente al mismo período del año anterior (−$501 MM).',
         'Los ingresos presentan una variación positiva del <strong class="pos">+46.4%</strong> (+$1.400 MM), al pasar de $3.017 MM a $4.418 MM acumulados en el trimestre.',
@@ -2731,6 +2732,41 @@ function buildFinAnual(){
   </div>`;
   document.getElementById('fin-anual').appendChild(_bEl);
   requestAnimationFrame(()=>{ const c=document.getElementById('fin-anual'); if(c) c.dispatchEvent(new Event('resize')); });
+}
+
+// ════════════════════════════════════════
+//  BUILD: EEFF DEFINITIVOS
+// ════════════════════════════════════════
+function buildFinEeff(){
+  const el=document.getElementById('fin-eeff');
+  const BASE='https://clawddma.github.io/oet-dashboard/eeff/';
+  const archivos=[
+    {nombre:'EEFF Ene · Feb · Mar 2026',archivo:'EEFF-OET-Ene-Feb-Mar-2026.xlsx',periodo:'Ene-26 – Mar-26',fecha:'Abril 2026',autora:'Paola · Contadora OET'},
+  ];
+  el.innerHTML=`
+  <div class="sec-title">Estados Financieros Definitivos</div>
+  <div class="gfull">
+    <div class="card">
+      <div class="card-hdr"><h3>Archivos oficiales emitidos por la contadora</h3></div>
+      <div class="card-body">
+        <table class="tbl">
+          <thead><tr><th>Documento</th><th>Período</th><th>Emitido</th><th>Autora</th><th></th></tr></thead>
+          <tbody>
+          ${archivos.map(a=>`
+            <tr>
+              <td style="font-weight:600">📊 ${a.nombre}</td>
+              <td>${a.periodo}</td>
+              <td>${a.fecha}</td>
+              <td style="color:#607d76">${a.autora}</td>
+              <td><a href="${BASE}${a.archivo}" download style="display:inline-block;background:#1a3a2a;color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">⬇ Descargar</a></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <p style="font-size:11px;color:#9eb3ad;margin-top:14px">Los archivos corresponden a los estados financieros oficiales entregados por la contadora. Uso interno.</p>
+      </div>
+    </div>
+  </div>`;
+  requestAnimationFrame(()=>{ if(el) el.dispatchEvent(new Event('resize')); });
 }
 
 // ════════════════════════════════════════
@@ -4337,6 +4373,7 @@ const BUILDERS = {
   'fin-flujo':   buildFinFlujo,
   'fin-balance': buildFinBalance,
   'fin-anual':   buildFinAnual,
+  'fin-eeff':    buildFinEeff,
   'com-inicio':    buildComInicio,
   'com-lineas':    buildComLineas,
   'com-cirujanos': buildComCirujanos,
