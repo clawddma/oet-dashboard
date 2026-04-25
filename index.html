@@ -556,7 +556,7 @@ a{text-decoration:none;color:inherit;}
     <div class="ttab" data-tab="com"><span class="ti">📊</span> Comercial</div>
     <div class="ttab" data-tab="acc"><span class="ti">✅</span> Acciones 2026</div>
   </nav>
-  <div class="hdr-meta">Datos: Ene 2024 – Feb 2026</div>
+  <div class="hdr-meta" id="hdr-meta">Datos: <span id="hdr-range">—</span></div>
 </header>
 <button id="hamburger" onclick="toggleSidebar()">☰</button>
 <nav id="bottom-nav">
@@ -763,6 +763,33 @@ const D = [
   {p:'Mar-26',f:'2026-03',y:2026,m:3,ing:1622729.33,cost:1117130.15,ub:505599.19,mbp:31.2,ga:631743.3,go:407597.02,da:73206.06,uo:-126144.11,mop:-7.8,oInc:16649.8,oGas:40387.92,un:-149882.23,mnp:-9.2,ebitda:-52938.05,mep:-3.3}
 ];
 
+// ════════════════════════════════════════
+//  META — Metadatos derivados de D[] (FUENTE ÚNICA DE VERDAD)
+//  No editar manualmente. Todo lo que dependa del "último mes con EEFF"
+//  debe leer de aquí. Cuando se inyecte un nuevo mes en D[], todo se
+//  recalcula automáticamente y los hardcodes desaparecen del dashboard.
+// ════════════════════════════════════════
+const _MN_FULL=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const _MN_SHORT=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const META = (()=>{
+  const eeffOnly = D.filter(d=>!d.eeffPending);
+  const last    = eeffOnly[eeffOnly.length-1] || D[D.length-1];
+  const first   = D[0];
+  const cur     = D[D.length-1]; // puede ser eeffPending
+  return {
+    first,           // {p:'Ene-24', f:'2024-01', y:2024, m:1, ...}
+    last,            // último con EEFF completo (Mar-26 hoy)
+    cur,             // último registro (puede ser eeffPending)
+    rangeLabel: `${_MN_SHORT[first.m]} ${first.y} – ${_MN_SHORT[cur.m]} ${cur.y}`,
+    lastP: last.p,
+    lastY: last.y,
+    lastM: last.m,
+    lastFullMonth: _MN_FULL[last.m]+' '+last.y,
+    yearsWithData: [...new Set(D.map(d=>d.y))],
+    eeffMonths26: eeffOnly.filter(d=>d.y===2026).length,
+  };
+})();
+
 /* ==OET_DATA_START== */
 // Datos Comerciales — Fuente: Archivo de Facturación real (auto-sync via Apps Script)
 const COM = {
@@ -838,21 +865,34 @@ const MTD_RAW = {y:2026,m:4,d:23,ing:1017577,cir:284,daysInMonth:30,lineas:[4433
 const DAILY_RAW = []; /* AUTO-DAILY */
 // ==DAILY_DATA_END==
 
-// Balance Sheet Snapshots (miles de COP) — Fuente: EEFF Feb 2026
+// Balance Sheet Snapshots (miles de COP) — Fuente: EEFF oficiales del contador
+// Estructura data-driven: cada snapshot es un objeto independiente.
+// Para agregar un nuevo cierre, simplemente push() a BSS.snapshots
+// y el dashboard se reconfigura automáticamente.
 const BSS = {
-  labels: ['Feb-25','Dic-25','Feb-26'],
-  // Activos
-  cash:      [291878,  178024,  -1793],    // Efectivo y equivalentes
-  cxc:       [701000,  2103000, 1914000],  // CxC clientes + anticipos
-  actCorr:   [993000,  2850000, 2481000],  // Total activo corriente
-  actTotal:  [6425000, 12929000,12982000], // Total activos
-  // Pasivos (valores positivos para el display)
-  deudaBco:  [719000,  701000,  757000],   // Obligaciones financieras
-  cxpProv:   [249000,  276000,  335000],   // CxP proveedores (corriente)
-  pasCorr:   [2769000, 7796000, 8491000],  // Total pasivo corriente
-  pasNoCorr: [1545000, 2810000, 2142000],  // Total pasivo no corriente
-  pasTotal:  [4314000, 10606000,10633000], // Total pasivos
-  patrimonio:[2111000, 2322000, 2349000],  // Patrimonio
+  snapshots: [
+    {periodo:'Feb-25', f:'2025-02', y:2025, m:2,  cash:291878, cxc:701000,  actCorr:993000,  actTotal:6425000,  deudaBco:719000, cxpProv:249000, pasCorr:2769000, pasNoCorr:1545000, pasTotal:4314000,  patrimonio:2111000},
+    {periodo:'Dic-25', f:'2025-12', y:2025, m:12, cash:178024, cxc:2103000, actCorr:2850000, actTotal:12929000, deudaBco:701000, cxpProv:276000, pasCorr:7796000, pasNoCorr:2810000, pasTotal:10606000, patrimonio:2322000},
+    {periodo:'Feb-26', f:'2026-02', y:2026, m:2,  cash:-1793,  cxc:1914000, actCorr:2481000, actTotal:12982000, deudaBco:757000, cxpProv:335000, pasCorr:8491000, pasNoCorr:2142000, pasTotal:10633000, patrimonio:2349000},
+    {periodo:'Mar-26', f:'2026-03', y:2026, m:3,  cash:43708,  cxc:2374000, actCorr:2987000, actTotal:13471000, deudaBco:736000, cxpProv:560000, pasCorr:5289000, pasNoCorr:2066000, pasTotal:7355000,  patrimonio:6116000},
+  ],
+  // Compatibilidad: arrays paralelos derivados (NO editar — se generan automáticamente)
+  get labels()    {return this.snapshots.map(s=>s.periodo);},
+  get cash()      {return this.snapshots.map(s=>s.cash);},
+  get cxc()       {return this.snapshots.map(s=>s.cxc);},
+  get actCorr()   {return this.snapshots.map(s=>s.actCorr);},
+  get actTotal()  {return this.snapshots.map(s=>s.actTotal);},
+  get deudaBco()  {return this.snapshots.map(s=>s.deudaBco);},
+  get cxpProv()   {return this.snapshots.map(s=>s.cxpProv);},
+  get pasCorr()   {return this.snapshots.map(s=>s.pasCorr);},
+  get pasNoCorr() {return this.snapshots.map(s=>s.pasNoCorr);},
+  get pasTotal()  {return this.snapshots.map(s=>s.pasTotal);},
+  get patrimonio(){return this.snapshots.map(s=>s.patrimonio);},
+  // Helpers data-driven
+  get last()      {return this.snapshots[this.snapshots.length-1];},
+  get first()     {return this.snapshots[0];},
+  get lastIdx()   {return this.snapshots.length-1;},
+  get prev()      {return this.snapshots[this.snapshots.length-2];},
 };
 
 // ════════════════════════════════════════
@@ -1771,9 +1811,11 @@ const NAVS = {
     {id:'com-meta',      label:'Meta 2026',        icon:'🎯'},
   ],
   acc:[
-    {id:'acc-inicio', label:'Inicio',       icon:'🏠'},
-    {id:'acc-plan',   label:'Plan Estratégico',icon:'🧭'},
-    {id:'acc-kpi',    label:'KPIs Objetivo', icon:'🎯'},
+    {id:'acc-inicio',   label:'Inicio',           icon:'🏠'},
+    {id:'acc-plan',     label:'Plan Estratégico', icon:'🧭'},
+    {id:'acc-kpi',      label:'KPIs Objetivo',    icon:'🎯'},
+    {id:'acc-bitacora', label:'Bitácora Comités', icon:'📋'},
+    {id:'acc-tareas',   label:'Tareas Activas',   icon:'✅'},
   ]
 };
 
@@ -2497,16 +2539,28 @@ function buildFinFlujo(){
       <div class="card-body" id="flujo-tabla"></div>
     </div>
   </div>
-  <div class="gfull">${chartCard('ch-fcf-acum','EBITDA Acumulado Total Ene-2024 → Feb-2026','¿Cuánto ha generado la clínica en total?',200,'')}</div>
-  <div class="insight warn">
-    🚨 <strong>Contexto real de liquidez (ver "Balance/Liquidez"):</strong>
-    Aunque el EBITDA acumulado sugiere generación operativa, la empresa enfrenta una crisis de caja real:
-    <strong>Caja Feb-26 = -$1.8M COP</strong> (negativa), <strong>Razón Corriente = 0.29x</strong>,
-    <strong>CxC = $1.9B COP sin cobrar</strong> (cartera atrasada), y Pasivo Corriente de $8.5B vs Activo Corriente de $2.5B.
-    El EBITDA se consume por: (1) CapEx de expansión de quirófanos (activos pasaron de $6.4B→$13B),
-    (2) financiamiento de deuda bancaria ($757M), y (3) acumulación de cartera (CxC sin cobrar).
-    <strong>Acción inmediata:</strong> cobrar CxC atrasada → ve al módulo <strong>Balance/Liquidez</strong> para proyección de caja.
-  </div>`;
+  <div class="gfull">${chartCard('ch-fcf-acum','EBITDA Acumulado Total '+META.first.p+' → '+META.last.p,'¿Cuánto ha generado la clínica en total?',200,'')}</div>
+  ${(()=>{
+    const _b=BSS.last, _r=(_b.actCorr/_b.pasCorr).toFixed(2);
+    const _isCrit=_b.cash<0||_b.actCorr<_b.pasCorr;
+    if(_isCrit){
+      return `<div class="insight warn">
+        🚨 <strong>Contexto real de liquidez (ver "Balance/Liquidez"):</strong>
+        Aunque el EBITDA acumulado sugiere generación operativa, la empresa enfrenta tensión de caja:
+        <strong>Caja ${_b.periodo} = ${fv(_b.cash)}</strong> ${_b.cash<0?'(negativa)':''}, <strong>Razón Corriente = ${_r}x</strong>,
+        <strong>CxC = ${fv(_b.cxc)} sin cobrar</strong> (cartera atrasada), y Pasivo Corriente de ${fv(_b.pasCorr)} vs Activo Corriente de ${fv(_b.actCorr)}.
+        El EBITDA se consume por: (1) CapEx de expansión, (2) financiamiento de deuda bancaria (${fv(_b.deudaBco)}), y (3) acumulación de cartera.
+        <strong>Acción inmediata:</strong> cobrar CxC atrasada → ve al módulo <strong>Balance/Liquidez</strong> para proyección de caja.
+      </div>`;
+    } else {
+      return `<div class="insight" style="border-left:4px solid #2dc5ab;background:rgba(45,197,171,.08)">
+        ✅ <strong>Contexto de liquidez (${_b.periodo}):</strong>
+        Caja <strong>${fv(_b.cash)}</strong> (positiva), Razón Corriente <strong>${_r}x</strong>,
+        CxC <strong>${fv(_b.cxc)}</strong>. Activo Corriente ${fv(_b.actCorr)} vs Pasivo Corriente ${fv(_b.pasCorr)}.
+        Mantener disciplina en cobro de cartera y control de obligaciones para sostener la liquidez.
+      </div>`;
+    }
+  })()}`;
 
   if(_hasMF_f){
     // ── MODO PERÍODO ─────────────────────────────────────────────────────
@@ -2735,13 +2789,228 @@ function buildFinAnual(){
 }
 
 // ════════════════════════════════════════
+//  COMITES — Bitácora editable de comités estratégicos OET
+//  Cada vez que llega un acta de comité:
+//  1. Agrega un objeto al inicio de COMITES (más reciente primero)
+//  2. La sección "Bitácora Comités" se actualiza automáticamente
+//  3. Las tareas se reflejan en "Tareas Activas" filtradas por estado
+//
+//  Estados de tarea: 'PENDIENTE' | 'EN_CURSO' | 'COMPLETADA' | 'CANCELADA' | 'EN_RIESGO'
+//  Prioridades: 'ALTA' | 'MEDIA' | 'BAJA'
+// ════════════════════════════════════════
+const COMITE_PARTICIPANTES_FIJOS = [
+  {nombre:'Miguel Jaramillo',  rol:'Presidente · Mayor accionista'},
+  {nombre:'Adriana',           rol:'Gerente General'},
+  {nombre:'Dorreymar',         rol:'Contadora OET'},
+  {nombre:'David Gómez',       rol:'Asesor Financiero'},
+  {nombre:'Daniel Mesa',       rol:'Asesor Financiero'},
+];
+const COMITES = [
+  {
+    id:'COM-2026-04',
+    fecha:'2026-04-22',
+    tipo:'Comité Estratégico Mensual',
+    cierre_periodo:'Mar-26',
+    asistentes:[...COMITE_PARTICIPANTES_FIJOS],
+    contexto:'Análisis del cierre del Q1-26 con EEFF oficiales. Revisión de pérdida de $122M en Mar-26 y caída del 132% en utilidad vs mismo período año anterior. Identificación de palancas para revertir el desbalance entre crecimiento de ingresos (+46%) y costos (+70%).',
+    tareas:[
+      {id:'T-001', titulo:'Auditoría de honorarios médicos por proveedor', desc:'Revisar variación +$352M (+40%) en cuenta 62101001 Honorarios Oftalmología. Identificar proveedores con mayor crecimiento (Miguel A. Jaramillo M., Juan S. Guerrero) y validar conciliación de tarifas.', resp:'Dorreymar + Daniel Mesa', deadline:'2026-05-15', estado:'EN_CURSO', prioridad:'ALTA', impacto:'Reducir 5–10% del costo de honorarios = $35–70M/mes', notas:''},
+      {id:'T-002', titulo:'Revisión arrendamientos y honorarios administrativos', desc:'Renegociar contratos de arrendamiento de equipos y revisar honorarios administrativos que aumentaron en Q1-26.', resp:'Adriana', deadline:'2026-05-30', estado:'PENDIENTE', prioridad:'ALTA', impacto:'Reducir gasto operacional ~$20–40M/mes', notas:''},
+      {id:'T-003', titulo:'Plan de cobro de cartera (CxC)', desc:'CxC alcanzó $2.37B en Mar-26 (vs $701M en Feb-25, +238%). Definir estrategia de gestión de cartera y reducción de días de cobro.', resp:'Adriana + Daniel', deadline:'2026-05-30', estado:'PENDIENTE', prioridad:'ALTA', impacto:'Recuperar $500M–$1B en 60 días → mejorar caja', notas:''},
+      {id:'T-004', titulo:'Análisis de costo de insumos médicos', desc:'Compra de insumos creció +63% vs 2025. Auditar consumo por línea de servicio (especialmente LIOs e insumos no gravados).', resp:'Dorreymar + Adriana', deadline:'2026-05-22', estado:'PENDIENTE', prioridad:'MEDIA', impacto:'Negociación con proveedores: 3–5% ahorro', notas:''},
+      {id:'T-005', titulo:'Activar nuevo quirófano (seguimiento)', desc:'Confirmar fecha exacta de puesta en operación. Revisar si las +300 cirugías/mes esperadas pueden compensar el desbalance de Q1.', resp:'Miguel J. + Adriana', deadline:'2026-05-15', estado:'EN_CURSO', prioridad:'ALTA', impacto:'+$1.5–2.0B anuales adicionales', notas:''},
+      {id:'T-006', titulo:'Validar utilidad acumulada Q1-26', desc:'Utilidad acumulada al cierre de Mar-26 = -$122M. Establecer plan de cierre 2026 que recupere este déficit en los meses restantes.', resp:'David Gómez', deadline:'2026-05-08', estado:'EN_CURSO', prioridad:'ALTA', impacto:'Definir hoja de ruta de recuperación', notas:''},
+    ],
+    revisiones:[],  // Tareas heredadas de comités anteriores con su evolución
+  },
+  // Para nuevos comités: agrega aquí, al inicio del array (más reciente primero)
+  // {
+  //   id:'COM-2026-05', fecha:'2026-05-XX', tipo:'Comité Estratégico Mensual',
+  //   cierre_periodo:'Abr-26', asistentes:[...COMITE_PARTICIPANTES_FIJOS],
+  //   contexto:'...',
+  //   tareas:[...],
+  //   revisiones:[ {id_tarea:'T-001', estado_anterior:'EN_CURSO', estado_actual:'COMPLETADA', resultado:'...'} ]
+  // }
+];
+
+// Helper: agrega todas las tareas de todos los comités con referencia al comité origen
+function _allTareas(){
+  const out=[];
+  COMITES.forEach(c=>{
+    c.tareas.forEach(t=>out.push({...t, comite_id:c.id, comite_fecha:c.fecha, cierre:c.cierre_periodo}));
+  });
+  return out;
+}
+
+// ════════════════════════════════════════
+//  BUILD: ACCIONES — BITÁCORA DE COMITÉS
+// ════════════════════════════════════════
+function buildAccBitacora(){
+  const el=document.getElementById('acc-bitacora');
+  const _estadoColor={
+    PENDIENTE:'#9eb3ad',
+    EN_CURSO:'#ff9800',
+    COMPLETADA:'#2dc5ab',
+    CANCELADA:'#999',
+    EN_RIESGO:'#ef5350',
+  };
+  const _prioridadColor={ALTA:'#ef5350',MEDIA:'#ff9800',BAJA:'#9eb3ad'};
+  const _fmtFecha=f=>{const [y,m,d]=f.split('-');return `${d}/${m}/${y}`;};
+
+  // KPIs de la bitácora
+  const _allTrk=_allTareas();
+  const _stats={
+    total:_allTrk.length,
+    pendiente:_allTrk.filter(t=>t.estado==='PENDIENTE').length,
+    enCurso:_allTrk.filter(t=>t.estado==='EN_CURSO').length,
+    completada:_allTrk.filter(t=>t.estado==='COMPLETADA').length,
+    enRiesgo:_allTrk.filter(t=>t.estado==='EN_RIESGO').length,
+  };
+
+  el.innerHTML=`
+  <div class="sec-title">Bitácora de Comités Estratégicos <span class="st-badge">${COMITES.length} ${COMITES.length===1?'reunión registrada':'reuniones registradas'}</span></div>
+
+  <!-- KPIs de seguimiento -->
+  <div class="kpis k4">
+    ${kpiCard('Comités realizados', String(COMITES.length), 'Última: '+(COMITES[0]?_fmtFecha(COMITES[0].fecha):'—'))}
+    ${kpiCard('Tareas en curso', String(_stats.enCurso), 'Activas con responsable asignado', 'orange')}
+    ${kpiCard('Tareas pendientes', String(_stats.pendiente), 'Por iniciar', 'warn')}
+    ${kpiCard('Tareas completadas', String(_stats.completada), 'Cerradas con resultado', _stats.completada>0?'':'')}
+  </div>
+
+  <!-- Timeline de comités -->
+  <div class="gfull" style="margin-top:14px">
+    ${COMITES.map((c,idx)=>{
+      const _isLatest=idx===0;
+      const _participantesHtml=c.asistentes.map(a=>`<span style="display:inline-block;background:#f5f8f7;border-radius:14px;padding:3px 10px;font-size:11px;color:#1a3a2a;margin:2px 4px 2px 0"><strong>${a.nombre}</strong> · <span style="color:#607d76">${a.rol}</span></span>`).join('');
+      const _tareasPorEstado={};
+      c.tareas.forEach(t=>{(_tareasPorEstado[t.estado]=_tareasPorEstado[t.estado]||[]).push(t);});
+      const _orderEstados=['EN_CURSO','PENDIENTE','EN_RIESGO','COMPLETADA','CANCELADA'];
+      const _tareasHtml=_orderEstados.filter(e=>_tareasPorEstado[e]).map(e=>{
+        const tareas=_tareasPorEstado[e];
+        return tareas.map(t=>`
+          <div style="border-left:3px solid ${_estadoColor[t.estado]};background:#fff;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+              <span style="background:${_estadoColor[t.estado]};color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px">${t.estado.replace('_',' ')}</span>
+              <span style="background:${_prioridadColor[t.prioridad]};color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px">${t.prioridad}</span>
+              <span style="font-size:11px;color:#9eb3ad">${t.id}</span>
+              <span style="font-size:11px;color:#607d76;margin-left:auto">📅 ${_fmtFecha(t.deadline)}</span>
+            </div>
+            <div style="font-weight:600;font-size:13px;color:#1a3a2a;margin-bottom:3px">${t.titulo}</div>
+            <div style="font-size:12px;color:#2d3f38;line-height:1.4;margin-bottom:6px">${t.desc}</div>
+            <div style="font-size:11px;color:#607d76;display:flex;flex-wrap:wrap;gap:14px">
+              <span>👤 <strong>${t.resp}</strong></span>
+              ${t.impacto?`<span>💰 ${t.impacto}</span>`:''}
+            </div>
+            ${t.notas?`<div style="margin-top:6px;padding:6px 10px;background:#f5f8f7;border-radius:6px;font-size:11px;color:#607d76">📝 ${t.notas}</div>`:''}
+          </div>`).join('');
+      }).join('');
+
+      return `
+      <div class="card" style="margin-bottom:14px;border-left:4px solid ${_isLatest?'#2dc5ab':'#9eb3ad'}">
+        <div class="card-hdr" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h3 style="margin:0">📋 ${c.tipo}</h3>
+          <span style="background:#1a3a2a;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px">${_fmtFecha(c.fecha)}</span>
+          <span style="background:#ffc107;color:#1a3a2a;font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px">Cierre ${c.cierre_periodo}</span>
+          ${_isLatest?'<span style="background:#2dc5ab;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:14px;margin-left:auto">MÁS RECIENTE</span>':''}
+        </div>
+        <div class="card-body">
+          <div style="margin-bottom:12px;padding:10px 14px;background:#f5f8f7;border-radius:8px;border-left:3px solid #2dc5ab">
+            <div style="font-size:11px;color:#607d76;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Contexto</div>
+            <div style="font-size:13px;color:#2d3f38;line-height:1.5">${c.contexto}</div>
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:#607d76;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Asistentes</div>
+            <div>${_participantesHtml}</div>
+          </div>
+          ${c.revisiones&&c.revisiones.length?`
+          <div style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border-radius:8px;border-left:3px solid #ff9800">
+            <div style="font-size:11px;color:#b8860b;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Revisiones del comité anterior</div>
+            ${c.revisiones.map(r=>`<div style="font-size:12px;color:#2d3f38;margin:4px 0">• <strong>${r.id_tarea}</strong>: ${r.estado_anterior} → <strong>${r.estado_actual}</strong> ${r.resultado?` — ${r.resultado}`:''}</div>`).join('')}
+          </div>`:''}
+          <div>
+            <div style="font-size:11px;color:#607d76;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Tareas definidas (${c.tareas.length})</div>
+            ${_tareasHtml}
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div class="insight" style="margin-top:14px;border-left:4px solid #607d76;background:#f5f8f7">
+    📎 <strong>Cómo agregar un nuevo comité:</strong> Al recibir el acta del próximo comité, se agrega un nuevo objeto al inicio del array <code>COMITES</code> en el código.
+    Las tareas no cerradas pasan automáticamente a la sección <strong>Tareas Activas</strong> y la columna de <em>revisiones</em> permite hacer seguimiento mes a mes.
+  </div>`;
+  requestAnimationFrame(()=>{ if(el) el.dispatchEvent(new Event('resize')); });
+}
+
+// ════════════════════════════════════════
+//  BUILD: ACCIONES — TAREAS ACTIVAS (Kanban-lite)
+// ════════════════════════════════════════
+function buildAccTareas(){
+  const el=document.getElementById('acc-tareas');
+  const _estadoColor={
+    PENDIENTE:'#9eb3ad',
+    EN_CURSO:'#ff9800',
+    COMPLETADA:'#2dc5ab',
+    CANCELADA:'#999',
+    EN_RIESGO:'#ef5350',
+  };
+  const _prioridadColor={ALTA:'#ef5350',MEDIA:'#ff9800',BAJA:'#9eb3ad'};
+  const _fmtFecha=f=>{const [y,m,d]=f.split('-');return `${d}/${m}/${y}`;};
+  const _all=_allTareas();
+  const _columns=[
+    {key:'PENDIENTE',  title:'Pendiente',  color:'#9eb3ad'},
+    {key:'EN_CURSO',   title:'En curso',   color:'#ff9800'},
+    {key:'EN_RIESGO',  title:'En riesgo',  color:'#ef5350'},
+    {key:'COMPLETADA', title:'Completada', color:'#2dc5ab'},
+  ];
+  el.innerHTML=`
+  <div class="sec-title">Tareas Activas <span class="st-badge">Vista Kanban · ${_all.length} tareas totales</span></div>
+  <div class="insight" style="margin-bottom:14px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.06)">
+    📊 Vista consolidada de todas las tareas definidas en los comités. Cada tarjeta muestra responsable, deadline, prioridad e impacto estimado. Para cambiar el estado de una tarea, se actualiza en la <strong>Bitácora de Comités</strong>.
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    ${_columns.map(col=>{
+      const tareas=_all.filter(t=>t.estado===col.key);
+      return `
+      <div style="background:#f5f8f7;border-radius:10px;padding:10px;min-height:300px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ${col.color}">
+          <div style="width:8px;height:8px;border-radius:50%;background:${col.color}"></div>
+          <strong style="font-size:13px;color:#1a3a2a">${col.title}</strong>
+          <span style="background:${col.color};color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:10px;margin-left:auto">${tareas.length}</span>
+        </div>
+        ${tareas.length===0?`<div style="text-align:center;color:#9eb3ad;font-size:11px;padding:20px 0">Sin tareas en esta columna</div>`:''}
+        ${tareas.map(t=>`
+          <div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);border-top:3px solid ${_prioridadColor[t.prioridad]}">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              <span style="font-size:9px;color:#9eb3ad">${t.id}</span>
+              <span style="font-size:9px;color:#fff;background:${_prioridadColor[t.prioridad]};padding:1px 6px;border-radius:8px;font-weight:700">${t.prioridad}</span>
+            </div>
+            <div style="font-size:12px;font-weight:600;color:#1a3a2a;margin-bottom:6px;line-height:1.3">${t.titulo}</div>
+            <div style="font-size:10px;color:#607d76;margin-bottom:4px">👤 ${t.resp}</div>
+            <div style="font-size:10px;color:#607d76;margin-bottom:4px">📅 ${_fmtFecha(t.deadline)}</div>
+            <div style="font-size:10px;color:#9eb3ad;border-top:1px solid #eef2f1;padding-top:4px;margin-top:6px">📋 ${t.cierre} · ${t.comite_id}</div>
+          </div>`).join('')}
+      </div>`;
+    }).join('')}
+  </div>
+  <style>
+    @media(max-width:1024px){ #acc-tareas > div[style*="grid-template-columns"] { grid-template-columns:repeat(2,1fr) !important; } }
+    @media(max-width:600px){ #acc-tareas > div[style*="grid-template-columns"] { grid-template-columns:1fr !important; } }
+  </style>`;
+  requestAnimationFrame(()=>{ if(el) el.dispatchEvent(new Event('resize')); });
+}
+
+// ════════════════════════════════════════
 //  BUILD: EEFF DEFINITIVOS
 // ════════════════════════════════════════
 function buildFinEeff(){
   const el=document.getElementById('fin-eeff');
   const BASE='https://clawddma.github.io/oet-dashboard/eeff/';
   const archivos=[
-    {nombre:'EEFF Ene · Feb · Mar 2026',archivo:'EEFF-OET-Ene-Feb-Mar-2026.xlsx',periodo:'Ene-26 – Mar-26',fecha:'Abril 2026',autora:'Elaborado por Paola / Asesores Financieros'},
+    {nombre:'EEFF Marzo 2026',  archivo:'EEFF-OET-2026-03-Marzo.xlsx',  periodo:'Mar-26 (Q1 2026 acumulado)',fecha:'Abril 2026', autora:'Elaborado por Paola / Asesores Financieros'},
+    {nombre:'EEFF Febrero 2026',archivo:'EEFF-OET-2026-02-Febrero.xlsx',periodo:'Feb-26 (Ene-Feb acumulado)',fecha:'Marzo 2026',  autora:'Elaborado por Paola / Asesores Financieros'},
+    {nombre:'EEFF Enero 2026',  archivo:'EEFF-OET-2026-01-Enero.xlsx',  periodo:'Ene-26 (cierre 2025 + Ene)',fecha:'Marzo 2026', autora:'Elaborado por Paola / Asesores Financieros'},
   ];
   el.innerHTML=`
   <div class="sec-title">Estados Financieros Definitivos</div>
@@ -3785,11 +4054,18 @@ function buildComMeta(){
     </div>
   </div>
   <div class="gfull">${chartCard('ch-meta-trend','Ritmo mensual necesario vs ritmo actual','',240,'')}</div>
-  <div class="insight">
-    🎯 <strong>Para alcanzar $23.5B en 2026</strong> se necesita un promedio de ${fv((COM.meta26-ytd26ing)/9)} por mes en los 9 meses restantes (Abr–Dic).
-    El mejor mes registrado fue Feb-26 con ${fv(D[D.length-1].ing)}. El nuevo quirófano puede agregar +300 cirugías/mes,
-    acelerando el cumplimiento de la meta.
-  </div>`;
+  ${(()=>{
+    // Mes más facturado de la historia, derivado dinámicamente de D[]
+    const _bestMes = [...D].sort((a,b)=>(b.ing||0)-(a.ing||0))[0];
+    const _mesesRest = 12 - META.lastM;  // meses restantes del año desde el último cierre
+    const _avgNeeded = _mesesRest>0 ? (COM.meta26-ytd26ing)/_mesesRest : 0;
+    const _restanteLbl = _mesesRest>0 ? META.lastM<11 ? _MN_SHORT[META.lastM+1]+'–Dic' : 'Dic' : 'año cerrado';
+    return `<div class="insight">
+      🎯 <strong>Para alcanzar ${fv(COM.meta26)} en 2026</strong> se necesita un promedio de ${fv(_avgNeeded)} por mes en los ${_mesesRest} meses restantes (${_restanteLbl}).
+      El mejor mes registrado fue <strong>${_bestMes.p}</strong> con ${fv(_bestMes.ing)}. El nuevo quirófano puede agregar +300 cirugías/mes,
+      acelerando el cumplimiento de la meta.
+    </div>`;
+  })()}`;
 
   // Meta chart: monthly actual vs required pace (con filtro de mes)
   const reqAvg = (COM.meta26-ytd26ing)/10;
@@ -4092,36 +4368,43 @@ function buildComCirujanos(){
 function buildFinBalance(){
   const el=document.getElementById('fin-balance');
 
-  // Ratios calculados con datos reales del EEFF Feb-2026
-  const currRatio=[BSS.actCorr[0]/BSS.pasCorr[0], BSS.actCorr[1]/BSS.pasCorr[1], BSS.actCorr[2]/BSS.pasCorr[2]];
-  const deRatio  =[BSS.pasTotal[0]/BSS.patrimonio[0], BSS.pasTotal[1]/BSS.patrimonio[1], BSS.pasTotal[2]/BSS.patrimonio[2]];
-  const cxcPct   =[BSS.cxc[0]/BSS.actCorr[0]*100, BSS.cxc[1]/BSS.actCorr[1]*100, BSS.cxc[2]/BSS.actCorr[2]*100];
-  const lastCurr =currRatio[2].toFixed(2);
-  const lastDE   =deRatio[2].toFixed(1);
-
-  // Δ CxC (collections problem): grew from 701M → 1,914M
-  const cxcGrowth=pctVar(BSS.cxc[2],BSS.cxc[0]);
-  // Pasivo corriente vs activo corriente
-  const gaps=BSS.pasCorr.map((p,i)=>BSS.actCorr[i]-p);
+  // ── Cálculos data-driven derivados de BSS.snapshots ──────────────────
+  const SS = BSS.snapshots;
+  const LI = SS.length-1;          // last index
+  const LAST = SS[LI];               // último snapshot (ej: Mar-26)
+  const FIRST = SS[0];               // primer snapshot (ej: Feb-25)
+  const LP = LAST.periodo, FP = FIRST.periodo;
+  const currRatio = SS.map(s=>s.actCorr/s.pasCorr);
+  const deRatio   = SS.map(s=>s.pasTotal/s.patrimonio);
+  const cxcPct    = SS.map(s=>s.cxc/s.actCorr*100);
+  const lastCurr  = currRatio[LI].toFixed(2);
+  const lastDE    = deRatio[LI].toFixed(1);
+  const cxcGrowth = pctVar(LAST.cxc, FIRST.cxc);
+  const gaps      = SS.map(s=>s.actCorr - s.pasCorr);
+  const liqStatus = currRatio[LI] >= 1 ? 'ok' : currRatio[LI] >= 0.5 ? 'warn' : 'critical';
+  const cashStatus= LAST.cash > 0 ? 'pos' : 'neg';
+  const periodsBadge = SS.map(s=>s.periodo).join(' · ');
+  const _trendIco = (LI>0 && currRatio[LI]>currRatio[LI-1]) ? '↑' : (LI>0 && currRatio[LI]<currRatio[LI-1]) ? '↓' : '→';
+  const _alertColor = liqStatus==='critical' ? '#ef5350' : liqStatus==='warn' ? '#ff9800' : '#2dc5ab';
 
   el.innerHTML=`
-  <div class="sec-title">Balance General & Liquidez <span class="st-badge">Feb-25 · Dic-25 · Feb-26</span></div>
+  <div class="sec-title">Balance General & Liquidez <span class="st-badge">${periodsBadge}</span></div>
 
-  <!-- ALERTA CRÍTICA -->
-  <div class="insight warn" style="margin-bottom:16px;border-left:4px solid #ef5350;background:rgba(239,83,80,.08)">
-    🚨 <strong>Alerta de Liquidez Crítica:</strong>
-    Razón corriente = <strong>${lastCurr}x</strong> (mínimo recomendado: 1.0x) —
-    Caja = <strong>$-1.8M COP</strong> en Feb-26 (negativa) —
-    Pasivo Corriente supera al Activo Corriente por <strong>${fv(Math.abs(gaps[2]))}</strong>.
-    El problema principal: <strong>CxC creció ${fp(cxcGrowth)}</strong> desde Feb-25 (cartera sin cobrar = $${(BSS.cxc[2]/1000).toFixed(1)}B COP).
+  <!-- ALERTA / DIAGNÓSTICO DINÁMICO -->
+  <div class="insight ${liqStatus==='critical'?'warn':''}" style="margin-bottom:16px;border-left:4px solid ${_alertColor};background:${liqStatus==='critical'?'rgba(239,83,80,.08)':liqStatus==='warn'?'rgba(255,152,0,.08)':'rgba(45,197,171,.08)'}">
+    ${liqStatus==='critical'?'🚨':liqStatus==='warn'?'⚠️':'✅'} <strong>${liqStatus==='critical'?'Alerta de Liquidez Crítica':liqStatus==='warn'?'Liquidez en Recuperación':'Liquidez Saludable'} (${LP}):</strong>
+    Razón corriente = <strong>${lastCurr}x</strong> ${_trendIco} (vs ${SS[LI-1]?currRatio[LI-1].toFixed(2)+'x ('+SS[LI-1].periodo+')':'—'}; mínimo recomendado: 1.0x).
+    Caja ${LP} = <strong style="color:${cashStatus==='pos'?'#2dc5ab':'#ef5350'}">${fv(LAST.cash)}</strong> ${cashStatus==='pos'?'(positiva)':'(negativa)'}.
+    Pasivo Corriente ${gaps[LI]<0?'supera':'es inferior a'} el Activo Corriente por <strong>${fv(Math.abs(gaps[LI]))}</strong>.
+    CxC ${LP} = <strong>${fv(LAST.cxc)}</strong> (${fp(cxcGrowth)} desde ${FP}).
   </div>
 
   <!-- KPIs CLAVE -->
   <div class="kpis k4">
-    ${kpiCard('Razón Corriente Feb-26', lastCurr+'x', 'Feb-25: '+currRatio[0].toFixed(2)+'x | Dic-25: '+currRatio[1].toFixed(2)+'x', 'red')}
-    ${kpiCard('Efectivo Feb-26', fv(BSS.cash[2]), 'Feb-25: '+fv(BSS.cash[0])+' | Dic-25: '+fv(BSS.cash[1]), 'red')}
-    ${kpiCard('CxC Clientes Feb-26', fv(BSS.cxc[2]), fp(cxcGrowth)+' vs Feb-25 · '+cxcPct[2].toFixed(0)+'% del activo corriente', 'warn')}
-    ${kpiCard('Deuda/Patrimonio', lastDE+'x', 'Feb-25: '+deRatio[0].toFixed(1)+'x | Pasivo total: '+fv(BSS.pasTotal[2]), 'warn')}
+    ${kpiCard('Razón Corriente '+LP, lastCurr+'x', SS.slice(0,-1).map(s=>s.periodo+': '+(s.actCorr/s.pasCorr).toFixed(2)+'x').join(' | '), liqStatus==='critical'?'red':liqStatus==='warn'?'warn':'')}
+    ${kpiCard('Efectivo '+LP, fv(LAST.cash), SS.slice(0,-1).map(s=>s.periodo+': '+fv(s.cash)).join(' | '), cashStatus==='pos'?'':'red')}
+    ${kpiCard('CxC Clientes '+LP, fv(LAST.cxc), fp(cxcGrowth)+' vs '+FP+' · '+cxcPct[LI].toFixed(0)+'% del activo corriente', cxcPct[LI]>60?'warn':'')}
+    ${kpiCard('Deuda/Patrimonio', lastDE+'x', FP+': '+deRatio[0].toFixed(1)+'x | Pasivo total: '+fv(LAST.pasTotal), deRatio[LI]>3?'warn':'')}
   </div>
 
   <!-- GRÁFICAS BALANCE -->
@@ -4132,7 +4415,7 @@ function buildFinBalance(){
   <div class="g2">
     ${chartCard('ch-bss-cxc','Evolución CxC vs Efectivo','Problema de cartera: ¿quién debe pagar?',240,'')}
     <div class="card">
-      <div class="card-hdr"><h3>Composición del Pasivo Corriente</h3><span class="badge">Feb-26</span></div>
+      <div class="card-hdr"><h3>Composición del Pasivo Corriente</h3><span class="badge">${LP}</span></div>
       <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-bss-pasdist"></canvas></div></div>
     </div>
   </div>
@@ -4244,20 +4527,20 @@ function buildFinBalance(){
       }}
   });
 
-  // ─── Chart: Composición pasivo corriente Feb-26 (doughnut)
+  // ─── Chart: Composición pasivo corriente del último período (doughnut)
   new Chart(document.getElementById('ch-bss-pasdist'),{
     type:'doughnut',
     data:{
       labels:['Ob. Financieras','CxP Proveedores','Otros Pasivo Corr.'],
       datasets:[{
-        data:[BSS.deudaBco[2], BSS.cxpProv[2], BSS.pasCorr[2]-BSS.deudaBco[2]-BSS.cxpProv[2]],
+        data:[LAST.deudaBco, LAST.cxpProv, LAST.pasCorr-LAST.deudaBco-LAST.cxpProv],
         backgroundColor:['#ef5350','#ff9800','#2dc5ab'],borderWidth:2,borderColor:'#fff'
       }]
     },
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:12,padding:10}},
         tooltip:{backgroundColor:'rgba(12,48,40,.92)',
-          callbacks:{label:c=>` ${c.label}: ${fv(c.parsed)} (${(c.parsed/BSS.pasCorr[2]*100).toFixed(1)}%)`}}}}
+          callbacks:{label:c=>` ${c.label}: ${fv(c.parsed)} (${(c.parsed/LAST.pasCorr*100).toFixed(1)}%)`}}}}
   });
 
   // ─── Tabla Capital de Trabajo
@@ -4278,36 +4561,43 @@ function buildFinBalance(){
   <div class="tbl-wrap"><table class="tbl">
     <thead><tr>
       <th style="text-align:left">Indicador</th>
-      <th>Feb-25</th><th>Dic-25</th><th>Feb-26</th>
-      <th>Δ% Feb-25 → Feb-26</th>
+      ${SS.map(s=>`<th>${s.periodo}</th>`).join('')}
+      <th>Δ% ${FP} → ${LP}</th>
     </tr></thead>
     <tbody>
     ${rows.map(r=>{
       const vals=r.v;
-      const d=(!r.noFmt && typeof vals[0]==='number') ? pctVar(vals[2],vals[0]) : null;
-      const fmtV=(v,i)=>{
+      const d=(!r.noFmt && typeof vals[0]==='number') ? pctVar(vals[LI],vals[0]) : null;
+      const fmtV=(v)=>{
         if(r.noFmt) return `<span style="font-weight:${r.bold?'700':'400'}">${v}</span>`;
-        const col=v<0?'color:#ef5350':v>0?'':'';
+        const col=v<0?'color:#ef5350':'';
         return `<span style="font-weight:${r.bold?'700':'400'};${col}">${fv(v)}</span>`;
       };
       const highlight=r.bold?'background:#f0f9f7;':'';
       return `<tr style="${highlight}">
-        <td style="text-align:left;${r.indent?'padding-left:20px;color:#607d76':r.bold?'font-weight:700':''}">
-          ${r.lbl}</td>
-        <td>${fmtV(vals[0],0)}</td>
-        <td>${fmtV(vals[1],1)}</td>
-        <td>${fmtV(vals[2],2)}</td>
+        <td style="text-align:left;${r.indent?'padding-left:20px;color:#607d76':r.bold?'font-weight:700':''}">${r.lbl}</td>
+        ${vals.map(v=>`<td>${fmtV(v)}</td>`).join('')}
         <td>${d!==null ? `<span class="${tdCls(d)}">${fp(d)}</span>` : '—'}</td>
       </tr>`;
     }).join('')}
     </tbody>
   </table></div>
-  <div class="insight warn" style="margin-top:12px">
-    ⚠️ <strong>Diagnóstico:</strong> El pasivo corriente de $${(BSS.pasCorr[2]/1000000).toFixed(1)}B COP supera el activo corriente en
-    <strong>${fv(Math.abs(gaps[2]))}</strong>. La empresa opera con déficit estructural de caja.
-    La CxC de $${(BSS.cxc[2]/1000000).toFixed(1)}B (${cxcPct[2].toFixed(0)}% del activo corriente) es la principal palanca de recuperación:
-    cobrar cartera atrasada es la acción más inmediata y de mayor impacto.
-  </div>`;
+  ${(()=>{
+    const gap=gaps[LI], cxcLast=LAST.cxc, cxcPctLast=cxcPct[LI];
+    if(gap>=0){
+      return `<div class="insight" style="margin-top:12px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.08)">
+        ✅ <strong>Diagnóstico (${LP}):</strong> El activo corriente supera al pasivo corriente por <strong>${fv(gap)}</strong>.
+        La razón corriente (${lastCurr}x) ${currRatio[LI]>=1?'cumple el mínimo recomendado de 1.0x':'está por debajo del mínimo de 1.0x'}.
+        ${cxcPctLast>50?`La CxC representa ${cxcPctLast.toFixed(0)}% del activo corriente — sigue siendo la palanca principal de gestión de cartera.`:''}
+      </div>`;
+    } else {
+      return `<div class="insight warn" style="margin-top:12px">
+        ⚠️ <strong>Diagnóstico (${LP}):</strong> El pasivo corriente de <strong>${fv(LAST.pasCorr)}</strong> supera el activo corriente en <strong>${fv(Math.abs(gap))}</strong>.
+        La empresa opera con déficit ${liqStatus==='critical'?'estructural':''} de caja.
+        La CxC de <strong>${fv(cxcLast)}</strong> (${cxcPctLast.toFixed(0)}% del activo corriente) es la principal palanca de recuperación: cobrar cartera atrasada es la acción más inmediata y de mayor impacto.
+      </div>`;
+    }
+  })()}`;
 
   // ─── Simulador de proyección
   window.simChart = null;
@@ -4320,9 +4610,15 @@ function buildFinBalance(){
     document.getElementById('lbl-cxc').textContent=(cxcPctCobro*100).toFixed(0)+'%';
     document.getElementById('lbl-debt').textContent=fv(debtAmort);
     document.getElementById('lbl-capex').textContent=fv(capex);
-    let cash=BSS.cash[2];  // Inicio: Feb-26 cash (negativo)
-    let cxcBal=BSS.cxc[2]; // Cartera pendiente
-    const months=['Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene-27','Feb-27'];
+    let cash=LAST.cash;     // Inicio: caja del último snapshot
+    let cxcBal=LAST.cxc;    // Cartera pendiente del último snapshot
+    // Genera etiquetas de los siguientes 12 meses a partir del último snapshot
+    const _mns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const months=Array.from({length:12},(_,i)=>{
+      const total=LAST.m+i+1;
+      const m=((total-1)%12)+1, y=LAST.y+Math.floor((total-1)/12);
+      return _mns[m-1]+(y!==LAST.y?'-'+(y%100):'');
+    });
     const cashFlow=[], cxcFlow=[];
     for(let i=0;i<12;i++){
       const cobro=cxcBal*cxcPctCobro;
@@ -4379,9 +4675,11 @@ const BUILDERS = {
   'com-cirujanos': buildComCirujanos,
   'com-trend':     buildComTrend,
   'com-meta':      buildComMeta,
-  'acc-inicio': buildAccInicio,
-  'acc-plan':   buildAccPlan,
-  'acc-kpi':    buildAccKpi,
+  'acc-inicio':   buildAccInicio,
+  'acc-plan':     buildAccPlan,
+  'acc-kpi':      buildAccKpi,
+  'acc-bitacora': buildAccBitacora,
+  'acc-tareas':   buildAccTareas,
 };
 const built = new Set();
 
@@ -4465,6 +4763,11 @@ function toggleSidebar(){
 // ════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════
+// Inicializa metadatos del header desde META (data-driven)
+(function(){
+  const r=document.getElementById('hdr-range');
+  if(r) r.textContent = META.rangeLabel + ' · EEFF al ' + META.lastP;
+})();
 buildAllSections();
 document.querySelectorAll('.ttab').forEach(t=>{
   t.onclick=()=>switchTab(t.dataset.tab);
