@@ -865,6 +865,30 @@ const MTD_RAW = {y:2026,m:4,d:23,ing:1017577,cir:284,daysInMonth:30,lineas:[4433
 const DAILY_RAW = []; /* AUTO-DAILY */
 // ==DAILY_DATA_END==
 
+// ════════════════════════════════════════
+//  HONORARIOS — Honorarios médicos pagados por OET (cuenta 62101001 EEFF)
+//  Es el COSTO de los honorarios. NO se mezcla con la facturación generada
+//  por el cirujano (CIR.bill), que es un INGRESO. Las dos vistas son
+//  independientes y no comparables sin contexto explícito.
+//
+//  Para agregar nuevo prestador: push() al array `proveedores`.
+//  Cifras en miles COP (igual que el resto del dashboard).
+// ════════════════════════════════════════
+const HONORARIOS = {
+  // Total cuenta 62101001 - Honorarios Oftalmología
+  total25: 3050555,        // Total 2025 anual
+  total26_q1: 874608,      // Total Q1-26 (Ene+Feb+Mar)
+  total25_q1: 522608,      // Total Q1-25 (Ene+Feb+Mar)  -- estimado del var nota Mar-26
+  // Detalle de top prestadores con variaciones más relevantes (de Notas Mar-26)
+  proveedores: [
+    {nit:'1127941794', nombre:'Dr. M.A. Jaramillo Noguera', cargo:'Cirujano staff · Presidente', esStaff:true,    hon25:326929, hon26q1:391518, esNuevo:false, ligaCirName:'Dr. M.A. Jaramillo N.'},
+    {nit:'80550424',   nombre:'Dr. M.A. Jaramillo Martínez',cargo:'Cirujano staff',                esStaff:true,    hon25:96468,  hon26q1:226195, esNuevo:false, ligaCirName:'Dr. M. Jaramillo M.'},
+    {nit:'901588752',  nombre:'OFTAMEDIC SAS',              cargo:'Sociedad médica externa',       esStaff:false,   hon25:43061,  hon26q1:89935,  esNuevo:false},
+    {nit:'1144068250', nombre:'Dr. Juan S. Guerrero Rey',   cargo:'Cirujano externo',              esStaff:false,   hon25:0,      hon26q1:88067,  esNuevo:true},
+    {nit:'1017192980', nombre:'Sara Chica Calderón',        cargo:'Especialista médica',           esStaff:false,   hon25:36508,  hon26q1:67125,  esNuevo:false},
+  ],
+};
+
 // Balance Sheet Snapshots (miles de COP) — Fuente: EEFF oficiales del contador
 // Estructura data-driven: cada snapshot es un objeto independiente.
 // Para agregar un nuevo cierre, simplemente push() a BSS.snapshots
@@ -1806,9 +1830,10 @@ const NAVS = {
   com:[
     {id:'com-inicio',    label:'Inicio',          icon:'🏠'},
     {id:'com-lineas',    label:'Por Servicio',     icon:'🔬'},
-    {id:'com-cirujanos', label:'Cirujanos',        icon:'👨‍⚕️'},
-    {id:'com-trend',     label:'Tendencia',        icon:'📈'},
-    {id:'com-meta',      label:'Meta 2026',        icon:'🎯'},
+    {id:'com-cirujanos',  label:'Cirujanos',         icon:'👨‍⚕️'},
+    {id:'com-honorarios', label:'Honorarios Médicos',icon:'💵'},
+    {id:'com-trend',      label:'Tendencia',         icon:'📈'},
+    {id:'com-meta',       label:'Meta 2026',         icon:'🎯'},
   ],
   acc:[
     {id:'acc-inicio',   label:'Inicio',           icon:'🏠'},
@@ -4261,10 +4286,29 @@ function buildComCirujanos(){
     ${kpiCard('Cirujano #1 Volumen',topVol.name,topVol.cir.toLocaleString()+' cirugías '+_yrBadge)}
     ${kpiCard('Procedimiento #1',CIR.tipos[0],(tipoTot25>0?(cfTipoYear(2025)[0]/tipoTot25*100).toFixed(0):0)+'% — '+fv(cfTipoYear(2025)[0]))}
   </div>
-<div class="gfull">${chartCard('ch-cir-bill','Facturación por Cirujano'+(mLbl?' — '+mLbl:''),'ordenado por 2025',270,'')}</div>
+<div class="insight" style="margin-bottom:10px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.06);font-size:12px">
+    💡 <strong>Vista de cirugías:</strong> aquí se compara la <strong>facturación generada</strong> por cada médico con sus cirugías y la <strong>cantidad de cirugías</strong> realizadas. Para ver lo que OET <em>paga</em> en honorarios a cada uno, ir a la pestaña <strong>Honorarios Médicos</strong>.
+  </div>
+  <div class="gfull">
+    <div class="card">
+      <div class="card-hdr"><h3>💰 ¿Quién factura más para la clínica?</h3><span class="badge">Facturación por cirujano${mLbl?' — '+mLbl:''} · ordenado por 2025</span></div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:280px"><canvas id="ch-cir-bill"></canvas></div>
+        <div style="margin-top:8px;font-size:11.5px;color:#2d3f38;background:#f5f8f7;padding:9px 12px;border-radius:8px">
+          📖 <strong>Cómo leer:</strong> cada barra es la facturación generada por las cirugías de ese médico. Pasa el cursor sobre la barra para ver el nombre completo y las variaciones interanuales.
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="g2">
-    ${chartCard('ch-cir-vol','Cirugías por Médico'+(mLbl?' — '+mLbl:''),'conteo D.Sala',240,'')}
-    ${chartCard('ch-cir-tipos','Facturación por Tipo de Procedimiento'+(mLbl?' — '+mLbl:''),'',240,'')}
+    <div class="card">
+      <div class="card-hdr"><h3>🔢 ¿Quién hace más cirugías?</h3><span class="badge">Volumen${mLbl?' — '+mLbl:''}</span></div>
+      <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-cir-vol"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>🏥 ¿Qué procedimientos generan más?</h3><span class="badge">Por tipo${mLbl?' — '+mLbl:''}</span></div>
+      <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-cir-tipos"></canvas></div></div>
+    </div>
   </div>
   ${mLbl?`<div class="gfull">${chartCard('ch-cir-mes','Cirugías Mensuales — Todas las clínicas','resalta '+mLbl,200,'')}</div>`:''}
   <div class="tbl-wrap" style="margin-top:16px"><table class="tbl">
@@ -4303,43 +4347,120 @@ function buildComCirujanos(){
   if(CF.years.has(2024)) _bill_ds.push({label:'2024'+_lblSufCir,data:billSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.bill:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:2});
   if(CF.years.has(2025)) _bill_ds.push({label:'2025'+_lblSufCir,data:billSort.map(c=>c.bill),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:2});
   if(CF.years.has(2026)) _bill_ds.push({label:'2026 YTD',data:billSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.bill:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:2});
-  // Abbreviate names for vertical X axis: "Apellido1 Apellido2" → max 12 chars
-  const _abbr = name => { const p=name.replace(/^Dr[a]?\. /,'').split(' '); return (p[0]+(p[1]?' '+p[1]:'')).substring(0,14); };
-  const _xOpts = {ticks:{font:{size:9},maxRotation:50,minRotation:35,autoSkip:false},grid:{display:false}};
-  const _yFmt  = {ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}};
+  // Etiquetas más legibles: nombre corto en gráfica, nombre completo en tooltip
+  const _abbr = name => {
+    const p=name.replace(/^Dr[a]?\. /,'').split(' ');
+    return (p[0]+(p[1]?' '+p[1]:'')).substring(0,14);
+  };
+  const _xOpts = {ticks:{font:{size:11,weight:'600'},color:'#1a3a2a',maxRotation:35,minRotation:20,autoSkip:false},grid:{display:false}};
+  const _yFmt  = {ticks:{callback:v=>fv(v),font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'}};
 
-  mkChart('ch-cir-bill',{type:'bar',data:{labels:billSort.map(c=>_abbr(c.name)),datasets:_bill_ds},
-    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-      scales:{x:_xOpts, y:_yFmt}}});
+  // ─── Gráfica 1: Facturación por cirujano (tooltip con nombre completo + variaciones)
+  mkChart('ch-cir-bill',{
+    type:'bar',
+    data:{labels:billSort.map(c=>_abbr(c.name)),datasets:_bill_ds},
+    options:{
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
+        tooltip:{
+          backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
+          callbacks:{
+            title:(items)=>billSort[items[0].dataIndex].name,
+            label:(c)=>` ${c.dataset.label}: ${fv(c.parsed.y)}`,
+            afterBody:(items)=>{
+              const c = billSort[items[0].dataIndex];
+              const b24=_drVis24.find(x=>x.name===c.name)?.bill||0;
+              const b25=c.bill||0;
+              const b26=_drVis26.find(x=>x.name===c.name)?.bill||0;
+              const lines=[''];
+              if(b24&&b25) lines.push('Δ 2024→2025: '+fp(pctVar(b25,b24)));
+              if(b25&&b26) lines.push('Δ 2025→2026 YTD: '+fp(pctVar(b26,b25)));
+              return lines;
+            }
+          }
+        }
+      },
+      scales:{x:_xOpts, y:Object.assign({},_yFmt,{title:{display:true,text:'Facturación generada (miles COP)',font:{size:11,weight:'600'},color:'#1a3a2a'}})}
+    }
+  });
 
-  // Volume bar — datos filtrados
+  // ─── Gráfica 2: Cirugías por médico (tooltip con nombre completo + variaciones)
   const cirSort=[..._drVis25].sort((a,b)=>b.cir-a.cir);
   {
     const ds=[];
-    if(CF.years.has(2024)) ds.push({label:'2024'+_lblSufCir,data:cirSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:5});
-    if(CF.years.has(2025)) ds.push({label:'2025'+_lblSufCir,data:cirSort.map(c=>c.cir),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:5});
-    if(CF.years.has(2026)) ds.push({label:'2026 YTD',data:cirSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:5});
-    mkChart('ch-cir-vol',{type:'bar',data:{labels:cirSort.map(c=>_abbr(c.name)),datasets:ds},
-      options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-        scales:{x:_xOpts, y:{ticks:{font:{size:10}},grid:{color:'#eef2f1'}}}}});
+    if(CF.years.has(2024)) ds.push({label:'2024'+_lblSufCir,data:cirSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:4});
+    if(CF.years.has(2025)) ds.push({label:'2025'+_lblSufCir,data:cirSort.map(c=>c.cir),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:4});
+    if(CF.years.has(2026)) ds.push({label:'2026 YTD',data:cirSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:4});
+    mkChart('ch-cir-vol',{
+      type:'bar',
+      data:{labels:cirSort.map(c=>_abbr(c.name)),datasets:ds},
+      options:{
+        plugins:{
+          legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
+          tooltip:{
+            backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
+            callbacks:{
+              title:(items)=>cirSort[items[0].dataIndex].name,
+              label:(c)=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString()} cirugías`,
+              afterBody:(items)=>{
+                const c = cirSort[items[0].dataIndex];
+                const v24=_drVis24.find(x=>x.name===c.name)?.cir||0;
+                const v25=c.cir||0;
+                const v26=_drVis26.find(x=>x.name===c.name)?.cir||0;
+                const lines=[''];
+                if(v24&&v25) lines.push('Δ 2024→2025: '+fp(pctVar(v25,v24)));
+                if(v25&&v26) lines.push('Δ 2025→2026 YTD: '+fp(pctVar(v26,v25)));
+                return lines;
+              }
+            }
+          }
+        },
+        scales:{x:_xOpts, y:{ticks:{font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'},
+                title:{display:true,text:'Cirugías realizadas',font:{size:11,weight:'600'},color:'#1a3a2a'}}}
+      }
+    });
   }
 
-  // Tipos procedimiento bar — datos filtrados
+  // ─── Gráfica 3: Tipos de procedimiento (tooltip con nombre completo + share %)
   const _ct24=cfTipoYear(2024), _ct25=cfTipoYear(2025), _ct26=cfTipoYear(2026);
-  // Abbreviate tipo labels: first word only
-  const _tiLbl = tiIdx.map(i=>CIR.tipos[i].split(' ').slice(0,2).join(' '));
-  mkChart('ch-cir-tipos',{type:'bar',data:{labels:_tiLbl,datasets:(() => {
-    const ds2=[];
-    if(CF.years.has(2024)) ds2.push({label:'2024'+_lblSufCir,data:tiIdx.map(i=>_ct24[i]),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:5});
-    if(CF.years.has(2025)) ds2.push({label:'2025'+_lblSufCir,data:tiIdx.map(i=>_ct25[i]),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:5});
-    if(CF.years.has(2026)) ds2.push({label:'2026 YTD',data:tiIdx.map(i=>_ct26[i]),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:5});
-    return ds2;
-  })()},
-  options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
-    scales:{
-      x:{ticks:{font:{size:9},maxRotation:40,minRotation:20,autoSkip:false},grid:{display:false}},
-      y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}}
-    }}}); // tipos
+  const _tiLblFull = tiIdx.map(i=>CIR.tipos[i]);
+  const _tiLbl = _tiLblFull.map(t=>t.split(' ').slice(0,2).join(' '));
+  mkChart('ch-cir-tipos',{
+    type:'bar',
+    data:{labels:_tiLbl,datasets:(() => {
+      const ds2=[];
+      if(CF.years.has(2024)) ds2.push({label:'2024'+_lblSufCir,data:tiIdx.map(i=>_ct24[i]),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:4});
+      if(CF.years.has(2025)) ds2.push({label:'2025'+_lblSufCir,data:tiIdx.map(i=>_ct25[i]),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:4});
+      if(CF.years.has(2026)) ds2.push({label:'2026 YTD',data:tiIdx.map(i=>_ct26[i]),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:4});
+      return ds2;
+    })()},
+    options:{
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
+        tooltip:{
+          backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
+          callbacks:{
+            title:(items)=>_tiLblFull[items[0].dataIndex],
+            label:(c)=>` ${c.dataset.label}: ${fv(c.parsed.y)}`,
+            afterBody:(items)=>{
+              const i = tiIdx[items[0].dataIndex];
+              const t25 = _ct25[i]||0, totaltipo25 = tiIdx.reduce((s,j)=>s+(_ct25[j]||0),0);
+              const t26 = _ct26[i]||0, totaltipo26 = tiIdx.reduce((s,j)=>s+(_ct26[j]||0),0);
+              const lines=[''];
+              if(totaltipo25) lines.push('% del total 2025: '+(t25/totaltipo25*100).toFixed(1)+'%');
+              if(totaltipo26) lines.push('% del total 2026 YTD: '+(t26/totaltipo26*100).toFixed(1)+'%');
+              if(t25&&t26) lines.push('Δ 2025→2026 YTD: '+fp(pctVar(t26,t25)));
+              return lines;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{font:{size:11,weight:'600'},color:'#1a3a2a',maxRotation:35,minRotation:0,autoSkip:false},grid:{display:false}},
+        y:Object.assign({},_yFmt,{title:{display:true,text:'Facturación por procedimiento (miles COP)',font:{size:11,weight:'600'},color:'#1a3a2a'}})
+      }
+    }
+  });
 
   // Monthly surgery chart (when month filter active)
   if(mLbl){
@@ -4363,6 +4484,203 @@ function buildComCirujanos(){
       options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
         scales:{y:{ticks:{font:{size:10}}}}}});
   }
+}
+
+// ════════════════════════════════════════
+//  BUILD: COMERCIAL — HONORARIOS MÉDICOS
+//  Vista separada del costo de honorarios. NO se mezcla con la
+//  facturación generada por cirujanos. Para cirujanos staff (Miguel
+//  Antonio Noguera, Miguel Antonio Martínez) muestra vista cruzada:
+//  qué generan en facturación vs qué reciben en honorarios.
+// ════════════════════════════════════════
+function buildComHonorarios(){
+  const el=document.getElementById('com-honorarios');
+  const HP = HONORARIOS.proveedores;
+  const totQ1 = HONORARIOS.total26_q1;
+  const tot25 = HONORARIOS.total25;
+  const tot25q1 = HONORARIOS.total25_q1;
+  const varQ1Pct = pctVar(totQ1, tot25q1);
+  const top = [...HP].sort((a,b)=>b.hon26q1-a.hon26q1)[0];
+  const nuevos = HP.filter(p=>p.esNuevo);
+
+  // Vista cruzada: cirujanos staff con su facturación generada vs honorarios recibidos
+  const staffCruzado = HP.filter(p=>p.esStaff && p.ligaCirName).map(p=>{
+    const cir = CIR.cirujanos.find(c=>c.name===p.ligaCirName);
+    const billQ1 = cir ? cir.bill26 : 0;     // facturación generada Q1-26
+    const honQ1  = p.hon26q1;                 // honorarios recibidos Q1-26
+    const margen = billQ1 - honQ1;
+    const honPct = billQ1>0 ? (honQ1/billQ1*100) : 0;
+    return {nombre:p.nombre, cargo:p.cargo, billQ1, honQ1, margen, honPct};
+  });
+
+  // ── Colores semánticos ────────────────────────────────────────────────
+  const C_HON26 = 'rgba(239,83,80,0.85)';   // rojo (es un costo)
+  const B_HON26 = 'rgba(239,83,80,1)';
+  const C_HON25 = 'rgba(239,83,80,0.35)';
+  const B_HON25 = 'rgba(239,83,80,0.6)';
+  const C_BILL  = 'rgba(45,197,171,0.85)';  // teal (es ingreso)
+  const B_BILL  = 'rgba(45,197,171,1)';
+
+  el.innerHTML=`
+  <div class="sec-title">Honorarios Médicos <span class="st-badge">Cuenta 62101001 · EEFF Q1-26</span></div>
+
+  <!-- Aviso de contexto -->
+  <div class="insight" style="margin-bottom:14px;border-left:4px solid #ff9800;background:rgba(255,152,0,0.06);font-size:12px">
+    💡 <strong>¿Qué muestra esta vista?</strong> Los <strong>honorarios médicos</strong> son el costo que paga OET a cada prestador (cirujano staff, sociedades médicas externas, especialistas). Esta cuenta es independiente de la <strong>facturación generada por las cirugías</strong> que aparece en la pestaña <em>Cirujanos</em> — son dos métricas separadas que nunca se deben mezclar.
+  </div>
+
+  <!-- KPIs de contexto -->
+  <div class="kpis k4">
+    ${kpiCard('Total honorarios Q1-26', fv(totQ1), fp(varQ1Pct)+' vs Q1-25 ('+fv(tot25q1)+')', varQ1Pct>30?'red':varQ1Pct>15?'warn':'')}
+    ${kpiCard('Total 2025 anual',       fv(tot25), 'Promedio mensual: '+fv(tot25/12))}
+    ${kpiCard('Top prestador Q1-26',    top.nombre.split('·')[0].trim(), fv(top.hon26q1)+' · '+top.cargo)}
+    ${kpiCard('Nuevos prestadores 2026',String(nuevos.length), nuevos.length>0?nuevos.map(n=>n.nombre.split('·')[0]).join(', '):'Sin nuevos','warn')}
+  </div>
+
+  <!-- Gráfica 1: Top 5 honorarios — barras verticales muy claras -->
+  <div class="gfull" style="margin-top:14px">
+    <div class="card">
+      <div class="card-hdr"><h3>💵 ¿A quién le paga OET más en honorarios?</h3><span class="badge">Q1-26 vs 2025 · Top prestadores</span></div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:330px"><canvas id="ch-hon-top"></canvas></div>
+        <div style="margin-top:10px;font-size:12px;color:#2d3f38;background:#f5f8f7;padding:10px 14px;border-radius:8px;border-left:3px solid #2dc5ab">
+          📖 <strong>Cómo leer:</strong> Cada barra es lo que OET pagó en honorarios a ese médico/proveedor. La barra <span style="color:${B_HON26};font-weight:700">roja</span> es <strong>solo Q1-26</strong> (3 meses). La barra <span style="color:${B_HON25};font-weight:700">rosada</span> es <strong>todo 2025</strong> (12 meses). Si la roja ya supera la rosada, ese prestador está cobrando más en 3 meses que en todo el año pasado.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla detallada -->
+  <div class="gfull" style="margin-top:14px">
+    <div class="card">
+      <div class="card-hdr"><h3>Detalle por Prestador</h3><span class="badge teal">Top 5 con mayor variación</span></div>
+      <div class="card-body">
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr>
+            <th style="text-align:left">Prestador</th>
+            <th style="text-align:left">Tipo</th>
+            <th>2025 (12m)</th>
+            <th>Q1-26 (3m)</th>
+            <th>Variación $</th>
+            <th>Variación %</th>
+          </tr></thead>
+          <tbody>
+          ${[...HP].sort((a,b)=>b.hon26q1-a.hon26q1).map(p=>{
+            const v = p.hon26q1 - p.hon25;
+            const vp = p.hon25>0 ? pctVar(p.hon26q1, p.hon25) : null;
+            const tipoBadge = p.esStaff
+              ? '<span style="background:#1a3a2a;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">Cirujano staff</span>'
+              : '<span style="background:#9eb3ad;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">Externo</span>';
+            const nuevoBadge = p.esNuevo ? '<span style="background:#ff9800;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:4px">Nuevo 2026</span>' : '';
+            return `<tr>
+              <td style="font-weight:500"><div>${p.nombre}</div><div style="font-size:10px;color:#9eb3ad">NIT ${p.nit}</div></td>
+              <td>${tipoBadge}${nuevoBadge}<div style="font-size:10px;color:#607d76;margin-top:3px">${p.cargo}</div></td>
+              <td>${fv(p.hon25)}</td>
+              <td style="font-weight:700;color:#1a3a2a">${fv(p.hon26q1)}</td>
+              <td class="${tdCls(v)}">${v>=0?'+':''}${fv(v)}</td>
+              <td class="${tdCls(vp||1000)}">${vp!==null?fp(vp):'<span style="color:#ff9800;font-weight:700">Nuevo</span>'}</td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA CRUZADA: cirujanos staff -->
+  ${staffCruzado.length ? `
+  <div class="gfull" style="margin-top:14px">
+    <div class="card" style="border-left:4px solid #ffc107">
+      <div class="card-hdr"><h3>🔄 Vista Cruzada — Cirujanos Staff</h3><span class="badge" style="background:#ffc107;color:#1a3a2a">Genera vs Recibe</span></div>
+      <div class="card-body">
+        <div class="insight" style="margin-bottom:14px;font-size:12px">
+          ℹ️ Para los cirujanos staff (vinculados como prestadores con honorarios), comparamos lo que generan en facturación con sus cirugías vs lo que la clínica les paga en honorarios. <strong>El margen es el ingreso neto que queda para OET</strong> (antes de costos directos como insumos, sala, personal).
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(${Math.min(staffCruzado.length,2)},1fr);gap:14px">
+          ${staffCruzado.map(s=>{
+            const _color = s.honPct>50?'#ef5350':s.honPct>35?'#ff9800':'#2dc5ab';
+            return `<div style="border:1px solid #e0e8e5;border-radius:12px;padding:16px;background:#fff">
+              <div style="font-weight:700;font-size:14px;color:#1a3a2a;margin-bottom:2px">${s.nombre}</div>
+              <div style="font-size:11px;color:#607d76;margin-bottom:14px">${s.cargo}</div>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:12px;color:#2dc5ab;font-weight:600">💰 Genera (facturación Q1-26)</span>
+                <span style="font-size:18px;font-weight:700;color:#2dc5ab">${fv(s.billQ1)}</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <span style="font-size:12px;color:#ef5350;font-weight:600">💵 Recibe (honorarios Q1-26)</span>
+                <span style="font-size:18px;font-weight:700;color:#ef5350">${fv(s.honQ1)}</span>
+              </div>
+              <div style="height:1px;background:#e0e8e5;margin:8px 0"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:12px;color:#1a3a2a;font-weight:600">Margen para OET</span>
+                <span style="font-size:20px;font-weight:700;color:${_color}">${fv(s.margen)}</span>
+              </div>
+              <div style="margin-top:10px;padding:8px 12px;background:#f5f8f7;border-radius:8px">
+                <div style="font-size:11px;color:#607d76">Honorario / Facturación</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                  <div style="flex:1;height:10px;background:#e0e8e5;border-radius:5px;overflow:hidden">
+                    <div style="height:100%;width:${Math.min(s.honPct,100)}%;background:${_color}"></div>
+                  </div>
+                  <span style="font-weight:700;font-size:14px;color:${_color}">${s.honPct.toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>` : ''}
+
+  <!-- Insight de cierre -->
+  <div class="insight" style="margin-top:14px;border-left:4px solid #ef5350;background:rgba(239,83,80,0.06)">
+    🚨 <strong>Variación clave Q1-26:</strong> los honorarios crecieron <strong>${fp(varQ1Pct)}</strong> vs el mismo período del año anterior. Las palancas principales:
+    <ul style="margin:6px 0 0 18px;padding:0;font-size:12px;line-height:1.6">
+      <li><strong>Dr. M.A. Jaramillo Martínez</strong>: +134.5% (de $96M a $226M en Q1) — revisar tarifas y volumen.</li>
+      <li><strong>OFTAMEDIC SAS</strong>: +108.9% — sociedad médica externa con alta variación.</li>
+      <li><strong>Dr. Juan S. Guerrero Rey</strong>: prestador nuevo en 2026, $88M en Q1 — no estaba en 2025.</li>
+    </ul>
+    Esta variación es una de las causas centrales del crecimiento de costos del 70% en Q1-26 reportado por el Comité Asesor.
+  </div>`;
+
+  // ─── Gráfica top honorarios — barras verticales con labels claras
+  const topSort = [...HP].sort((a,b)=>b.hon26q1-a.hon26q1);
+  const _shortName = (n) => n.replace(/^Dr[a]?\. /,'').replace(/M\.A\. /,'M.A.\n').replace('SAS','SAS').slice(0,22);
+  mkChart('ch-hon-top',{
+    type:'bar',
+    data:{
+      labels:topSort.map(p=>_shortName(p.nombre)),
+      datasets:[
+        {label:'2025 (12 meses completos)', data:topSort.map(p=>p.hon25), backgroundColor:C_HON25, borderColor:B_HON25, borderWidth:1, borderRadius:4},
+        {label:'Q1-26 (Ene+Feb+Mar)',       data:topSort.map(p=>p.hon26q1), backgroundColor:C_HON26, borderColor:B_HON26, borderWidth:1, borderRadius:4},
+      ]
+    },
+    options:{
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
+        tooltip:{
+          backgroundColor:'rgba(12,48,40,.95)',
+          padding:10, titleFont:{size:13,weight:'600'}, bodyFont:{size:12},
+          callbacks:{
+            title:(items)=>topSort[items[0].dataIndex].nombre,
+            label:(c)=>` ${c.dataset.label}: ${fv(c.parsed.y)}`,
+            afterBody:(items)=>{
+              const p = topSort[items[0].dataIndex];
+              const v = p.hon26q1 - p.hon25;
+              const vp = p.hon25>0 ? pctVar(p.hon26q1, p.hon25) : null;
+              return ['', 'Variación: '+(v>=0?'+':'')+fv(v), vp!==null?fp(vp)+' vs 2025':'Prestador nuevo en 2026'];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{font:{size:11,weight:'600'},color:'#1a3a2a'},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'},
+           title:{display:true,text:'Honorarios pagados (miles COP)',font:{size:11,weight:'600'},color:'#1a3a2a'}}
+      }
+    }
+  });
+  requestAnimationFrame(()=>{ if(el) el.dispatchEvent(new Event('resize')); });
 }
 
 function buildFinBalance(){
@@ -4672,9 +4990,10 @@ const BUILDERS = {
   'fin-eeff':    buildFinEeff,
   'com-inicio':    buildComInicio,
   'com-lineas':    buildComLineas,
-  'com-cirujanos': buildComCirujanos,
-  'com-trend':     buildComTrend,
-  'com-meta':      buildComMeta,
+  'com-cirujanos':  buildComCirujanos,
+  'com-honorarios': buildComHonorarios,
+  'com-trend':      buildComTrend,
+  'com-meta':       buildComMeta,
   'acc-inicio':   buildAccInicio,
   'acc-plan':     buildAccPlan,
   'acc-kpi':      buildAccKpi,
