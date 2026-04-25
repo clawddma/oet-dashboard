@@ -2687,6 +2687,50 @@ function buildFinAnual(){
       ...(FF.years.has(2026)&&ffYtd26().length?[{label:'2026 YTD',data:[_mbp26e,_mop26e,_mep26e,_mnp26e].map(v=>+v.toFixed(1)),backgroundColor:'rgba(255,152,0,0.82)'}]:[])
     ]
   },options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
+
+  // ── Bitácora de comentarios del asesor ──────────────────────────────
+  const BITACORA=[
+    {
+      periodo:'Mar-26',
+      fecha:'Abril 2026',
+      autor:'Contadora — DMA Asesorías',
+      items:[
+        'Se registró una pérdida de <strong>$122 MM</strong>, lo que representa una caída del <strong class="neg">−132.2%</strong> frente al mismo período del año anterior (−$501 MM).',
+        'Los ingresos presentan una variación positiva del <strong class="pos">+46.4%</strong> (+$1.400 MM), al pasar de $3.017 MM a $4.418 MM acumulados en el trimestre.',
+        'Los costos y gastos crecieron en mayor proporción: <strong class="neg">+70.2%</strong> (+$1.863 MM), pasando de $2.639 MM a $4.502 MM. El incremento se explica principalmente por honorarios médicos, compra de insumos y gastos de operación (arrendamientos y honorarios administrativos).',
+        'Este desbalance entre ingresos y costos impactó negativamente el EBITDA, con una reducción del <strong class="neg">−74.2%</strong> (−$369 MM).',
+      ],
+      nota:'Las notas del balance (estructura de pasivos) y las variaciones del Estado de Resultados se encuentran detalladas en la hoja <em>Notas Mar-26</em> del EEFF oficial.'
+    }
+  ];
+  const _bEl=document.createElement('div');
+  _bEl.className='gfull';
+  _bEl.style.marginTop='12px';
+  _bEl.innerHTML=`
+  <div class="card" style="border-left:4px solid #607d76">
+    <div class="card-hdr" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <h3 style="margin:0">📝 Bitácora — Comentarios del Asesor</h3>
+      <span style="font-size:11px;color:#607d76;margin-left:auto">Fuente: EEFF Oficial · DMA Asesorías</span>
+    </div>
+    <div class="card-body" style="padding:12px 16px">
+      ${BITACORA.map(b=>`
+        <div style="margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <span style="background:#1a3a2a;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">${b.periodo}</span>
+            <span style="font-size:11px;color:#607d76">${b.fecha} · ${b.autor}</span>
+          </div>
+          <ul style="margin:0 0 10px 0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
+            ${b.items.map(i=>`<li style="font-size:13px;color:#2d3f38;line-height:1.5">${i}</li>`).join('')}
+          </ul>
+          <div style="background:#f5f8f7;border-radius:8px;padding:8px 12px;font-size:12px;color:#607d76;border-left:3px solid #2dc5ab">
+            📎 ${b.nota}
+          </div>
+        </div>
+      `).join('<hr style="border:none;border-top:1px solid #e0e8e5;margin:14px 0">')}
+    </div>
+  </div>`;
+  document.getElementById('fin-anual').appendChild(_bEl);
+  requestAnimationFrame(()=>{ const c=document.getElementById('fin-anual'); if(c) c.dispatchEvent(new Event('resize')); });
 }
 
 // ════════════════════════════════════════
