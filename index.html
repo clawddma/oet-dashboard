@@ -401,12 +401,84 @@ a{text-decoration:none;color:inherit;}
   border:1px solid rgba(255,193,7,0.3); border-radius:4px;
   padding:2px 8px; white-space:nowrap;
 }
+/* ── Sync status pill + manual refresh button ───────────────── */
+.cfb-sync-wrap{
+  display:flex; align-items:center; gap:6px; margin-left:8px;
+}
+.cfb-sync-pill{
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(45,197,171,0.12); border:1px solid rgba(45,197,171,0.4);
+  color:#a8d5cc; border-radius:18px; padding:3px 11px;
+  font-size:10.5px; font-weight:600; cursor:pointer; height:28px;
+  white-space:nowrap; transition:background .15s, color .15s, border-color .15s;
+}
+.cfb-sync-pill:hover{ background:rgba(45,197,171,0.22); }
+.cfb-sync-pill.fresh{ border-color:rgba(45,197,171,0.55); color:#2dc5ab; }
+.cfb-sync-pill.stale{
+  background:rgba(255,152,0,0.14); border-color:rgba(255,152,0,0.55); color:#ffb74d;
+}
+.cfb-sync-pill.critical{
+  background:rgba(239,83,80,0.2); border-color:rgba(239,83,80,0.7);
+  color:#ef9090; font-weight:700;
+  animation:cfb-sync-blink 1.6s ease-in-out infinite;
+}
+.cfb-sync-pill.syncing{
+  background:rgba(255,193,7,0.18); border-color:rgba(255,193,7,0.6);
+  color:#ffd54f; cursor:wait;
+}
+.cfb-sync-pill .cfb-sync-icon{ display:inline-block; line-height:1; }
+.cfb-sync-pill.syncing .cfb-sync-icon{ animation:cfb-spin 1s linear infinite; }
+@keyframes cfb-spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+@keyframes cfb-sync-blink{ 0%,100%{opacity:1} 50%{opacity:.55} }
+.cfb-refresh-btn{
+  background:rgba(45,197,171,0.85); color:#071f18; font-weight:700;
+  border:1px solid #2dc5ab; border-radius:18px;
+  padding:3px 11px; font-size:10.5px; cursor:pointer; height:28px;
+  white-space:nowrap; transition:background .15s, transform .1s;
+}
+.cfb-refresh-btn:hover{ background:#2dc5ab; }
+.cfb-refresh-btn:active{ transform:scale(0.96); }
+.cfb-refresh-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+/* ── Sync alert banner (when critical) ───────────────────────── */
+#sync-alert-banner{
+  position:fixed; top:var(--hdr-h); left:200px; right:0;
+  z-index:96; display:none;
+  background:linear-gradient(90deg,#c62828,#d32f2f);
+  color:#fff; padding:7px 16px;
+  align-items:center; gap:12px;
+  font-size:12px; font-weight:600;
+  box-shadow:0 2px 6px rgba(0,0,0,0.2);
+}
+#sync-alert-banner.visible{ display:flex; }
+.sync-alert-icon{ font-size:15px; }
+.sync-alert-text{ flex:1; }
+.sync-alert-text strong{ font-weight:800; }
+.sync-alert-action{
+  background:#fff; color:#c62828;
+  border:none; border-radius:4px;
+  padding:5px 12px; font-size:11px; font-weight:700;
+  cursor:pointer; white-space:nowrap;
+}
+.sync-alert-action:hover{ background:#ffebee; }
+/* When alert visible, push filter bar + content down by ~36px */
+#com-filter-bar.shifted{ top:calc(var(--hdr-h) + 36px); }
+#content.has-sync-alert.has-filter-bar{ padding-top:130px; }
+@media(max-width:1023px){ #sync-alert-banner{ left:170px; } }
+@media(max-width:767px){
+  #sync-alert-banner{ left:0; top:calc(var(--hdr-h) + var(--snav-h)); padding:6px 10px; font-size:11px; }
+  .sync-alert-action{ padding:4px 8px; font-size:10px; }
+  #com-filter-bar.shifted{ top:calc(var(--hdr-h) + var(--snav-h) + 32px); }
+}
+
 @media(max-width:767px){
   #com-filter-bar{ top:calc(var(--hdr-h) + var(--snav-h)); padding:5px 8px; gap:5px 7px; }
   .cfb-select{ max-width:115px; font-size:10px; }
   .cfb-pill{ padding:2px 8px; font-size:10px; }
   .cfb-lbl{ font-size:9px; }
   .cfb-div{ display:none; }
+  .cfb-sync-pill{ font-size:9.5px; padding:2px 8px; }
+  .cfb-refresh-btn{ font-size:9.5px; padding:2px 8px; }
 }
 /* ═══════════════════════════════════════
    FINANCIAL FILTER BAR (FF)
@@ -582,6 +654,12 @@ a{text-decoration:none;color:inherit;}
 <!-- ═══════════════ APP ═══════════════ -->
 <div id="app">
   <div id="sub-nav-wrap"><div id="sub-nav"></div></div>
+  <!-- ─── Sync alert banner (visible only on critical staleness) ─── -->
+  <div id="sync-alert-banner" role="alert">
+    <span class="sync-alert-icon">⚠️</span>
+    <span class="sync-alert-text"><strong>No pudo ser actualizado</strong> · Última sincronización: <span id="sync-alert-ts">--</span></span>
+    <button class="sync-alert-action" onclick="manualRefresh()">Reintentar ahora</button>
+  </div>
   <!-- ─── Commercial filter bar ─── -->
   <div id="com-filter-bar">
     <!-- ── Período rápido ───────────────────────────────────────── -->
@@ -663,6 +741,13 @@ a{text-decoration:none;color:inherit;}
     </div>
     <button class="cfb-clear" onclick="clearComFilters()">✕ Limpiar</button>
     <div id="cfb-hint" class="cfb-active-hint" style="display:none"></div>
+    <div class="cfb-sync-wrap">
+      <div id="cfb-sync-status" class="cfb-sync-pill" onclick="manualRefresh()" title="Click para actualizar manualmente">
+        <span class="cfb-sync-icon" id="cfb-sync-icon">⟳</span>
+        <span id="cfb-sync-label">--</span>
+      </div>
+      <button class="cfb-refresh-btn" id="cfb-refresh-btn" onclick="manualRefresh()" title="Forzar sincronización con Google Sheets">↻ Actualizar</button>
+    </div>
   </div>
   <div id="fin-filter-bar">
     <div class="cfb-group">
@@ -869,6 +954,25 @@ const MTD_RAW = {y:2026,m:4,d:30,ing:1379964,cir:374,daysInMonth:30,lineas:[5894
 // ==DAILY_DATA_START==
 const DAILY_RAW = []; /* AUTO-DAILY */
 // ==DAILY_DATA_END==
+
+// ════════════════════════════════════════
+//  LAST_SYNC — timestamp del último sync exitoso (escrito por Apps Script)
+// ════════════════════════════════════════
+// Formato: 'YYYY-MM-DD HH:mm' en hora Colombia (America/Bogota).
+// Si Apps Script no ha corrido nunca, queda en su valor inicial.
+// ==SYNC_TS_START==
+const LAST_SYNC = '2026-04-30 11:00'; /* AUTO-SYNC-TS */
+// ==SYNC_TS_END==
+
+// ════════════════════════════════════════
+//  Webhook de actualización manual (Apps Script Web App)
+// ════════════════════════════════════════
+// Para activar el botón "Actualizar Ahora":
+//   1. Despliega oet_autosync.gs como Web App (Acceso = "Anyone")
+//   2. Pega la URL aquí abajo
+//   3. Ejecuta setRefreshToken() en Apps Script y pega el token
+const SYNC_WEBHOOK_URL = '';   /* PEGAR URL EJECUCIÓN: https://script.google.com/macros/s/AKfyc.../exec */
+const SYNC_WEBHOOK_TOKEN = ''; /* PEGAR TOKEN generado por setRefreshToken() */
 
 // ════════════════════════════════════════
 //  COMENTARIOS_MENSUALES — Comentarios oficiales asociados a cada cierre EEFF
@@ -1482,6 +1586,154 @@ function clearComFilters(){
   _syncComPeriodBtns();
   updateCfHint();
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SYNC STATUS — alerta de freshness + botón de actualización manual
+// ════════════════════════════════════════════════════════════════
+//  Lee LAST_SYNC (escrito por Apps Script) y muestra:
+//    - Pill verde:  sync de hoy, < 90 min
+//    - Pill ámbar:  sync de hoy, > 90 min
+//    - Pill roja + banner superior: pasaron las 12:00 y NO hay sync de hoy
+//
+//  El botón "Actualizar" llama al webhook (Apps Script Web App) que
+//  ejecuta syncDashboard() y luego recarga la página tras el redespliegue
+//  de GitHub Pages (~45s).
+// ════════════════════════════════════════════════════════════════
+function getSyncFreshness(){
+  if(typeof LAST_SYNC==='undefined' || !LAST_SYNC){
+    return {state:'critical', label:'Sin datos', minutesAgo:-1};
+  }
+  // LAST_SYNC formato 'YYYY-MM-DD HH:mm' en hora Colombia
+  const synced=new Date(LAST_SYNC.replace(' ','T')+':00');
+  if(isNaN(synced.getTime())){
+    return {state:'critical', label:LAST_SYNC, minutesAgo:-1};
+  }
+  const now=new Date();
+  const ageMin=Math.max(0, Math.floor((now-synced)/60000));
+  const sameDay = synced.getFullYear()===now.getFullYear()
+               && synced.getMonth()===now.getMonth()
+               && synced.getDate()===now.getDate();
+  const isPastNoon=now.getHours()>=12;
+  if(!sameDay && isPastNoon)   return {state:'critical', label:LAST_SYNC, minutesAgo:ageMin};
+  if(ageMin>90)                return {state:'stale',    label:LAST_SYNC, minutesAgo:ageMin};
+  return                              {state:'fresh',    label:LAST_SYNC, minutesAgo:ageMin};
+}
+
+function refreshSyncStatus(){
+  const status=getSyncFreshness();
+  const pill=document.getElementById('cfb-sync-status');
+  const label=document.getElementById('cfb-sync-label');
+  if(!pill||!label) return;
+  if(pill.classList.contains('syncing')) return;  // no sobrescribir mientras sincroniza
+  pill.classList.remove('fresh','stale','critical');
+  pill.classList.add(status.state);
+  if(status.state==='critical'){
+    label.textContent='No actualizado';
+    pill.title='No pudo ser actualizado · Última sync: '+status.label;
+    showSyncAlert(status.label);
+  } else if(status.state==='stale'){
+    const h=Math.floor(status.minutesAgo/60), m=status.minutesAgo%60;
+    label.textContent='Hace '+(h>0?h+'h ':'')+m+'m';
+    pill.title='Última sync: '+status.label+' (datos del día — sin actualizar en '+status.minutesAgo+' min)';
+    hideSyncAlert();
+  } else {
+    label.textContent='✓ '+(status.label.split(' ')[1]||status.label);
+    pill.title='Sincronizado: '+status.label;
+    hideSyncAlert();
+  }
+}
+
+function showSyncAlert(ts){
+  const banner=document.getElementById('sync-alert-banner');
+  const tsEl=document.getElementById('sync-alert-ts');
+  if(!banner) return;
+  if(tsEl) tsEl.textContent=ts;
+  banner.classList.add('visible');
+  document.getElementById('com-filter-bar')?.classList.add('shifted');
+  document.getElementById('content')?.classList.add('has-sync-alert');
+}
+
+function hideSyncAlert(){
+  const banner=document.getElementById('sync-alert-banner');
+  if(!banner) return;
+  banner.classList.remove('visible');
+  document.getElementById('com-filter-bar')?.classList.remove('shifted');
+  document.getElementById('content')?.classList.remove('has-sync-alert');
+}
+
+async function manualRefresh(){
+  const pill=document.getElementById('cfb-sync-status');
+  const label=document.getElementById('cfb-sync-label');
+  const btn=document.getElementById('cfb-refresh-btn');
+
+  // Caso 1: webhook no configurado → modal informativo
+  if(typeof SYNC_WEBHOOK_URL==='undefined' || !SYNC_WEBHOOK_URL || !SYNC_WEBHOOK_TOKEN){
+    alert('⚠️ Botón aún no activado\n\n'+
+          'Para activar la actualización manual:\n'+
+          '  1. Daniel debe desplegar Apps Script como Web App\n'+
+          '  2. Pegar la URL en SYNC_WEBHOOK_URL (index.html)\n'+
+          '  3. Generar token con setRefreshToken() y pegarlo\n\n'+
+          'Mientras tanto, el sync automático corre cada 30 min.');
+    return;
+  }
+
+  // Caso 2: ejecutar refresh
+  pill.classList.remove('fresh','stale','critical');
+  pill.classList.add('syncing');
+  label.textContent='Sincronizando...';
+  if(btn){ btn.disabled=true; btn.textContent='⏳ ...'; }
+  hideSyncAlert();
+
+  const url=SYNC_WEBHOOK_URL+(SYNC_WEBHOOK_URL.indexOf('?')>=0?'&':'?')+
+            'token='+encodeURIComponent(SYNC_WEBHOOK_TOKEN);
+  let okFromServer=false, errorMsg='';
+  try{
+    const r=await fetch(url, {method:'GET', mode:'cors', cache:'no-store'});
+    if(r && r.ok){
+      try{
+        const data=await r.json();
+        if(data.ok) okFromServer=true;
+        else errorMsg=data.error||'Apps Script reportó error';
+      }catch(e){
+        // Respuesta no es JSON parseable — asumimos que el sync corrió
+        okFromServer=true;
+      }
+    }
+  }catch(networkErr){
+    // CORS o red — no podemos confirmar pero el request salió
+    // Asumir éxito y esperar redespliegue
+    okFromServer=true;
+  }
+
+  if(!okFromServer){
+    pill.classList.remove('syncing');
+    pill.classList.add('critical');
+    label.textContent='❌ Error';
+    pill.title='Error: '+errorMsg;
+    if(btn){ btn.disabled=false; btn.textContent='↻ Reintentar'; }
+    setTimeout(refreshSyncStatus, 6000);
+    return;
+  }
+
+  // Esperar redespliegue de GitHub Pages
+  label.textContent='Esperando redespliegue...';
+  await new Promise(r=>setTimeout(r, 45000));
+  label.textContent='Recargando...';
+  // Cache-bust para forzar nueva descarga
+  const cacheBust='?v='+Date.now();
+  location.href=location.pathname+cacheBust+(location.hash||'');
+}
+
+function _initSyncStatus(){
+  refreshSyncStatus();
+  // Re-evaluar cada minuto (la edad del sync cambia con el tiempo)
+  setInterval(refreshSyncStatus, 60000);
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', _initSyncStatus);
+} else {
+  _initSyncStatus();
 }
 
 function updateCfHint(){

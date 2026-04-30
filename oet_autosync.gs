@@ -395,6 +395,20 @@ function syncDashboard() {
       llog('⚠️  Marcadores DAILY_DATA_START/END no encontrados — DAILY no actualizado');
     }
 
+    // 11b. Reemplazar bloque LAST_SYNC (timestamp del último sync exitoso)
+    var syncTsStart = '// ==SYNC_TS_START==';
+    var syncTsEnd   = '// ==SYNC_TS_END==';
+    var stsi = newHtml.indexOf(syncTsStart);
+    var stei = newHtml.indexOf(syncTsEnd);
+    if (stsi >= 0 && stei >= 0) {
+      stei += syncTsEnd.length;
+      var syncBlock = syncTsStart + '\nconst LAST_SYNC = \'' + ts + '\'; /* AUTO-SYNC-TS */\n' + syncTsEnd;
+      newHtml = newHtml.substring(0, stsi) + syncBlock + newHtml.substring(stei);
+      llog('✅ LAST_SYNC actualizado → ' + ts);
+    } else {
+      llog('⚠️  Marcadores SYNC_TS_START/END no encontrados — LAST_SYNC no actualizado');
+    }
+
     // 12. Push a GitHub
     llog('⬆️  Subiendo a GitHub…');
     var newContent = Utilities.base64Encode(Utilities.newBlob(newHtml).getBytes());
@@ -595,4 +609,88 @@ function removeAllTriggers() {
 function syncNow() {
   Logger.log('🔄 Sync manual iniciado (v5.0 — incluye MTD y DAILY)…');
   syncDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  WEB APP — Endpoint para botón "Actualizar Ahora" del dashboard
+// ═══════════════════════════════════════════════════════════════════════
+//  PASO PARA ACTIVAR (una sola vez):
+//    1. Ejecuta setRefreshToken() en este editor.
+//       Logger imprimirá un token UUID. Cópialo.
+//    2. Despliega como Web App:
+//       Deploy ▸ New deployment ▸ Type: Web App
+//       - Execute as:    Me (tu cuenta)
+//       - Who has access: Anyone
+//       Click Deploy → copia la URL "Web app URL" (termina en /exec).
+//    3. Pega la URL y el token en index.html (constantes
+//       SYNC_WEBHOOK_URL y SYNC_WEBHOOK_TOKEN).
+//    4. Commit + push del index.html.
+//
+//  Cada vez que actualices el script: Deploy ▸ Manage deployments ▸
+//  el "↻ icono" para crear nueva versión (mantiene la misma URL).
+// ═══════════════════════════════════════════════════════════════════════
+
+function doGet(e)  { return _handleManualSync(e); }
+function doPost(e) { return _handleManualSync(e); }
+
+function _handleManualSync(e) {
+  var output = ContentService.createTextOutput();
+  output.setMimeType(ContentService.MimeType.JSON);
+
+  var SECRET = PropertiesService.getScriptProperties().getProperty('REFRESH_TOKEN');
+  var provided = (e && e.parameter && e.parameter.token) ? e.parameter.token : '';
+
+  if (!SECRET) {
+    output.setContent(JSON.stringify({
+      ok: false,
+      error: 'REFRESH_TOKEN no configurado en Apps Script. Ejecuta setRefreshToken() primero.'
+    }));
+    return output;
+  }
+  if (provided !== SECRET) {
+    output.setContent(JSON.stringify({ok: false, error: 'unauthorized'}));
+    return output;
+  }
+
+  try {
+    var t0 = Date.now();
+    syncDashboard();
+    var elapsed = Math.round((Date.now() - t0) / 1000);
+    var nowTs = Utilities.formatDate(new Date(), CFG.timezone, 'yyyy-MM-dd HH:mm:ss');
+    output.setContent(JSON.stringify({
+      ok: true,
+      ts: nowTs,
+      elapsed_s: elapsed,
+      message: 'Sync ejecutado correctamente'
+    }));
+  } catch (err) {
+    output.setContent(JSON.stringify({ok: false, error: err.message}));
+  }
+  return output;
+}
+
+/**
+ * Genera y guarda un token aleatorio para el endpoint manual.
+ * Ejecuta UNA SOLA VEZ. El token aparece en el Logger — cópialo a index.html.
+ */
+function setRefreshToken() {
+  var token = Utilities.getUuid();
+  PropertiesService.getScriptProperties().setProperty('REFRESH_TOKEN', token);
+  Logger.log('🔑 REFRESH_TOKEN guardado.');
+  Logger.log('   Token: ' + token);
+  Logger.log('   Pega este valor en index.html → const SYNC_WEBHOOK_TOKEN = "...";');
+}
+
+/**
+ * Diagnóstico del Web App. Ejecuta para verificar configuración.
+ */
+function checkWebApp() {
+  var token = PropertiesService.getScriptProperties().getProperty('REFRESH_TOKEN');
+  Logger.log('=== Web App — Diagnóstico ===');
+  Logger.log(token ? '✅ REFRESH_TOKEN configurado: ' + token.substring(0,8) + '...'
+                   : '❌ REFRESH_TOKEN NO configurado. Ejecuta setRefreshToken().');
+  Logger.log('');
+  Logger.log('Para obtener la URL del Web App:');
+  Logger.log('  Deploy ▸ Manage deployments ▸ copia "Web app URL"');
+  Logger.log('  Termina en /exec. Pégala en index.html → SYNC_WEBHOOK_URL.');
 }
