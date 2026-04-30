@@ -971,8 +971,8 @@ const LAST_SYNC = '2026-04-30 11:00'; /* AUTO-SYNC-TS */
 //   1. Despliega oet_autosync.gs como Web App (Acceso = "Anyone")
 //   2. Pega la URL aquí abajo
 //   3. Ejecuta setRefreshToken() en Apps Script y pega el token
-const SYNC_WEBHOOK_URL = '';   /* PEGAR URL EJECUCIÓN: https://script.google.com/macros/s/AKfyc.../exec */
-const SYNC_WEBHOOK_TOKEN = ''; /* PEGAR TOKEN generado por setRefreshToken() */
+const SYNC_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw-zgA7XrFOwGDfjjwdMACOWAB2dpprsGK4VERrXios5Uyz33gmimYutjVj4i2sURnShw/exec';
+const SYNC_WEBHOOK_TOKEN = '1cfdb5a5-94b7-4657-921b-9c27afe746e6';
 
 // ════════════════════════════════════════
 //  COMENTARIOS_MENSUALES — Comentarios oficiales asociados a cada cierre EEFF
@@ -1601,23 +1601,38 @@ function clearComFilters(){
 //  de GitHub Pages (~45s).
 // ════════════════════════════════════════════════════════════════
 function getSyncFreshness(){
-  if(typeof LAST_SYNC==='undefined' || !LAST_SYNC){
+  // Fuente primaria: LAST_SYNC (Apps Script v5.1+ lo actualiza con timestamp preciso)
+  // Fallback: MTD_RAW.y/m/d (siempre actualizado por todos los Apps Script)
+  const now=new Date();
+  const isPastNoon=now.getHours()>=12;
+
+  let synced=null, label='', minutesAgo=-1;
+  if(typeof LAST_SYNC!=='undefined' && LAST_SYNC){
+    const t=new Date(LAST_SYNC.replace(' ','T')+':00');
+    if(!isNaN(t.getTime())){ synced=t; label=LAST_SYNC; }
+  }
+  // Si LAST_SYNC no fue parseable, usar MTD_RAW (solo precisión de día, no hora)
+  if(!synced && typeof MTD_RAW!=='undefined' && MTD_RAW && MTD_RAW.y){
+    synced=new Date(MTD_RAW.y, MTD_RAW.m-1, MTD_RAW.d, 12, 0, 0); // mediodía como referencia
+    const pad=n=>String(n).padStart(2,'0');
+    label=MTD_RAW.y+'-'+pad(MTD_RAW.m)+'-'+pad(MTD_RAW.d);
+  }
+  if(!synced){
     return {state:'critical', label:'Sin datos', minutesAgo:-1};
   }
-  // LAST_SYNC formato 'YYYY-MM-DD HH:mm' en hora Colombia
-  const synced=new Date(LAST_SYNC.replace(' ','T')+':00');
-  if(isNaN(synced.getTime())){
-    return {state:'critical', label:LAST_SYNC, minutesAgo:-1};
-  }
-  const now=new Date();
-  const ageMin=Math.max(0, Math.floor((now-synced)/60000));
+
+  minutesAgo=Math.max(0, Math.floor((now-synced)/60000));
   const sameDay = synced.getFullYear()===now.getFullYear()
                && synced.getMonth()===now.getMonth()
                && synced.getDate()===now.getDate();
-  const isPastNoon=now.getHours()>=12;
-  if(!sameDay && isPastNoon)   return {state:'critical', label:LAST_SYNC, minutesAgo:ageMin};
-  if(ageMin>90)                return {state:'stale',    label:LAST_SYNC, minutesAgo:ageMin};
-  return                              {state:'fresh',    label:LAST_SYNC, minutesAgo:ageMin};
+
+  // CRITICAL: pasó mediodía y NO hay sync de hoy
+  if(!sameDay && isPastNoon)  return {state:'critical', label, minutesAgo};
+  // STALE: sync de hoy pero hace más de 90 min (solo aplica si tenemos hora precisa)
+  if(typeof LAST_SYNC!=='undefined' && LAST_SYNC && minutesAgo>90){
+    return {state:'stale', label, minutesAgo};
+  }
+  return {state:'fresh', label, minutesAgo};
 }
 
 function refreshSyncStatus(){
@@ -1638,7 +1653,9 @@ function refreshSyncStatus(){
     pill.title='Última sync: '+status.label+' (datos del día — sin actualizar en '+status.minutesAgo+' min)';
     hideSyncAlert();
   } else {
-    label.textContent='✓ '+(status.label.split(' ')[1]||status.label);
+    // Si tenemos hora precisa (LAST_SYNC) muestra HH:MM; si no, muestra fecha
+    const hasTime=typeof LAST_SYNC!=='undefined' && LAST_SYNC && status.label.indexOf(' ')>0;
+    label.textContent='✓ '+(hasTime ? status.label.split(' ')[1] : 'Hoy');
     pill.title='Sincronizado: '+status.label;
     hideSyncAlert();
   }
