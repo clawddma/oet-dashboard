@@ -1602,38 +1602,51 @@ function clearComFilters(){
 //  de GitHub Pages (~45s).
 // ════════════════════════════════════════════════════════════════
 function getSyncFreshness(){
-  // Fuente primaria: LAST_SYNC (Apps Script v5.1+ lo actualiza con timestamp preciso)
-  // Fallback: MTD_RAW.y/m/d (siempre actualizado por todos los Apps Script)
+  // MTD_RAW es la fuente primaria para "¿es de hoy?" — siempre actualizado por auto-sync.
+  // LAST_SYNC solo se usa si TAMBIÉN es de hoy, para afinar la hora exacta (HH:MM).
   const now=new Date();
   const isPastNoon=now.getHours()>=12;
+  const pad=n=>String(n).padStart(2,'0');
 
-  let synced=null, label='', minutesAgo=-1;
+  if(typeof MTD_RAW!=='undefined' && MTD_RAW && MTD_RAW.y){
+    const mtdSameDay=MTD_RAW.y===now.getFullYear()
+                  && MTD_RAW.m===(now.getMonth()+1)
+                  && MTD_RAW.d===now.getDate();
+    const mtdLabel=MTD_RAW.y+'-'+pad(MTD_RAW.m)+'-'+pad(MTD_RAW.d);
+    if(mtdSameDay){
+      // Auto-sync corrió hoy. Usar LAST_SYNC solo si también es de hoy (HH:MM preciso).
+      if(typeof LAST_SYNC!=='undefined' && LAST_SYNC){
+        const t=new Date(LAST_SYNC.replace(' ','T')+':00');
+        const lsSameDay=!isNaN(t.getTime())
+                      && t.getFullYear()===now.getFullYear()
+                      && t.getMonth()===now.getMonth()
+                      && t.getDate()===now.getDate();
+        if(lsSameDay){
+          const minutesAgo=Math.max(0,Math.floor((now-t)/60000));
+          if(minutesAgo>90) return {state:'stale', label:LAST_SYNC, minutesAgo};
+          return {state:'fresh', label:LAST_SYNC, minutesAgo};
+        }
+      }
+      return {state:'fresh', label:mtdLabel, minutesAgo:0};
+    }
+    // MTD_RAW no es de hoy → datos desactualizados
+    const minutesAgo=Math.max(0,Math.floor((now-new Date(MTD_RAW.y,MTD_RAW.m-1,MTD_RAW.d,12,0,0))/60000));
+    if(!isPastNoon) return {state:'fresh', label:mtdLabel, minutesAgo:0};
+    return {state:'critical', label:mtdLabel, minutesAgo};
+  }
+
+  // Sin MTD_RAW: LAST_SYNC como último recurso
   if(typeof LAST_SYNC!=='undefined' && LAST_SYNC){
     const t=new Date(LAST_SYNC.replace(' ','T')+':00');
-    if(!isNaN(t.getTime())){ synced=t; label=LAST_SYNC; }
+    if(!isNaN(t.getTime())){
+      const sameDay=t.getFullYear()===now.getFullYear()&&t.getMonth()===now.getMonth()&&t.getDate()===now.getDate();
+      const minutesAgo=Math.max(0,Math.floor((now-t)/60000));
+      if(!sameDay && isPastNoon) return {state:'critical', label:LAST_SYNC, minutesAgo};
+      if(minutesAgo>90) return {state:'stale', label:LAST_SYNC, minutesAgo};
+      return {state:'fresh', label:LAST_SYNC, minutesAgo};
+    }
   }
-  // Si LAST_SYNC no fue parseable, usar MTD_RAW (solo precisión de día, no hora)
-  if(!synced && typeof MTD_RAW!=='undefined' && MTD_RAW && MTD_RAW.y){
-    synced=new Date(MTD_RAW.y, MTD_RAW.m-1, MTD_RAW.d, 12, 0, 0); // mediodía como referencia
-    const pad=n=>String(n).padStart(2,'0');
-    label=MTD_RAW.y+'-'+pad(MTD_RAW.m)+'-'+pad(MTD_RAW.d);
-  }
-  if(!synced){
-    return {state:'critical', label:'Sin datos', minutesAgo:-1};
-  }
-
-  minutesAgo=Math.max(0, Math.floor((now-synced)/60000));
-  const sameDay = synced.getFullYear()===now.getFullYear()
-               && synced.getMonth()===now.getMonth()
-               && synced.getDate()===now.getDate();
-
-  // CRITICAL: pasó mediodía y NO hay sync de hoy
-  if(!sameDay && isPastNoon)  return {state:'critical', label, minutesAgo};
-  // STALE: sync de hoy pero hace más de 90 min (solo aplica si tenemos hora precisa)
-  if(typeof LAST_SYNC!=='undefined' && LAST_SYNC && minutesAgo>90){
-    return {state:'stale', label, minutesAgo};
-  }
-  return {state:'fresh', label, minutesAgo};
+  return {state:'critical', label:'Sin datos', minutesAgo:-1};
 }
 
 function refreshSyncStatus(){
@@ -1697,6 +1710,10 @@ async function manualRefresh(){
   }
 
   // Caso 2: ejecutar refresh
+  if(!pill || !label){
+    console.error('[OET] manualRefresh: elementos DOM no encontrados (cfb-sync-status/cfb-sync-label)');
+    return;
+  }
   pill.classList.remove('fresh','stale','critical');
   pill.classList.add('syncing');
   label.textContent='Sincronizando...';
@@ -1707,28 +1724,19 @@ async function manualRefresh(){
             'token='+encodeURIComponent(SYNC_WEBHOOK_TOKEN);
   let okFromServer=false, errorMsg='';
   try{
-    const r=await fetch(url, {method:'GET', mode:'cors', cache:'no-store'});
-    if(r && r.ok){
-      try{
-        const data=await r.json();
-        if(data.ok) okFromServer=true;
-        else errorMsg=data.error||'Apps Script reportó error';
-      }catch(e){
-        // Respuesta no es JSON parseable — asumimos que el sync corrió
-        okFromServer=true;
-      }
-    }
-  }catch(networkErr){
-    // CORS o red — no podemos confirmar pero el request salió
-    // Asumir éxito y esperar redespliegue
+    // no-cors: no podemos leer la respuesta, pero el request llega al servidor
+    await fetch(url, {method:'GET', mode:'no-cors', cache:'no-store'});
     okFromServer=true;
+  }catch(networkErr){
+    errorMsg='Sin conexión — verifique internet';
+    console.error('[OET] manualRefresh fetch error:', networkErr);
   }
 
   if(!okFromServer){
     pill.classList.remove('syncing');
     pill.classList.add('critical');
-    label.textContent='❌ Error';
-    pill.title='Error: '+errorMsg;
+    label.textContent='Sin conexión';
+    pill.title='Error de red: '+errorMsg;
     if(btn){ btn.disabled=false; btn.textContent='↻ Reintentar'; }
     setTimeout(refreshSyncStatus, 6000);
     return;
