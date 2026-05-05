@@ -3,7 +3,8 @@
 **Proyecto:** OET Dashboard · Panel de Business Intelligence  
 **Operado por:** Daniel Mesa · CFO Externo / Asesor Estratégico  
 **Producción:** https://clawddma.github.io/oet-dashboard/  
-**Repositorio:** https://github.com/clawddma/oet-dashboard
+**Repositorio:** https://github.com/clawddma/oet-dashboard  
+**Última actualización CLAUDE.md:** 2026-05-04
 
 ---
 
@@ -490,10 +491,18 @@ git show backup-2026-04-20:index.html > index_recovered.html
 
 ## 12. ROADMAP DEL PROYECTO
 
+### Completado (Q1–Q2 2026)
+- [x] Inyección EEFF enero–marzo 2026 (Q1 cerrado)
+- [x] YTD comparable en Tab Comercial — fix comparativas interanuales (2026-04-30)
+- [x] Fix alerta "96h sin actualización" — `getSyncFreshness()` usa MTD_RAW como fuente primaria (2026-05-04)
+- [x] Fix botón "↻ Actualizar" — `manualRefresh()` con `mode:'no-cors'` (2026-05-04)
+- [x] Editor de actas + drag & drop + comentarios mensuales + gráfico CxC/CxP (2026-04-25)
+- [x] Sistema de honorarios médicos integrado con filtros CF (2026-04-28)
+
 ### Activo (Q2 2026)
-- [ ] Inyección EEFF marzo 2026
-- [ ] YTD comparable en Tab Comercial (fix comparativas interanuales)
-- [ ] Mejoras visuales basadas en reuniones con cliente
+- [ ] Pegar paso 11b en Apps Script → escribir LAST_SYNC con timestamp preciso
+- [ ] Revisar y promover cambios de staging.html (4 features STAGING-NEW)
+- [ ] Mejoras visuales post-reunión cliente mayo 2026
 
 ### Corto plazo (Mayo–Junio 2026)
 - [ ] Módulo de interacción / chat con el dashboard
@@ -508,6 +517,12 @@ git show backup-2026-04-20:index.html > index_recovered.html
 ### Largo plazo (2027+)
 - [ ] App móvil nativa
 - [ ] API pública para integración contable
+
+### Documentos de análisis generados
+| Documento | Fecha | Descripción |
+|---|---|---|
+| `OET_Diagnostico_Financiero_Q1_2026.docx` | 2026-05-04 | Diagnóstico financiero completo Q1-2026, 7 secciones + rubros atípicos |
+| `PyG_Cirujanos_Q1_2025_vs_2026.docx` | 2026-05-04 | P&G por cirujano Q1-25 vs Q1-26, UB/cirugía |
 
 ---
 
