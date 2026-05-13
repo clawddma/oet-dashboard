@@ -1677,8 +1677,8 @@ function toggleComYear(y,btn){
     CF.years.add(y); btn.classList.add('on');
   }
   updateCfHint();
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
-  else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
+  else if(activeTab==='mkt'){ applyMktFilter(); }
 }
 
 // ── Toggle de modo de comparación YTD / Año completo / Auto ──────────────
@@ -1690,14 +1690,14 @@ function setCompareMode(mode, btn){
     b.classList.toggle('on', b.dataset.cmp===mode);
   });
   updateCfHint();
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
 }
 
 function setComFilter(key,val){
   CF[key]=val;
   updateCfHint();
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
-  else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
+  else if(activeTab==='mkt'){ applyMktFilter(); }
 }
 
 function clearComFilters(){
@@ -1722,7 +1722,7 @@ function clearComFilters(){
   });
   _syncComPeriodBtns();
   updateCfHint();
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
 }
 
 
@@ -1733,8 +1733,8 @@ function toggleComTipo(name,btn){
   CF.tipo='';
   updateCfHint();
   updateCfDdLabel('tipos');
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
-  else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
+  else if(activeTab==='mkt'){ applyMktFilter(); }
 }
 // ─── C5: Toggle multi-select línea de servicio ───────────────
 function toggleComLinea(name,btn){
@@ -1743,8 +1743,8 @@ function toggleComLinea(name,btn){
   CF.linea='';
   updateCfHint();
   updateCfDdLabel('lineas');
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
-  else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
+  else if(activeTab==='mkt'){ applyMktFilter(); }
 }
 // ─── C8/C10: Toggle vista de cirujanos (bill / cir / hon) ────
 function setCirView(view, btn){
@@ -1794,8 +1794,8 @@ function clearCfTiposEvt(e){
   document.querySelectorAll('#cfb-tipos-panel .cfb-ms-item').forEach(b=>b.classList.remove('on'));
   document.getElementById('cfb-tipos-all')?.classList.add('on');
   updateCfDdLabel('tipos');
-  if(activeTab==='com'){clearComBuilt();navigate(activeSection);}
-  else if(activeTab==='mkt'){clearMktBuilt();navigate(activeSection);}
+  if(activeTab==='com'){applyComFilter();}
+  else if(activeTab==='mkt'){applyMktFilter();}
 }
 function clearCfLineasEvt(e){
   e.stopPropagation();
@@ -1803,8 +1803,8 @@ function clearCfLineasEvt(e){
   document.querySelectorAll('#cfb-lineas-panel .cfb-ms-item').forEach(b=>b.classList.remove('on'));
   document.getElementById('cfb-lineas-all')?.classList.add('on');
   updateCfDdLabel('lineas');
-  if(activeTab==='com'){clearComBuilt();navigate(activeSection);}
-  else if(activeTab==='mkt'){clearMktBuilt();navigate(activeSection);}
+  if(activeTab==='com'){applyComFilter();}
+  else if(activeTab==='mkt'){applyMktFilter();}
 }
 function updateCfDdLabel(which){
   const btn=document.getElementById('cfb-'+which+'-btn');
@@ -2079,13 +2079,13 @@ function toggleComMonth(m,btn){
   });
   _syncComPeriodBtns();
   updateCfHint();
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
 }
 function toggleComDoctor(name,btn){
   if(CF.doctors.has(name)){ CF.doctors.delete(name); btn.classList.remove('on'); }
   else { CF.doctors.add(name); btn.classList.add('on'); }
   updateCfHint();
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
 }
 function updateFilterBarHeight(){
   const bar=document.getElementById('com-filter-bar');
@@ -2166,7 +2166,7 @@ function toggleComQuarter(q,btn){
   const allBtn=document.getElementById('cfb-p-all');
   if(allBtn) allBtn.classList.toggle('on', CF.months.size===0);
   updateCfHint();
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
 }
 
 // Activa MTD o Semana (modos exclusivos; desactiva filtros de mes)
@@ -2183,7 +2183,7 @@ function setComPeriod(mode,btn){
     // En MTD/week los meses individuales no aplican (pero no los borramos para no perder selección)
   }
   updateCfHint();
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
 }
 
 // Limpia filtros de mes y activa "Año completo"
@@ -2195,7 +2195,7 @@ function setComPeriodAll(btn){
   _syncComPeriodBtns();
   btn.classList.add('on');
   updateCfHint();
-  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  if(activeTab==='com'){ applyComFilter(); }
 }
 
 // Sincroniza visualmente los botones MTD/Semana/Año según CF.period
@@ -5498,6 +5498,9 @@ function buildComCirujanos(){
   const _ytdNoteCir=(CF.months.size===0 && _ytdBadgeCir)?'<span style="font-size:10px;color:#607d76;font-weight:400">· '+_ytdBadgeCir+' · comparable entre años</span>':'';
   el.innerHTML=`
   <div class="sec-title">Cirujanos <span class="st-badge">${mLbl?mLbl+' · ':''+(tiIdx.length<CIR.tipos.length?'Tipo filtrado · ':'')}${_yrBadge}</span> ${_ytdNoteCir}</div>
+  <div class="gfull" style="margin-bottom:12px">
+${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por cirujano','Barras apiladas por médico · click en leyenda para filtrar',240,'')}
+  </div>
   ${mLbl?`
   <div class="kpis k3" style="margin-bottom:12px">
     ${CF.years.has(2024)&&cir24m>0?kpiCard('Cirugías '+mLbl+'-24',cir24m.toLocaleString(),'Total clínica ese mes'):''}
@@ -5531,95 +5534,7 @@ function buildComCirujanos(){
   <div class="gfull">${chartCard('ch-cir-vol','🔢 ¿Quién hace más cirugías?','Volumen'+(mLbl?' — '+mLbl:''),280,'')}</div>
   </div>
   <div id="cir-view-hon" style="display:none">
-  <div class="gfull">
-    <div class="card">
-      <div class="card-hdr"><h3>⚖️ D.Sala · Hon.Cirujano · Honorarios Pagados OET</h3><span class="badge" id="hon-view-badge">Por período filtrado · estimado proporcional</span></div>
-      <div class="card-body">
-        ${(()=>{
-          const {months:_ms, partial:_pt} = cfYtdMonths();
-          const MNS=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-          const _pLbl = _ms.length===12?'Año completo':_ms.map(m=>MNS[m]).join(', ');
-          const visCirc=CIR.cirujanos.filter(c=>CF.doctors.size===0||CF.doctors.has(c.name));
-          const _yrs=[...CF.years].sort();
-
-          // Per year: precompute allBill for billing fraction denominator
-          const _allBill=(y)=>{
-            let v=0;
-            _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>v+=d.bill);});
-            if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>v+=Math.round(d.bill*_pt.factor));
-            return v;
-          };
-          const _allCirAnnual=(y)=>CIR.cirujanos.reduce((s,c)=>s+(y===2024?c.cir24:y===2025?c.cir25:c.cir26),0);
-
-          const _clinicLine=(y,li)=>{
-            let v=0;
-            _ms.forEach(m=>{if(LMON[y]&&LMON[y][m]) v+=LMON[y][m][li]||0;});
-            if(_pt&&LMON[y]&&LMON[y][_pt.month]) v+=Math.round((LMON[y][_pt.month][li]||0)*_pt.factor);
-            return v;
-          };
-          const _clinicHonPaid=(y)=>{
-            const arr=y===2024?HONORARIOS.m24:y===2025?HONORARIOS.m25:HONORARIOS.m26;
-            let v=0;
-            _ms.forEach(m=>v+=arr[m-1]||0);
-            if(_pt) v+=Math.round((arr[_pt.month-1]||0)*_pt.factor);
-            return v;
-          };
-
-          let html='';
-          _yrs.forEach(y=>{
-            const abill=_allBill(y);
-            const acir=_allCirAnnual(y);
-            const clinicDS=_clinicLine(y,0);
-            const clinicHB=_clinicLine(y,1);
-            const clinicHP=_clinicHonPaid(y);
-            const drVis=cfDoctorYear(y).filter(d=>CF.doctors.size===0||CF.doctors.has(d.name));
-
-            html+=`<div style="font-size:12px;font-weight:700;color:#1a3a2a;margin:10px 0 4px">${y} · <span style="font-weight:400;color:#607d76">${_pLbl}</span></div>`;
-            html+='<div class="tbl-wrap"><table class="hon-cmp-tbl"><thead><tr>'+
-              '<th style="text-align:left">Cirujano</th>'+
-              '<th>D. Sala</th><th>Hon. Cirujano¹</th><th>Total Fact.</th>'+
-              '<th>Hon. Pagados OET²</th><th>Neto</th><th>%</th>'+
-              '</tr></thead><tbody>';
-
-            visCirc.forEach(c=>{
-              const entry=drVis.find(d=>d.name===c.name)||{bill:0,cir:0};
-              if(!entry.bill&&!entry.cir) return;
-              // D.Sala by surgery share
-              const drCirAnn=y===2024?c.cir24:y===2025?c.cir25:c.cir26;
-              const dsala=acir>0?Math.round(clinicDS*drCirAnn/acir):0;
-              // Billing fraction for Hon.Cirujano and Hon.Pagados
-              let drBill_=0;
-              _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>{if(d.name===c.name)drBill_+=d.bill;});});
-              if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>{if(d.name===c.name)drBill_+=Math.round(d.bill*_pt.factor);});
-              const bf=abill>0?drBill_/abill:0;
-              const honBill=Math.round(clinicHB*bf);
-              const totalFact=entry.bill;
-              const honPaid=Math.round(clinicHP*bf);
-              const neto=totalFact-honPaid;
-              const pct=totalFact>0?honPaid/totalFact*100:null;
-              const nc=neto>=0?'pos':'neg';
-              const pc=pct!==null?(pct<30?'pos':pct<50?'':'neg'):'';
-              html+=`<tr>
-                <td style="font-weight:500">${c.name}</td>
-                <td>${fv(dsala)}</td>
-                <td>${fv(honBill)}</td>
-                <td style="font-weight:600">${fv(totalFact)}</td>
-                <td>${honPaid>0?fv(honPaid):'—'}</td>
-                <td class="${nc}">${honPaid>0?fv(neto):'—'}</td>
-                <td class="${pc}">${pct!==null?pct.toFixed(1)+'%':'—'}</td>
-              </tr>`;
-            });
-            html+='</tbody></table></div>';
-          });
-          html+=`<p style="font-size:10.5px;color:#607d76;margin-top:8px">
-            ¹ Hon. Cirujano = lo que factura la clínica al paciente/EPS por honorarios del cirujano (línea de ingresos).<br>
-            ² Hon. Pagados OET = lo que OET paga al médico (Cta. 62101001). Distribuido proporcionalmente al billing del médico.
-          </p>`;
-          return html;
-        })()}
-      </div>
-    </div>
-  </div>
+<div class="gfull">${chartCard('ch-cir-hon-bar','⚖️ Derechos de Sala · Honorarios Cirujano · Honorarios Pagados OET','Por médico · período filtrado',280,'')}</div>
   </div>
   <div class="gfull" style="margin-top:8px">
   ${chartCard('ch-cir-tipos','🏥 ¿Qué procedimientos generan más?','Por tipo'+(mLbl?' — '+mLbl:''),240,'')}
@@ -6008,6 +5923,157 @@ function buildComCirujanos(){
            title:{display:true,text:'Cirugías',font:{size:11},color:'#1a3a2a'}}
       }
     }});
+  }
+
+  // ─── Gráfica: Evolución mensual de facturación apilada por cirujano
+  {
+    const _mnsEv=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const _yrsEv=Array.from(CF.years).sort();
+    const _multiYear=_yrsEv.length>1;
+    // Doctors list sorted by 2025 billing
+    const _drListEv=CIR.cirujanos.filter(c=>CF.doctors.size===0||CF.doctors.has(c.name));
+    const _drSorted=_drListEv.slice().sort((a,b)=>{
+      const ba=(DMON[2025]?Object.values(DMON[2025]).reduce((s,m)=>{const e=m.find(d=>d.name===a.name);return s+(e?e.bill:0);},0):0);
+      const bb=(DMON[2025]?Object.values(DMON[2025]).reduce((s,m)=>{const e=m.find(d=>d.name===b.name);return s+(e?e.bill:0);},0):0);
+      return bb-ba;
+    });
+    const _evDs=[];
+    _yrsEv.forEach(y=>{
+      _drSorted.forEach((c,di)=>{
+        const data=Array.from({length:12},(_,mi)=>{
+          const m=mi+1;
+          if(!DMON[y]||!DMON[y][m]) return null;
+          const entry=DMON[y][m].find(d=>d.name===c.name);
+          return entry&&entry.bill>0?entry.bill:null;
+        });
+        _evDs.push({
+          label:_abbr(c.name)+(_multiYear?' '+y:''),
+          data,
+          backgroundColor:_drPalette[di%_drPalette.length],
+          borderRadius:3,
+          stack:_multiYear?'ev'+y:'ev'
+        });
+      });
+    });
+    mkChart('ch-cir-evol',{type:'bar',data:{labels:_mnsEv,datasets:_evDs},options:{
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:8}},
+        tooltip:{
+          mode:'index',intersect:false,
+          backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:12,weight:'600'},bodyFont:{size:11},
+          callbacks:{
+            label:c=>c.raw!=null?` ${c.dataset.label}: ${fv(c.raw)}`:'',
+            footer:items=>{
+              if(_multiYear){
+                const totByStack={};
+                items.forEach(i=>{if(i.raw!=null){const sk=i.dataset.stack||'ev';totByStack[sk]=(totByStack[sk]||0)+i.parsed.y;}});
+                return Object.entries(totByStack).map(([sk,t])=>`Total ${sk.replace('ev','')}: ${fv(t)}`);
+              } else {
+                const t=items.reduce((s,i)=>s+(i.raw!=null?i.parsed.y:0),0);
+                return t>0?['','Total: '+fv(t)]:[];
+              }
+            }
+          }
+        }
+      },
+      scales:{
+        x:{stacked:true,ticks:{font:{size:11},color:'#1a3a2a'},grid:{display:false}},
+        y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'},
+           title:{display:true,text:'Facturación (miles COP)',font:{size:11,weight:'600'},color:'#1a3a2a'}}
+      }
+    }});
+  }
+
+  // ─── Gráfica: Derechos de Sala · Honorarios Cirujano · Honorarios Pagados OET — barras agrupadas por médico
+  {
+    const {months:_hms, partial:_hpt} = cfYtdMonths();
+    const _yrsHon=Array.from(CF.years).sort();
+    // Doctors sorted by 2025 billing (same order as evolution chart)
+    const _drHonVis=CIR.cirujanos.filter(c=>CF.doctors.size===0||CF.doctors.has(c.name));
+    const _drHonSorted=_drHonVis.slice().sort((a,b)=>{
+      const ba=(DMON[2025]?Object.values(DMON[2025]).reduce((s,m)=>{const e=m.find(d=>d.name===a.name);return s+(e?e.bill:0);},0):0);
+      const bb=(DMON[2025]?Object.values(DMON[2025]).reduce((s,m)=>{const e=m.find(d=>d.name===b.name);return s+(e?e.bill:0);},0):0);
+      return bb-ba;
+    });
+    const _honXLabels=_drHonSorted.map(c=>_abbr(c.name));
+    // Use only the first selected year if multiple are selected, to keep chart readable
+    const _honYear=_yrsHon[_yrsHon.length-1]||2025;
+    // Clinic-level totals for the period
+    const _allBillHon=(y)=>{
+      let v=0;
+      _hms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>v+=d.bill);});
+      if(_hpt&&DMON[y]&&DMON[y][_hpt.month]) DMON[y][_hpt.month].forEach(d=>v+=Math.round(d.bill*_hpt.factor));
+      return v;
+    };
+    const _clinicLineHon=(y,li)=>{
+      let v=0;
+      _hms.forEach(m=>{if(LMON[y]&&LMON[y][m]) v+=LMON[y][m][li]||0;});
+      if(_hpt&&LMON[y]&&LMON[y][_hpt.month]) v+=Math.round((LMON[y][_hpt.month][li]||0)*_hpt.factor);
+      return v;
+    };
+    const _clinicHonPaidHon=(y)=>{
+      const arr=y===2024?HONORARIOS.m24:y===2025?HONORARIOS.m25:HONORARIOS.m26;
+      let v=0;
+      _hms.forEach(m=>v+=arr[m-1]||0);
+      if(_hpt) v+=Math.round((arr[_hpt.month-1]||0)*_hpt.factor);
+      return v;
+    };
+    const _dSalaData=[], _honBillData=[], _honPaidData=[];
+    const _allBillV=_allBillHon(_honYear);
+    const _allCirAnnV=CIR.cirujanos.reduce((s,c)=>s+((_honYear===2024?c.cir24:_honYear===2025?c.cir25:c.cir26)),0);
+    const _cDS=_clinicLineHon(_honYear,0);
+    const _cHB=_clinicLineHon(_honYear,1);
+    const _cHP=_clinicHonPaidHon(_honYear);
+    _drHonSorted.forEach(c=>{
+      const drCirAnn=_honYear===2024?c.cir24:_honYear===2025?c.cir25:c.cir26;
+      const dsala=_allCirAnnV>0?Math.round(_cDS*drCirAnn/_allCirAnnV):0;
+      let drBillV=0;
+      _hms.forEach(m=>{if(DMON[_honYear]&&DMON[_honYear][m]) DMON[_honYear][m].forEach(d=>{if(d.name===c.name)drBillV+=d.bill;});});
+      if(_hpt&&DMON[_honYear]&&DMON[_honYear][_hpt.month]) DMON[_honYear][_hpt.month].forEach(d=>{if(d.name===c.name)drBillV+=Math.round(d.bill*_hpt.factor);});
+      const bf=_allBillV>0?drBillV/_allBillV:0;
+      const honBill=Math.round(_cHB*bf);
+      const honPaid=Math.round(_cHP*bf);
+      _dSalaData.push(dsala||null);
+      _honBillData.push(honBill||null);
+      _honPaidData.push(honPaid||null);
+    });
+    mkChart('ch-cir-hon-bar',{type:'bar',
+      data:{
+        labels:_honXLabels,
+        datasets:[
+          {label:'D. Sala',data:_dSalaData,backgroundColor:'rgba(45,197,171,0.85)',borderRadius:3},
+          {label:'Hon. Cirujano (fact.)',data:_honBillData,backgroundColor:'rgba(68,108,179,0.82)',borderRadius:3},
+          {label:'Hon. Pagados OET',data:_honPaidData,backgroundColor:'rgba(239,83,80,0.82)',borderRadius:3}
+        ]
+      },
+      options:{
+        plugins:{
+          legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
+          tooltip:{
+            mode:'index',intersect:false,
+            backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
+            callbacks:{
+              title:items=>_drHonSorted[items[0].dataIndex]?.name||_honXLabels[items[0].dataIndex],
+              label:c=>c.raw!=null?` ${c.dataset.label}: ${fv(c.raw)}`:'',
+              footer:items=>{
+                const vals={};
+                items.forEach(i=>{if(i.raw!=null) vals[i.dataset.label]=i.parsed.y;});
+                const ds=vals['D. Sala']||0;
+                const hb=vals['Hon. Cirujano (fact.)']||0;
+                const hp=vals['Hon. Pagados OET']||0;
+                const neto=ds+hb-hp;
+                return neto!==0?['','Neto (DS+Hon−Pagados): '+fv(neto)]:[];
+              }
+            }
+          }
+        },
+        scales:{
+          x:{ticks:{font:{size:11,weight:'600'},color:'#1a3a2a',maxRotation:35,minRotation:20,autoSkip:false},grid:{display:false}},
+          y:{ticks:{callback:v=>fv(v),font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'},
+             title:{display:true,text:'Miles COP',font:{size:11,weight:'600'},color:'#1a3a2a'}}
+        }
+      }
+    });
   }
 }
 
@@ -6728,6 +6794,20 @@ function buildSidebar(tab){
   }
 }
 
+function applyComFilter(){
+  const _ct=document.getElementById('content');
+  const _sy=_ct?_ct.scrollTop:0;
+  clearComBuilt();
+  navigate(activeSection);
+  if(_ct) requestAnimationFrame(()=>{_ct.scrollTop=_sy;});
+}
+function applyMktFilter(){
+  const _ct=document.getElementById('content');
+  const _sy=_ct?_ct.scrollTop:0;
+  clearMktBuilt();
+  navigate(activeSection);
+  if(_ct) requestAnimationFrame(()=>{_ct.scrollTop=_sy;});
+}
 function navigate(secId){
   // Hide all
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
