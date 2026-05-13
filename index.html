@@ -5499,7 +5499,7 @@ function buildComCirujanos(){
   el.innerHTML=`
   <div class="sec-title">Cirujanos <span class="st-badge">${mLbl?mLbl+' · ':''+(tiIdx.length<CIR.tipos.length?'Tipo filtrado · ':'')}${_yrBadge}</span> ${_ytdNoteCir}</div>
   <div class="gfull" style="margin-bottom:12px">
-${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por cirujano','Barras apiladas por médico · click en leyenda para filtrar',240,'')}
+${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por cirujano','Barras apiladas por médico',240,`<div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:#607d76">Ver:</span><button id="evol-btn-total" class="itog-btn${(!window._evolMode||window._evolMode==='total')?' active':''}" onclick="window._evolMode='total';applyComFilter()">💰 Facturación total</button><button id="evol-btn-dsala" class="itog-btn${window._evolMode==='dsala'?' active':''}" onclick="window._evolMode='dsala';applyComFilter()">🏥 Solo D. Sala</button></div>`)}
   </div>
   ${mLbl?`
   <div class="kpis k3" style="margin-bottom:12px">
@@ -5930,19 +5930,24 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
     const _mnsEv=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const _yrsEv=Array.from(CF.years).sort();
     const _multiYear=_yrsEv.length>1;
-    // Doctors list sorted by 2025 billing
+    const _evolDSala=(y,m,name)=>{
+      if(!LMON[y]||!LMON[y][m]||!DMON[y]||!DMON[y][m]) return null;
+      const clinicDS=LMON[y][m][0]||0; if(!clinicDS) return null;
+      const totDmonCir=DMON[y][m].reduce((s,d)=>s+d.cir,0); if(!totDmonCir) return null;
+      const drCir=DMON[y][m].find(d=>d.name===name)?.cir||0;
+      return drCir>0?Math.round(clinicDS*drCir/totDmonCir):null;
+    };
+    const _isDSala=(window._evolMode==='dsala');
+    // Doctors sorted by 2025 billing desc
     const _drListEv=CIR.cirujanos.filter(c=>CF.doctors.size===0||CF.doctors.has(c.name));
-    const _drSorted=_drListEv.slice().sort((a,b)=>{
-      const ba=(DMON[2025]?Object.values(DMON[2025]).reduce((s,m)=>{const e=m.find(d=>d.name===a.name);return s+(e?e.bill:0);},0):0);
-      const bb=(DMON[2025]?Object.values(DMON[2025]).reduce((s,m)=>{const e=m.find(d=>d.name===b.name);return s+(e?e.bill:0);},0):0);
-      return bb-ba;
-    });
+    const _drSorted=[..._drListEv].sort((a,b)=>b.bill25-a.bill25);
     const _evDs=[];
     _yrsEv.forEach(y=>{
       _drSorted.forEach((c,di)=>{
         const data=Array.from({length:12},(_,mi)=>{
           const m=mi+1;
           if(!DMON[y]||!DMON[y][m]) return null;
+          if(_isDSala) return _evolDSala(y,m,c.name);
           const entry=DMON[y][m].find(d=>d.name===c.name);
           return entry&&entry.bill>0?entry.bill:null;
         });
@@ -5955,9 +5960,10 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
         });
       });
     });
+    const _evolYTitle=_isDSala?'D. Sala — derechos de cirugía (miles COP)':'Facturación total (miles COP)';
     mkChart('ch-cir-evol',{type:'bar',data:{labels:_mnsEv,datasets:_evDs},options:{
       plugins:{
-        legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:8}},
+        legend:{position:'right',align:'start',labels:{boxWidth:12,font:{size:11},padding:8}},
         tooltip:{
           mode:'index',intersect:false,
           backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:12,weight:'600'},bodyFont:{size:11},
@@ -5968,10 +5974,9 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
                 const totByStack={};
                 items.forEach(i=>{if(i.raw!=null){const sk=i.dataset.stack||'ev';totByStack[sk]=(totByStack[sk]||0)+i.parsed.y;}});
                 return Object.entries(totByStack).map(([sk,t])=>`Total ${sk.replace('ev','')}: ${fv(t)}`);
-              } else {
-                const t=items.reduce((s,i)=>s+(i.raw!=null?i.parsed.y:0),0);
-                return t>0?['','Total: '+fv(t)]:[];
               }
+              const t=items.reduce((s,i)=>s+(i.raw!=null?i.parsed.y:0),0);
+              return t>0?['','Total: '+fv(t)]:[];
             }
           }
         }
@@ -5979,7 +5984,7 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
       scales:{
         x:{stacked:true,ticks:{font:{size:11},color:'#1a3a2a'},grid:{display:false}},
         y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'},
-           title:{display:true,text:'Facturación (miles COP)',font:{size:11,weight:'600'},color:'#1a3a2a'}}
+           title:{display:true,text:_evolYTitle,font:{size:11,weight:'600'},color:'#1a3a2a'}}
       }
     }});
   }
