@@ -2099,7 +2099,7 @@ function updateFilterBarHeight(){
 }
 /* Destruye los charts de las secciones comerciales y limpia el caché
    de 'built', para forzar re-render completo cuando cambia un filtro */
-const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-honorarios','com-trend','com-meta'];
+const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-honorarios','com-lentes','com-trend','com-meta'];
 const MKT_SECS=['mkt-inicio','mkt-lentes','mkt-growth','mkt-cirujanos','mkt-roi'];
 const FAR_SECS=['far-inicio','far-lentes','far-compras'];
 function clearTabBuilt(secs){
@@ -2521,6 +2521,7 @@ const NAVS = {
     {id:'com-lineas',    label:'Por Servicio',     icon:'🔬'},
     {id:'com-cirujanos',  label:'Cirujanos',         icon:'👨‍⚕️'},
     {id:'com-honorarios', label:'Honorarios Médicos',icon:'💵'},
+    {id:'com-lentes',     label:'Lentes',            icon:'🔬'},
     {id:'com-trend',      label:'Tendencia',         icon:'📈'},
     {id:'com-meta',       label:'Meta 2026',         icon:'🎯'},
   ],
@@ -5952,7 +5953,7 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
           return entry&&entry.bill>0?entry.bill:null;
         });
         _evDs.push({
-          label:_abbr(c.name)+(_multiYear?' '+y:''),
+          label:_abbr(c.name)+(_multiYear?` '${String(y).slice(-2)}`:''),
           data,
           backgroundColor:_drPalette[di%_drPalette.length],
           borderRadius:3,
@@ -6750,6 +6751,7 @@ const BUILDERS = {
   'com-lineas':    buildComLineas,
   'com-cirujanos':  buildComCirujanos,
   'com-honorarios': buildComHonorarios,
+  'com-lentes':     buildComLentes,
   'com-trend':      buildComTrend,
   'com-meta':       buildComMeta,
   'mkt-inicio':    buildMktInicio,
@@ -6860,6 +6862,131 @@ function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
 }
 
+
+function buildComLentes(){
+  const el=document.getElementById('com-lentes');
+  if(!el) return;
+
+  // LIO data: line index 2 = 'LIOs ★' in COM.lineas
+  // tipo indices: 1='LIOs Premium', 6='LIO Fáquico'
+  const MN=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const C24='rgba(68,108,179,0.82)',B24='rgba(68,108,179,1)';
+  const C25='rgba(45,197,171,0.88)',B25='rgba(45,197,171,1)';
+  const C26='rgba(255,152,0,0.85)',B26='rgba(255,152,0,1)';
+
+  // Filtered LIO billing: cfLineYear respects CF.months + CF.doctors
+  const lio24=cfLineYear(2024)[2], lio25=cfLineYear(2025)[2], lio26=cfLineYear(2026)[2];
+  // Filtered tipo billing for LIOs Premium (idx 1) and Fáquico (idx 6)
+  const tiP24=cfTipoYear(2024)[1],tiP25=cfTipoYear(2025)[1],tiP26=cfTipoYear(2026)[1];
+  const tiF24=cfTipoYear(2024)[6],tiF25=cfTipoYear(2025)[6],tiF26=cfTipoYear(2026)[6];
+  // Total billing for share calc
+  const tot24=cfLineYear(2024).reduce((s,v)=>s+v,0);
+  const tot25=cfLineYear(2025).reduce((s,v)=>s+v,0);
+  const tot26=cfLineYear(2026).reduce((s,v)=>s+v,0);
+
+  const {months:_ms, partial:_pt}=cfYtdMonths();
+  const mLbl=CF.months.size>0?[...CF.months].sort((a,b)=>a-b).map(m=>MN[m]).join(', '):null;
+  const _yrBadge=[...CF.years].sort().join(', ');
+
+  el.innerHTML=`
+  <div class="sec-title">Lentes & LIOs <span class="st-badge">${mLbl?mLbl+' · ':''}${_yrBadge}</span></div>
+
+  <div class="kpis k3" style="margin-bottom:16px">
+    ${CF.years.has(2024)?kpiCard('LIOs ★ 2024',fv(lio24),(tot24>0?(lio24/tot24*100).toFixed(1)+'% del total':'')):''}
+    ${CF.years.has(2025)?kpiCard('LIOs ★ 2025',fv(lio25),fp(pctVar(lio25,lio24))+' vs 2024 · '+(tot25>0?(lio25/tot25*100).toFixed(1)+'% del total':'')):''}
+    ${CF.years.has(2026)?kpiCard('LIOs ★ 2026'+(mLbl?' · '+mLbl:''),fv(lio26),fp(pctVar(lio26,lio25))+' vs 2025 · '+(tot26>0?(lio26/tot26*100).toFixed(1)+'% del total':'')):''}
+  </div>
+
+  <div class="g2">
+    ${chartCard('ch-lnl-lio-mes','📈 Evolución mensual LIOs ★','Facturación mensual de lentes intraoculares'+(mLbl?' — '+mLbl:''),240,'')}
+    ${chartCard('ch-lnl-lio-tipo','🔬 LIOs por tipo de procedimiento','LIOs Premium vs LIO Fáquico'+(mLbl?' — '+mLbl:''),240,'')}
+  </div>
+  <div class="gfull" style="margin-top:12px">
+    ${chartCard('ch-lnl-lio-dr','👨‍⚕️ LIOs por cirujano','Facturación LIOs ★ estimada por médico — proporcional al billing'+(mLbl?' — '+mLbl:''),260,'')}
+  </div>
+  <div class="insight">
+    💡 <strong>LIOs ★</strong> es la línea de mayor margen de OET. Incluye lentes premium implantados en cirugías de catarata y refractiva. La facturación se distribuye proporcionalmente al billing de cada cirujano.
+    <br>⚠️ Conteo en unidades (# de lentes) requiere integración de inventario desde la fuente — pendiente de implementación.
+  </div>`;
+
+  // Chart 1: Monthly LIO billing by year
+  {
+    const _mnsL=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const _dsL=[];
+    [[2024,C24,B24],[2025,C25,B25],[2026,C26,B26]].forEach(([y,bg,bc])=>{
+      if(!CF.years.has(y)) return;
+      const data=_mnsL.map((_,mi)=>{
+        const m=mi+1;
+        if(!LMON[y]||!LMON[y][m]) return null;
+        if(CF.months.size>0&&!CF.months.has(m)) return null;
+        const v=LMON[y][m][2]||0;
+        return v>0?v:null;
+      });
+      _dsL.push({label:String(y),data,backgroundColor:bg,borderColor:bc,borderWidth:1,borderRadius:3});
+    });
+    mkChart('ch-lnl-lio-mes',{type:'bar',data:{labels:_mnsL,datasets:_dsL},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:10}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(12,48,40,.95)',padding:10,bodyFont:{size:11},
+          callbacks:{label:c=>c.raw!=null?` ${c.dataset.label}: ${fv(c.raw)}`:'',
+            footer:items=>{
+              if(items.length<2) return [];
+              const vals=items.filter(i=>i.raw!=null);
+              if(vals.length<2) return [];
+              const v0=vals[0].parsed.y,v1=vals[vals.length-1].parsed.y;
+              return v0&&v1?['Δ: '+fp(pctVar(v1,v0))]:[];
+            }}}},
+      scales:{x:{ticks:{font:{size:11}},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'},
+           title:{display:true,text:'Facturación LIOs (miles COP)',font:{size:11},color:'#1a3a2a'}}}}});
+  }
+
+  // Chart 2: LIO tipo — Premium vs Fáquico
+  {
+    const _lioTipos=['LIOs Premium','LIO Fáquico'];
+    const _tiDs=[];
+    if(CF.years.has(2024)) _tiDs.push({label:'2024',data:[tiP24,tiF24],backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:3});
+    if(CF.years.has(2025)) _tiDs.push({label:'2025',data:[tiP25,tiF25],backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:3});
+    if(CF.years.has(2026)) _tiDs.push({label:'2026',data:[tiP26,tiF26],backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:3});
+    mkChart('ch-lnl-lio-tipo',{type:'bar',data:{labels:_lioTipos,datasets:_tiDs},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:10}},
+        tooltip:{backgroundColor:'rgba(12,48,40,.95)',padding:10,bodyFont:{size:11},
+          callbacks:{label:c=>` ${c.dataset.label}: ${fv(c.raw)}`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:12,weight:'600'}}},
+        y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'},
+           title:{display:true,text:'Facturación (miles COP)',font:{size:11},color:'#1a3a2a'}}}}});
+  }
+
+  // Chart 3: LIO by doctor (proportional to billing fraction)
+  {
+    const _cirSorted=[...CIR.cirujanos].filter(c=>CF.doctors.size===0||CF.doctors.has(c.name)).sort((a,b)=>b.bill25-a.bill25);
+    const _abbr2=name=>{const p=name.replace(/^Dr[a]?\. /,'').split(' ');return(p[0]+(p[1]?' '+p[1]:'')).substring(0,14);};
+    const _drDsL=[];
+    [[2024,C24,B24],[2025,C25,B25],[2026,C26,B26]].forEach(([y,bg,bc])=>{
+      if(!CF.years.has(y)) return;
+      const lioTotal=cfLineYear(y)[2];
+      // Total billing denominator for fraction
+      let allBill_=0;
+      _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>allBill_+=d.bill);});
+      if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>allBill_+=Math.round(d.bill*_pt.factor));
+      const data=_cirSorted.map(c=>{
+        let drBill_=0;
+        _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>{if(d.name===c.name)drBill_+=d.bill;});});
+        if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>{if(d.name===c.name)drBill_+=Math.round(d.bill*_pt.factor);});
+        const bf=allBill_>0?drBill_/allBill_:0;
+        return Math.round(lioTotal*bf)||null;
+      });
+      _drDsL.push({label:String(y),data,backgroundColor:bg,borderColor:bc,borderWidth:1,borderRadius:3});
+    });
+    mkChart('ch-lnl-lio-dr',{type:'bar',data:{labels:_cirSorted.map(c=>_abbr2(c.name)),datasets:_drDsL},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:10}},
+        tooltip:{backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:12},bodyFont:{size:11},
+          callbacks:{title:items=>_cirSorted[items[0].dataIndex].name,
+            label:c=>` ${c.dataset.label}: ${fv(c.raw)}`}}},
+      scales:{x:{ticks:{font:{size:11,weight:'600'},color:'#1a3a2a',maxRotation:35,minRotation:20,autoSkip:false},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'},
+           title:{display:true,text:'LIOs ★ estimado (miles COP)',font:{size:11},color:'#1a3a2a'}}}}});
+  }
+}
 
 // ════════════════════════════════════════
 //  BUILD: COMERCIAL (en proceso) — MKT TAB
