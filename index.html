@@ -1749,12 +1749,12 @@ function toggleComLinea(name,btn){
 // ─── C8/C10: Toggle vista de cirujanos (bill / cir / hon) ────
 function setCirView(view, btn){
   if(btn) btn.closest('.itog-grp').querySelectorAll('.itog-btn').forEach(b=>b.classList.toggle('active',b===btn));
-  ['bill','cir','hon'].forEach(v=>{
+  ['bill','cir','hon','honpaid'].forEach(v=>{
     const el=document.getElementById('cir-view-'+v);
     if(el) el.style.display=(v===view)?'':'none';
   });
   requestAnimationFrame(()=>{
-    ['ch-cir-bill','ch-cir-vol','ch-cir-tipos'].forEach(id=>{
+    ['ch-cir-bill','ch-cir-vol','ch-cir-tipos','ch-cir-honpaid'].forEach(id=>{
       const cv=document.getElementById(id);
       if(cv){const ch=Chart.getChart(cv);if(ch) ch.resize();}
     });
@@ -5466,15 +5466,19 @@ function buildComCirujanos(){
     ${kpiCard('Procedimiento #1',CIR.tipos[0],(tipoTot25>0?(cfTipoYear(2025)[0]/tipoTot25*100).toFixed(0):0)+'% — '+fv(cfTipoYear(2025)[0]))}
   </div>
 <div class="insight" style="margin-bottom:10px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.06);font-size:12px">
-    💡 Usa el toggle para alternar entre vista de <strong>facturación</strong>, <strong>cirugías</strong> o comparativo <strong>neto vs honorarios</strong>.
+    💡 Usa el toggle para ver <strong>D. Sala</strong> (facturación de todos los médicos), <strong>Honorarios</strong> (lo que la clínica paga a cada prestador), <strong>Cirugías</strong> (volumen) o el comparativo <strong>Neto vs Honorarios</strong> (solo médicos staff con datos).
   </div>
   <div class="itog-grp">
-    <button class="itog-btn active" onclick="setCirView('bill',this)">💰 Facturación</button>
+    <button class="itog-btn active" onclick="setCirView('bill',this)">📊 D. Sala</button>
+    <button class="itog-btn" onclick="setCirView('honpaid',this)">💵 Honorarios pagados</button>
     <button class="itog-btn" onclick="setCirView('cir',this)">🔢 Cirugías</button>
-    <button class="itog-btn" onclick="setCirView('hon',this)">📊 Neto vs Honorarios</button>
+    <button class="itog-btn" onclick="setCirView('hon',this)">⚖️ Neto vs Honorarios</button>
   </div>
   <div id="cir-view-bill">
-  <div class="gfull">${chartCard('ch-cir-bill','💰 ¿Quién factura más para la clínica?','Facturación por cirujano'+(mLbl?' — '+mLbl:'')+' · ordenado por 2025',280,'<div style="margin-top:8px;font-size:11.5px;color:#2d3f38;background:#f5f8f7;padding:9px 12px;border-radius:8px">📖 <strong>Cómo leer:</strong> cada barra es la facturación generada por las cirugías de ese médico.</div>')}</div>
+  <div class="gfull">${chartCard('ch-cir-bill','📊 Derechos de Sala por cirujano','Facturación generada por las cirugías de cada médico'+(mLbl?' — '+mLbl:'')+' · ordenado por 2025',280,'<div style="margin-top:8px;font-size:11px;color:#607d76;background:#f5f8f7;padding:8px 12px;border-radius:8px">Esta vista muestra <strong>todos los médicos</strong> sin sesgo de honorarios. Compara el valor que cada cirujano genera en facturación.</div>')}</div>
+  </div>
+  <div id="cir-view-honpaid" style="display:none">
+  <div class="gfull">${chartCard('ch-cir-honpaid','💵 Honorarios pagados por OET — Q1-2025 vs Q1-2026','Cuenta 62101001 · Solo disponible Q1 (notas EEFF del contador) · Incluye staff y externos',260,'<div style="margin-top:8px;font-size:11px;color:#607d76;background:#f5f8f7;padding:8px 12px;border-radius:8px">📋 <strong>Fuente:</strong> notas del EEFF Q1-2026 del contador. Los honorarios mensuales completos (mes a mes) están disponibles en la fuente original (Google Sheets por factura) y se integrarán en próxima actualización.</div>')}</div>
   </div>
   <div id="cir-view-cir" style="display:none">
   <div class="gfull">${chartCard('ch-cir-vol','🔢 ¿Quién hace más cirugías?','Volumen'+(mLbl?' — '+mLbl:''),280,'')}</div>
@@ -5664,6 +5668,51 @@ function buildComCirujanos(){
       }
     }
   });
+
+  // ─── Gráfica 4: Honorarios pagados por proveedor (Q1-2025 vs Q1-2026)
+  {
+    const _hp=[...HONORARIOS.proveedores].filter(p=>(p.q1_2025||0)>0||(p.q1_2026||0)>0)
+      .sort((a,b)=>(b.q1_2026||0)-(a.q1_2026||0));
+    const _hpLbl=_hp.map(p=>{
+      const n=p.nombre.replace(/^Dr[a]?\. /,'');
+      return n.length>22?n.substring(0,21)+'…':n;
+    });
+    const _hp25=_hp.map(p=>p.q1_2025||0);
+    const _hp26=_hp.map(p=>p.q1_2026||0);
+    mkChart('ch-cir-honpaid',{
+      type:'bar',
+      data:{labels:_hpLbl,datasets:[
+        {label:'Q1-2025',data:_hp25,backgroundColor:'rgba(45,197,171,0.75)',borderColor:'rgba(45,197,171,1)',borderWidth:1,borderRadius:3},
+        {label:'Q1-2026',data:_hp26,backgroundColor:'rgba(255,152,0,0.85)',borderColor:'rgba(255,152,0,1)',borderWidth:1,borderRadius:3}
+      ]},
+      options:{
+        indexAxis:'y',
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:12}},
+          tooltip:{
+            backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:12,weight:'600'},bodyFont:{size:12},
+            callbacks:{
+              title:items=>_hp[items[0].dataIndex].nombre,
+              label:ctx=>` ${ctx.dataset.label}: ${fvFull(ctx.raw)}`,
+              afterBody:items=>{
+                const p=_hp[items[0].dataIndex];
+                const v25=p.q1_2025||0, v26=p.q1_2026||0;
+                const lines=[p.cargo+(p.esStaff?' · Médico staff':'')];
+                if(v25&&v26) lines.push('Variación Q1: '+fp(pctVar(v26,v25)));
+                if(!v25&&v26) lines.push('Nuevo en Q1-2026');
+                return lines;
+              }
+            }
+          }
+        },
+        scales:{
+          x:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'}},
+          y:{ticks:{font:{size:11,weight:'600'},color:'#1a3a2a'},grid:{display:false}}
+        }
+      }
+    });
+  }
 
   // Monthly surgery chart (when month filter active)
   if(mLbl){
