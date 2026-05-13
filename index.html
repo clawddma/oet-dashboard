@@ -6873,15 +6873,14 @@ function buildComLentes(){
   const C24='rgba(68,108,179,0.82)',B24='rgba(68,108,179,1)';
   const C25='rgba(45,197,171,0.88)',B25='rgba(45,197,171,1)';
   const C26='rgba(255,152,0,0.85)',B26='rgba(255,152,0,1)';
+  const _abbr2=name=>{const p=name.replace(/^Dr[a]?\. /,'').split(' ');return(p[0]+(p[1]?' '+p[1]:'')).substring(0,14);};
 
   const {months:_ms, partial:_pt}=cfYtdMonths();
   const mLbl=CF.months.size>0?[...CF.months].sort((a,b)=>a-b).map(m=>MN[m]).join(', '):null;
   const _yrBadge=[...CF.years].sort().join(', ');
-
-  // X-axis months: only selected months when filter active, otherwise full period
   const _showMs=CF.months.size>0?[...CF.months].sort((a,b)=>a-b):[..._ms].sort((a,b)=>a-b);
 
-  // Helper: sum selected tipos for a year+period
+  // Billing: sum selected tipos for a year+period
   const _tipoTotalY=y=>{
     if(!TMON[y]) return 0;
     let v=0;
@@ -6893,6 +6892,26 @@ function buildComLentes(){
   const allTot24=cfTipoYear(2024).reduce((s,v)=>s+v,0);
   const allTot25=cfTipoYear(2025).reduce((s,v)=>s+v,0);
   const allTot26=cfTipoYear(2026).reduce((s,v)=>s+v,0);
+
+  // Surgery counts for the selected period (respects doctor filter)
+  const _countCirY=y=>{
+    if(CF.doctors.size===0){
+      const arr=y===2024?CIR.mes_24:y===2025?CIR.mes_25:CIR.mes_26;
+      let v=0;
+      _ms.forEach(m=>v+=arr[m-1]||0);
+      if(_pt) v+=Math.round((arr[_pt.month-1]||0)*_pt.factor);
+      return Math.round(v);
+    } else {
+      let v=0;
+      _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name))v+=d.cir;});});
+      if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>{if(CF.doctors.has(d.name))v+=Math.round(d.cir*_pt.factor);});
+      return Math.round(v);
+    }
+  };
+  const cir24=_countCirY(2024), cir25=_countCirY(2025), cir26=_countCirY(2026);
+
+  // Ticket promedio: billing tipos seleccionados / total cirugías período
+  const _ticket=y=>{const c=_countCirY(y); return c>0?Math.round((y===2024?tot24:y===2025?tot25:tot26)/c):0;};
 
   const _tipoChips=CIR.tipos.slice(0,8).map((t,i)=>
     `<button class="itog-btn${window._ltTipos.has(i)?' active':''}" style="font-size:11px" onclick="if(window._ltTipos.has(${i})&&window._ltTipos.size>1){window._ltTipos.delete(${i});}else{window._ltTipos.add(${i});}built.delete('com-lentes');navigate('com-lentes')">${t}</button>`
@@ -6906,6 +6925,7 @@ function buildComLentes(){
     <div style="display:flex;gap:6px;flex-wrap:wrap">${_tipoChips}</div>
   </div>
 
+  <div style="font-size:12px;font-weight:700;color:#1a3a2a;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.05em">💰 Facturación</div>
   <div class="kpis k3" style="margin-bottom:16px">
     ${CF.years.has(2024)?kpiCard('Selección 2024',fv(tot24),(allTot24>0?(tot24/allTot24*100).toFixed(1)+'% del total':'')):''}
     ${CF.years.has(2025)?kpiCard('Selección 2025',fv(tot25),fp(pctVar(tot25,tot24))+' vs 2024 · '+(allTot25>0?(tot25/allTot25*100).toFixed(1)+'% del total':'')):''}
@@ -6913,18 +6933,33 @@ function buildComLentes(){
   </div>
 
   <div class="g2">
-    ${chartCard('ch-lnl-lio-mes','📈 Evolución mensual — tipos seleccionados','Facturación mensual por procedimientos seleccionados'+(mLbl?' — '+mLbl:''),240,'')}
+    ${chartCard('ch-lnl-lio-mes','📈 Evolución mensual — facturación','Facturación mensual por procedimientos seleccionados'+(mLbl?' — '+mLbl:''),240,'')}
     ${chartCard('ch-lnl-lio-tipo','🔬 Por tipo de procedimiento','Comparativo interanual — tipos seleccionados'+(mLbl?' — '+mLbl:''),240,'')}
   </div>
   <div class="gfull" style="margin-top:12px">
-    ${chartCard('ch-lnl-lio-dr','👨‍⚕️ Por cirujano — estimado','Facturación estimada proporcional al billing de cada médico'+(mLbl?' — '+mLbl:''),260,'')}
+    ${chartCard('ch-lnl-lio-dr','👨‍⚕️ Facturación por cirujano — estimado','Proporcional al billing de cada médico'+(mLbl?' — '+mLbl:''),260,'')}
+  </div>
+
+  <div style="border-top:2px solid #dce9e5;margin:22px 0 14px;padding-top:16px">
+    <div style="font-size:12px;font-weight:700;color:#1a3a2a;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">🔢 Volumen de Cirugías</div>
+    <div style="font-size:11px;color:#607d76;margin-bottom:12px">Cada fila de Derechos de Sala = 1 procedimiento = 1 ojo ≈ 1 lente implantado. Bilateral (2 ojos) = 2 filas. Para conteo exacto de lentes como unidad física se requiere columna de cantidad en la fuente.</div>
+    <div class="kpis k3" style="margin-bottom:16px">
+      ${CF.years.has(2024)?kpiCard('Cirugías 2024',cir24.toLocaleString(),'ticket: '+fv(_ticket(2024))+'/cir'):''}
+      ${CF.years.has(2025)?kpiCard('Cirugías 2025',cir25.toLocaleString(),fp(pctVar(cir25,cir24))+' vs 2024 · ticket: '+fv(_ticket(2025))+'/cir'):''}
+      ${CF.years.has(2026)?kpiCard('Cirugías 2026'+(mLbl?' · '+mLbl:''),cir26.toLocaleString(),fp(pctVar(cir26,cir25))+' vs 2025 · ticket: '+fv(_ticket(2026))+'/cir'):''}
+    </div>
+  </div>
+
+  <div class="g2">
+    ${chartCard('ch-lnl-cir-mes','📊 Evolución mensual — nº de cirugías','Procedimientos por mes · 1 fila Derechos de Sala = 1 cirugía'+(mLbl?' — '+mLbl:''),240,'')}
+    ${chartCard('ch-lnl-cir-dr','👨‍⚕️ Cirugías por médico','Nº de procedimientos por cirujano'+(mLbl?' — '+mLbl:''),240,'')}
   </div>
   <div class="insight">
-    💡 Usa los chips de tipo para enfocar el análisis: selecciona solo "LIOs Premium" + "LIO Fáquico" para ver el negocio de lentes como unidad independiente, o activa todos los tipos para el total quirúrgico.
-    <br>⚠️ La distribución por cirujano es una estimación proporcional al billing total de cada médico.
+    💡 Filtra por "LIOs Premium" + "LIO Fáquico" para ver el negocio de lentes como unidad independiente. El volumen de cirugías es el proxy más preciso del número de lentes implantados disponible en los datos actuales.
+    <br>⚠️ Facturación por cirujano: estimación proporcional al billing. Conteo por cirujano: dato real de Derechos de Sala.
   </div>`;
 
-  // Chart 1: Monthly — only _showMs on X axis, sum of selected tipos
+  // Chart 1: Monthly billing — only _showMs on X axis
   {
     const _mnsL=_showMs.map(m=>MN[m]);
     const _dsL=[];
@@ -6952,7 +6987,7 @@ function buildComLentes(){
            title:{display:true,text:'Facturación (miles COP)',font:{size:11},color:'#1a3a2a'}}}}});
   }
 
-  // Chart 2: Selected tipos breakdown comparison across years
+  // Chart 2: Tipo billing breakdown
   {
     const _tiposSelArr=[...window._ltTipos].sort((a,b)=>a-b);
     const _tipoLabels=_tiposSelArr.map(i=>CIR.tipos[i]);
@@ -6969,10 +7004,9 @@ function buildComLentes(){
            title:{display:true,text:'Facturación (miles COP)',font:{size:11},color:'#1a3a2a'}}}}});
   }
 
-  // Chart 3: By doctor — proportional billing fraction × sum of selected tipos
+  // Chart 3: Billing by doctor
   {
     const _cirSorted=[...CIR.cirujanos].filter(c=>CF.doctors.size===0||CF.doctors.has(c.name)).sort((a,b)=>b.bill25-a.bill25);
-    const _abbr2=name=>{const p=name.replace(/^Dr[a]?\. /,'').split(' ');return(p[0]+(p[1]?' '+p[1]:'')).substring(0,14);};
     const _drDsL=[];
     [[2024,C24,B24],[2025,C25,B25],[2026,C26,B26]].forEach(([y,bg,bc])=>{
       if(!CF.years.has(y)) return;
@@ -6997,6 +7031,60 @@ function buildComLentes(){
       scales:{x:{ticks:{font:{size:11,weight:'600'},color:'#1a3a2a',maxRotation:35,minRotation:20,autoSkip:false},grid:{display:false}},
         y:{ticks:{callback:v=>fv(v),font:{size:10}},grid:{color:'#eef2f1'},
            title:{display:true,text:'Estimado selección (miles COP)',font:{size:11},color:'#1a3a2a'}}}}});
+  }
+
+  // Chart 4: Monthly surgery count — _showMs only
+  {
+    const _mnsC=_showMs.map(m=>MN[m]);
+    const _dsC=[];
+    [[2024,C24,B24],[2025,C25,B25],[2026,C26,B26]].forEach(([y,bg,bc])=>{
+      if(!CF.years.has(y)) return;
+      const arr=y===2024?CIR.mes_24:y===2025?CIR.mes_25:CIR.mes_26;
+      const data=_showMs.map(m=>{
+        if(CF.doctors.size===0) return arr[m-1]||null;
+        if(!DMON[y]||!DMON[y][m]) return null;
+        let v=0; DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name))v+=d.cir;});
+        return Math.round(v)||null;
+      });
+      _dsC.push({label:String(y),data,backgroundColor:bg,borderColor:bc,borderWidth:1,borderRadius:3});
+    });
+    mkChart('ch-lnl-cir-mes',{type:'bar',data:{labels:_mnsC,datasets:_dsC},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:10}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(12,48,40,.95)',padding:10,bodyFont:{size:11},
+          callbacks:{label:c=>c.raw!=null?` ${c.dataset.label}: ${c.raw} cir`:'',
+            footer:items=>{
+              const vals=items.filter(i=>i.raw!=null);
+              if(vals.length<2) return [];
+              const v0=vals[0].parsed.y,v1=vals[vals.length-1].parsed.y;
+              return v0&&v1?['Δ: '+fp(pctVar(v1,v0))]:[];
+            }}}},
+      scales:{x:{ticks:{font:{size:11}},grid:{display:false}},
+        y:{ticks:{font:{size:10}},grid:{color:'#eef2f1'},
+           title:{display:true,text:'Nº de cirugías',font:{size:11},color:'#1a3a2a'}}}}});
+  }
+
+  // Chart 5: Surgery count by doctor
+  {
+    const _cirSortedC=[...CIR.cirujanos].filter(c=>CF.doctors.size===0||CF.doctors.has(c.name)).sort((a,b)=>(b.cir25||0)-(a.cir25||0));
+    const _drCirDs=[];
+    [[2024,C24,B24],[2025,C25,B25],[2026,C26,B26]].forEach(([y,bg,bc])=>{
+      if(!CF.years.has(y)) return;
+      const data=_cirSortedC.map(c=>{
+        let v=0;
+        _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]){const d=DMON[y][m].find(d=>d.name===c.name);if(d)v+=d.cir;}});
+        if(_pt&&DMON[y]&&DMON[y][_pt.month]){const d=DMON[y][_pt.month].find(d=>d.name===c.name);if(d)v+=Math.round(d.cir*_pt.factor);}
+        return Math.round(v)||null;
+      });
+      _drCirDs.push({label:String(y),data,backgroundColor:bg,borderColor:bc,borderWidth:1,borderRadius:3});
+    });
+    mkChart('ch-lnl-cir-dr',{type:'bar',data:{labels:_cirSortedC.map(c=>_abbr2(c.name)),datasets:_drCirDs},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:10}},
+        tooltip:{backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:12},bodyFont:{size:11},
+          callbacks:{title:items=>_cirSortedC[items[0].dataIndex].name,
+            label:c=>` ${c.dataset.label}: ${c.raw} cir`}}},
+      scales:{x:{ticks:{font:{size:11,weight:'600'},color:'#1a3a2a',maxRotation:35,minRotation:20,autoSkip:false},grid:{display:false}},
+        y:{ticks:{font:{size:10}},grid:{color:'#eef2f1'},
+           title:{display:true,text:'Nº de cirugías',font:{size:11},color:'#1a3a2a'}}}}});
   }
   requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
