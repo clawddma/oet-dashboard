@@ -4837,6 +4837,11 @@ function buildComLineas(){
     const liT24=li24, liT25=li25, liT26=li26;
     const liTotal26=liT26.reduce((a,b)=>a+b,0);
     const liTotal25=liT25.reduce((a,b)=>a+b,0);
+    // Surgery counts for selected months (total clinic, used in proc view KPIs)
+    const _sumCirMLn=(arr)=>mArr2.reduce((s,m)=>s+(arr[m-1]||0),0);
+    const cir24m=_sumCirMLn(CIR.mes_24);
+    const cir25m=_sumCirMLn(CIR.mes_25);
+    const cir26m=_sumCirMLn(CIR.mes_26);
 
     el.innerHTML=`
     <div class="itog-grp" style="margin-bottom:14px">
@@ -4863,6 +4868,16 @@ function buildComLineas(){
         +fv(Math.max(...liT26))+') · <strong>'+liLabels.sort((a,b)=>liT26[liLabels.indexOf(b)]-liT26[liLabels.indexOf(a)])[1]+'</strong> ('
         +fv(liT26.slice().sort((a,b)=>b-a)[1])+').':''}
       <br><span style="font-size:10px;color:#607d76">ℹ️ Fuente: facturación real del Google Sheet. El análisis de costos y márgenes se incorpora cuando se comparten los estados financieros del mes.</span>
+    </div>
+    </div>
+    <div id="lineas-view-proc" style="display:none">
+    <div class="sec-title">Procedimientos — ${mLbl} <span class="st-badge">${_yrBadgeLn}</span></div>
+    <div class="kpis k3" style="margin-bottom:8px">
+      ${CF.years.has(2024)&&cir24m?kpiCard('Cirugías 2024 · '+mLbl,cir24m.toLocaleString(),'Total clínica'):''}
+      ${CF.years.has(2025)&&cir25m?kpiCard('Cirugías 2025 · '+mLbl,cir25m.toLocaleString(),cir24m?fp(pctVar(cir25m,cir24m))+' vs 2024':'Total clínica'):''}
+      ${CF.years.has(2026)&&cir26m?kpiCard('Cirugías 2026 · '+mLbl,cir26m.toLocaleString(),cir25m?fp(pctVar(cir26m,cir25m))+' vs 2025':'Total clínica'):''}
+    </div>
+    <div class="gfull">${chartCard('ch-lnl-proc','Cirugías por Mes — Comparativa Interanual','Evolución mensual del volumen de cirugías · mes '+mLbl+' resaltado',240,'')}</div>
     </div>`;
 
     // ── Facturación por servicio — comparativo interanual para el mes ────────
@@ -4922,6 +4937,38 @@ function buildComLineas(){
       options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
         scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}
     });
+
+    // ── Procedimientos: Cirugías por mes (respeta doctor filter) ─────────────
+    {
+      const _procMns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const _procDs=[];
+      const _procClrs=['rgba(45,197,171,0.3)','rgba(45,197,171,0.8)','rgba(255,193,7,0.75)'];
+      const _procDrCir=(y)=>{
+        if(CF.doctors.size===0) return y===2024?CIR.mes_24:y===2025?CIR.mes_25:CIR.mes_26;
+        if(!DMON[y]) return new Array(12).fill(0);
+        return Array.from({length:12},(_,mi)=>{
+          const m=mi+1; if(!DMON[y][m]) return 0;
+          let t=0; DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name)) t+=d.cir;}); return t;
+        });
+      };
+      const _procYrs=[2024,2025,2026];
+      Array.from(CF.years).sort().forEach(y=>{
+        const data=_procDrCir(y);
+        _procDs.push({
+          label:String(y),
+          data:data.map(v=>v||null),
+          backgroundColor:data.map((v,mi)=>
+            mArr2.includes(mi+1)
+              ?(y===2026?'rgba(255,193,7,1)':'rgba(45,197,171,1)')
+              :_procClrs[_procYrs.indexOf(y)]
+          ),borderRadius:3
+        });
+      });
+      mkChart('ch-lnl-proc',{type:'bar',data:{labels:_procMns,datasets:_procDs},
+        options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+          interaction:{mode:'index',intersect:false},
+          scales:{y:{ticks:{font:{size:10}},grid:{color:'#eef2f1'}},x:{grid:{display:false}}}}});
+    }
 
   } else {
     // ── ANNUAL VIEW — YTD comparable (mismo corte entre años) ───────────────
@@ -5550,10 +5597,6 @@ function buildComCirujanos(){
   const _drVis24=cfDoctorYear(2024).filter(d=>CF.doctors.size===0||CF.doctors.has(d.name));
   const _drVis26=cfDoctorYear(2026).filter(d=>CF.doctors.size===0||CF.doctors.has(d.name));
   const billSort=[..._drVis25].sort((a,b)=>b.bill-a.bill);
-  const _bill_ds=[];
-  if(CF.years.has(2024)) _bill_ds.push({label:'2024'+_lblSufCir,data:billSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.bill:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:2});
-  if(CF.years.has(2025)) _bill_ds.push({label:'2025'+_lblSufCir,data:billSort.map(c=>c.bill),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:2});
-  if(CF.years.has(2026)) _bill_ds.push({label:'2026 YTD',data:billSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.bill:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:2});
   // Etiquetas más legibles: nombre corto en gráfica, nombre completo en tooltip
   const _abbr = name => {
     const p=name.replace(/^Dr[a]?\. /,'').split(' ');
@@ -5561,21 +5604,57 @@ function buildComCirujanos(){
   };
   const _xOpts = {ticks:{font:{size:11,weight:'600'},color:'#1a3a2a',maxRotation:35,minRotation:20,autoSkip:false},grid:{display:false}};
   const _yFmt  = {ticks:{callback:v=>fv(v),font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'}};
+  // Color palette for multi-doctor stacked mode (one color per surgeon)
+  const _drPalette=[
+    'rgba(45,197,171,0.85)','rgba(255,193,7,0.88)','rgba(68,108,179,0.82)',
+    'rgba(239,83,80,0.82)','rgba(102,187,106,0.85)','rgba(171,71,188,0.82)',
+    'rgba(255,152,0,0.85)','rgba(0,172,193,0.85)','rgba(141,110,99,0.82)','rgba(120,144,156,0.82)'
+  ];
+  const _multiDr = CF.doctors.size > 1; // stacked mode when 2+ doctors selected
 
-  // ─── Gráfica 1: Facturación por cirujano (tooltip con nombre completo + variaciones)
-  mkChart('ch-cir-bill',{
-    type:'bar',
-    data:{labels:billSort.map(c=>_abbr(c.name)),datasets:_bill_ds},
-    options:{
+  // ─── Gráfica 1: Facturación por cirujano
+  if(_multiDr){
+    // Stacked bars: X = years, each dataset = one doctor
+    const _yrLbls=Array.from(CF.years).sort().map(y=>y===2026?'2026 YTD':String(y)+(CF.months.size===0&&ytdBadgeText()?' YTD':''));
+    const _yrArr=Array.from(CF.years).sort();
+    const _selDrs=[...CF.doctors];
+    const _stackDs=_selDrs.map((name,di)=>{
+      const data=_yrArr.map(y=>{
+        const list=y===2024?_drVis24:y===2025?_drVis25:_drVis26;
+        return list.find(x=>x.name===name)?.bill||0;
+      });
+      return {label:_abbr(name),data,backgroundColor:_drPalette[di%_drPalette.length],borderRadius:2,stack:'s'};
+    });
+    mkChart('ch-cir-bill',{type:'bar',data:{labels:_yrLbls,datasets:_stackDs},options:{
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:10}},
+        tooltip:{mode:'index',intersect:false,
+          backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:12,weight:'600'},bodyFont:{size:11},
+          callbacks:{
+            label:c=>` ${c.dataset.label}: ${fv(c.parsed.y)}`,
+            footer:items=>{const t=items.reduce((s,i)=>s+i.parsed.y,0);return['','Total: '+fv(t)];}
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{font:{size:12,weight:'600'},color:'#1a3a2a'},grid:{display:false}},
+        y:{stacked:true,..._yFmt,title:{display:true,text:'Facturación generada (miles COP)',font:{size:11,weight:'600'},color:'#1a3a2a'}}
+      }
+    }});
+  } else {
+    const _bill_ds=[];
+    if(CF.years.has(2024)) _bill_ds.push({label:'2024'+_lblSufCir,data:billSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.bill:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:2});
+    if(CF.years.has(2025)) _bill_ds.push({label:'2025'+_lblSufCir,data:billSort.map(c=>c.bill),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:2});
+    if(CF.years.has(2026)) _bill_ds.push({label:'2026 YTD',data:billSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.bill:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:2});
+    mkChart('ch-cir-bill',{type:'bar',data:{labels:billSort.map(c=>_abbr(c.name)),datasets:_bill_ds},options:{
       plugins:{
         legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
-        tooltip:{
-          backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
+        tooltip:{backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
           callbacks:{
             title:(items)=>billSort[items[0].dataIndex].name,
             label:(c)=>` ${c.dataset.label}: ${fv(c.parsed.y)}`,
             afterBody:(items)=>{
-              const c = billSort[items[0].dataIndex];
+              const c=billSort[items[0].dataIndex];
               const b24=_drVis24.find(x=>x.name===c.name)?.bill||0;
               const b25=c.bill||0;
               const b26=_drVis26.find(x=>x.name===c.name)?.bill||0;
@@ -5588,29 +5667,54 @@ function buildComCirujanos(){
         }
       },
       scales:{x:_xOpts, y:Object.assign({},_yFmt,{title:{display:true,text:'Facturación generada (miles COP)',font:{size:11,weight:'600'},color:'#1a3a2a'}})}
-    }
-  });
+    }});
+  }
 
-  // ─── Gráfica 2: Cirugías por médico (tooltip con nombre completo + variaciones)
+  // ─── Gráfica 2: Cirugías por médico
   const cirSort=[..._drVis25].sort((a,b)=>b.cir-a.cir);
   {
-    const ds=[];
-    if(CF.years.has(2024)) ds.push({label:'2024'+_lblSufCir,data:cirSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:4});
-    if(CF.years.has(2025)) ds.push({label:'2025'+_lblSufCir,data:cirSort.map(c=>c.cir),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:4});
-    if(CF.years.has(2026)) ds.push({label:'2026 YTD',data:cirSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:4});
-    mkChart('ch-cir-vol',{
-      type:'bar',
-      data:{labels:cirSort.map(c=>_abbr(c.name)),datasets:ds},
-      options:{
+    if(_multiDr){
+      const _yrLbls2=Array.from(CF.years).sort().map(y=>y===2026?'2026 YTD':String(y)+(CF.months.size===0&&ytdBadgeText()?' YTD':''));
+      const _yrArr2=Array.from(CF.years).sort();
+      const _selDrs2=[...CF.doctors];
+      const _stackDs2=_selDrs2.map((name,di)=>{
+        const data=_yrArr2.map(y=>{
+          const list=y===2024?_drVis24:y===2025?_drVis25:_drVis26;
+          return list.find(x=>x.name===name)?.cir||0;
+        });
+        return {label:_abbr(name),data,backgroundColor:_drPalette[di%_drPalette.length],borderRadius:2,stack:'s'};
+      });
+      mkChart('ch-cir-vol',{type:'bar',data:{labels:_yrLbls2,datasets:_stackDs2},options:{
+        plugins:{
+          legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:10}},
+          tooltip:{mode:'index',intersect:false,
+            backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:12,weight:'600'},bodyFont:{size:11},
+            callbacks:{
+              label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString()} cir.`,
+              footer:items=>{const t=items.reduce((s,i)=>s+i.parsed.y,0);return['','Total: '+t.toLocaleString()+' cir.'];}
+            }
+          }
+        },
+        scales:{
+          x:{ticks:{font:{size:12,weight:'600'},color:'#1a3a2a'},grid:{display:false}},
+          y:{stacked:true,ticks:{font:{size:11},color:'#607d76'},grid:{color:'#eef2f1'},
+             title:{display:true,text:'Cirugías realizadas',font:{size:11,weight:'600'},color:'#1a3a2a'}}
+        }
+      }});
+    } else {
+      const ds=[];
+      if(CF.years.has(2024)) ds.push({label:'2024'+_lblSufCir,data:cirSort.map(c=>{const d=_drVis24.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C24,borderColor:B24,borderWidth:1,borderRadius:4});
+      if(CF.years.has(2025)) ds.push({label:'2025'+_lblSufCir,data:cirSort.map(c=>c.cir),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:4});
+      if(CF.years.has(2026)) ds.push({label:'2026 YTD',data:cirSort.map(c=>{const d=_drVis26.find(x=>x.name===c.name);return d?d.cir:0;}),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:4});
+      mkChart('ch-cir-vol',{type:'bar',data:{labels:cirSort.map(c=>_abbr(c.name)),datasets:ds},options:{
         plugins:{
           legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
-          tooltip:{
-            backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
+          tooltip:{backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:13,weight:'600'},bodyFont:{size:12},
             callbacks:{
               title:(items)=>cirSort[items[0].dataIndex].name,
               label:(c)=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString()} cirugías`,
               afterBody:(items)=>{
-                const c = cirSort[items[0].dataIndex];
+                const c=cirSort[items[0].dataIndex];
                 const v24=_drVis24.find(x=>x.name===c.name)?.cir||0;
                 const v25=c.cir||0;
                 const v26=_drVis26.find(x=>x.name===c.name)?.cir||0;
@@ -5626,6 +5730,7 @@ function buildComCirujanos(){
                 title:{display:true,text:'Cirugías realizadas',font:{size:11,weight:'600'},color:'#1a3a2a'}}}
       }
     });
+    }
   }
 
   // ─── Gráfica 3: Tipos de procedimiento (tooltip con nombre completo + share %)
@@ -5714,18 +5819,27 @@ function buildComCirujanos(){
     });
   }
 
-  // Monthly surgery chart (when month filter active)
+  // Monthly surgery chart (when month filter active) — respects doctor filter
   if(mLbl){
     const mnsAll=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const mesDs=[];
     const mesClrs=['rgba(45,197,171,0.35)','rgba(45,197,171,0.85)','rgba(255,193,7,0.8)'];
     const mesYrs=[2024,2025,2026];
-    const mesData={2024:CIR.mes_24,2025:CIR.mes_25,2026:CIR.mes_26};
-    Array.from(CF.years).sort().forEach((y,ki)=>{
+    // Doctor-filtered monthly surgery data
+    const _mesDrCir=(y)=>{
+      if(CF.doctors.size===0) return y===2024?CIR.mes_24:y===2025?CIR.mes_25:CIR.mes_26;
+      if(!DMON[y]) return new Array(12).fill(0);
+      return Array.from({length:12},(_,mi)=>{
+        const m=mi+1; if(!DMON[y][m]) return 0;
+        let t=0; DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name)) t+=d.cir;}); return t;
+      });
+    };
+    Array.from(CF.years).sort().forEach((y)=>{
+      const data=_mesDrCir(y);
       mesDs.push({
         label:String(y),
-        data:mesData[y].map(v=>v||null),
-        backgroundColor:mesData[y].map((v,mi)=>
+        data:data.map(v=>v||null),
+        backgroundColor:data.map((v,mi)=>
           mArr2.includes(mi+1)
             ? (y===2026?'rgba(255,193,7,1)':'rgba(45,197,171,1)')
             : mesClrs[mesYrs.indexOf(y)]
@@ -5930,9 +6044,20 @@ function buildComHonorarios(){
   const _msSet = new Set(ms);
   const _highlight = (mi, baseRGBA, alphaFull, alphaDim) => _msSet.has(mi+1) ? baseRGBA.replace(/[\d.]+\)$/, alphaFull+')') : baseRGBA.replace(/[\d.]+\)$/, alphaDim+')');
   const _ds = [];
-  if(CF.years.has(2024)) _ds.push({label:'2024', data:HONORARIOS.m24, backgroundColor:HONORARIOS.m24.map((_,i)=>_highlight(i,'rgba(68,108,179,0.85)','0.85','0.25')), borderColor:B24, borderWidth:1, borderRadius:3});
-  if(CF.years.has(2025)) _ds.push({label:'2025', data:HONORARIOS.m25, backgroundColor:HONORARIOS.m25.map((_,i)=>_highlight(i,'rgba(45,197,171,0.85)','0.85','0.25')), borderColor:B25, borderWidth:1, borderRadius:3});
-  if(CF.years.has(2026)) _ds.push({label:'2026', data:HONORARIOS.m26, backgroundColor:HONORARIOS.m26.map((v,i)=> v===0 ? 'rgba(255,152,0,0.05)' : _highlight(i,'rgba(255,152,0,0.85)','0.85','0.25')), borderColor:B26, borderWidth:1, borderRadius:3});
+  // Scale monthly data by Q1 doctor ratio when a staff doctor is selected
+  const _honDrScale=(arr, y)=>{
+    if(CF.doctors.size===0) return arr;
+    const matched=HONORARIOS.proveedores.filter(p=>p.ligaCirName&&CF.doctors.has(p.ligaCirName));
+    if(!matched.length) return arr; // no Q1 data for selected doctor — show total
+    const drQ1=matched.reduce((s,p)=>s+(y===2025?p.q1_2025||0:y===2026?p.q1_2026||0:0),0);
+    const clQ1=[0,1,2].reduce((s,i)=>s+(arr[i]||0),0);
+    if(!clQ1||!drQ1) return arr;
+    const ratio=Math.min(1,drQ1/clQ1);
+    return arr.map(v=>Math.round(v*ratio));
+  };
+  if(CF.years.has(2024)){const d=_honDrScale(HONORARIOS.m24,2024);_ds.push({label:'2024', data:d, backgroundColor:d.map((_,i)=>_highlight(i,'rgba(68,108,179,0.85)','0.85','0.25')), borderColor:B24, borderWidth:1, borderRadius:3});}
+  if(CF.years.has(2025)){const d=_honDrScale(HONORARIOS.m25,2025);_ds.push({label:'2025', data:d, backgroundColor:d.map((_,i)=>_highlight(i,'rgba(45,197,171,0.85)','0.85','0.25')), borderColor:B25, borderWidth:1, borderRadius:3});}
+  if(CF.years.has(2026)){const d=_honDrScale(HONORARIOS.m26,2026);_ds.push({label:'2026', data:d, backgroundColor:d.map((v,i)=>v===0?'rgba(255,152,0,0.05)':_highlight(i,'rgba(255,152,0,0.85)','0.85','0.25')), borderColor:B26, borderWidth:1, borderRadius:3});}
 
   mkChart('ch-hon-mensual',{
     type:'bar',
