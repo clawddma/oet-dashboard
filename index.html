@@ -460,6 +460,26 @@ a{text-decoration:none;color:inherit;}
   max-width:130px;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;letter-spacing:0;
 }
+
+/* ── Multi-select dropdown para tipos y líneas ─────────────── */
+.cfb-ms-wrap{position:relative;display:inline-flex;align-items:center;}
+.cfb-ms-btn{font-size:11px !important;padding:3px 10px !important;white-space:nowrap;
+  display:flex;align-items:center;gap:5px;max-width:none !important;}
+.cfb-ms-btn.active{background:rgba(45,197,171,.22) !important;border-color:rgba(45,197,171,.8) !important;}
+.cfb-ms-panel{position:fixed;background:#0d2e28;border:1px solid rgba(45,197,171,.35);
+  border-radius:10px;padding:6px;z-index:9999;min-width:200px;max-height:300px;
+  overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+.cfb-ms-panel::-webkit-scrollbar{width:5px;}
+.cfb-ms-panel::-webkit-scrollbar-track{background:transparent;}
+.cfb-ms-panel::-webkit-scrollbar-thumb{background:rgba(45,197,171,.4);border-radius:3px;}
+.cfb-ms-item{display:block;width:100%;text-align:left;padding:5px 10px;border:none;
+  background:none;cursor:pointer;font-size:11px;color:#a0c4bb;border-radius:6px;
+  white-space:nowrap;}
+.cfb-ms-item:hover{background:rgba(45,197,171,.12);color:#e0f5f0;}
+.cfb-ms-item.on{background:rgba(45,197,171,.18);color:#2dc5ab;font-weight:700;}
+.cfb-ms-divider{height:1px;background:rgba(45,197,171,.18);margin:3px 0;}
+.cfb-ms-count{display:inline-block;background:rgba(45,197,171,.25);color:#2dc5ab;
+  font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:3px;}
 /* ── Tab WIP label ─────────────────────────────────────────── */
 .tab-wip{font-size:0.7em;opacity:0.62;font-style:italic;margin-left:2px;}
 /* ── Honorarios comparison table in cirujanos ──────────────── */
@@ -773,10 +793,24 @@ a{text-decoration:none;color:inherit;}
     <div class="cfb-div"></div>
     <div class="cfb-group" id="cfb-tipos-group">
       <span class="cfb-lbl">Tipo de Procedimiento</span>
+      <div class="cfb-ms-wrap" id="cfb-tipos-wrap">
+        <button class="cfb-pill cfb-ms-btn" id="cfb-tipos-btn" onclick="toggleCfDd('tipos')">Todos ▾</button>
+        <div class="cfb-ms-panel" id="cfb-tipos-panel" style="display:none">
+          <button class="cfb-ms-item on" id="cfb-tipos-all" onclick="clearCfTiposEvt(event)">✓ Todos los tipos</button>
+          <div class="cfb-ms-divider"></div>
+        </div>
+      </div>
     </div>
     <div class="cfb-div"></div>
     <div class="cfb-group" id="cfb-lineas-group">
       <span class="cfb-lbl">Línea / Servicio</span>
+      <div class="cfb-ms-wrap" id="cfb-lineas-wrap">
+        <button class="cfb-pill cfb-ms-btn" id="cfb-lineas-btn" onclick="toggleCfDd('lineas')">Todos ▾</button>
+        <div class="cfb-ms-panel" id="cfb-lineas-panel" style="display:none">
+          <button class="cfb-ms-item on" id="cfb-lineas-all" onclick="clearCfLineasEvt(event)">✓ Todas las líneas</button>
+          <div class="cfb-ms-divider"></div>
+        </div>
+      </div>
     </div>
     <button class="cfb-clear" onclick="clearComFilters()">✕ Limpiar</button>
     <div id="cfb-hint" class="cfb-active-hint" style="display:none"></div>
@@ -962,7 +996,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,371,426,415,125,0,0,0,0,0,0,0],  // total=1712 (2026-05-13 12:30) /* AUTO */
+  mes_26:[375,371,426,415,125,0,0,0,0,0,0,0],  // total=1712 (2026-05-13 11:30) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -1589,26 +1623,40 @@ function initComFilters(){
     btn.addEventListener('click',()=>toggleComDoctor(c.name,btn));
     dg.appendChild(btn);
   });
-  const tg=document.getElementById('cfb-tipos-group');
-  if(tg) CIR.tipos.forEach(t=>{
-    if(t==='Otros') return;
+  // Tipos dropdown — incluye TODOS los tipos (incluido Otros)
+  const tp=document.getElementById('cfb-tipos-panel');
+  if(tp) CIR.tipos.forEach(t=>{
     const btn=document.createElement('button');
-    btn.className='cfb-pill cfb-tipo-pill';
+    btn.className='cfb-ms-item';
     btn.dataset.tipo=t;
     btn.textContent=t.replace(' (Facoemulsif.)','').replace(' (Refractiva)','');
     btn.title=t;
     btn.addEventListener('click',()=>toggleComTipo(t,btn));
-    tg.appendChild(btn);
+    tp.appendChild(btn);
   });
-  const lg=document.getElementById('cfb-lineas-group');
-  if(lg) COM.lineas.forEach(l=>{
+  // Líneas dropdown
+  const lp=document.getElementById('cfb-lineas-panel');
+  if(lp) COM.lineas.forEach(l=>{
     const btn=document.createElement('button');
-    btn.className='cfb-pill cfb-linea-pill';
+    btn.className='cfb-ms-item';
     btn.dataset.linea=l;
     btn.textContent=l;
     btn.title=l;
     btn.addEventListener('click',()=>toggleComLinea(l,btn));
-    lg.appendChild(btn);
+    lp.appendChild(btn);
+  });
+  // Posicionar dropdowns al abrir (fixed positioning)
+  ['tipos','lineas'].forEach(which=>{
+    const wrapEl=document.getElementById('cfb-'+which+'-wrap');
+    const panelEl=document.getElementById('cfb-'+which+'-panel');
+    const btnEl=document.getElementById('cfb-'+which+'-btn');
+    if(!wrapEl||!panelEl||!btnEl) return;
+    btnEl.addEventListener('click',()=>{
+      if(panelEl.style.display!=='none'){return;}
+      const r=btnEl.getBoundingClientRect();
+      panelEl.style.top=(r.bottom+4)+'px';
+      panelEl.style.left=r.left+'px';
+    });
   });
   const bar=document.getElementById('com-filter-bar');
   if(bar && window.ResizeObserver){
@@ -1664,7 +1712,11 @@ function clearComFilters(){
   document.querySelectorAll('#cfb-cmp-group .cfb-cmp-pill').forEach(b=>{
     b.classList.toggle('on', b.dataset.cmp==='auto');
   });
-  document.querySelectorAll('.cfb-tipo-pill,.cfb-linea-pill').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.cfb-tipo-pill,.cfb-linea-pill,.cfb-ms-item').forEach(p=>p.classList.remove('on'));
+  ['tipos','lineas'].forEach(w=>{
+    document.getElementById('cfb-'+w+'-all')?.classList.add('on');
+    updateCfDdLabel(w);
+  });
   _syncComPeriodBtns();
   updateCfHint();
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
@@ -1677,6 +1729,7 @@ function toggleComTipo(name,btn){
   else{CF.tipos.add(name);btn.classList.add('on');}
   CF.tipo='';
   updateCfHint();
+  updateCfDdLabel('tipos');
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
   else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
 }
@@ -1686,6 +1739,7 @@ function toggleComLinea(name,btn){
   else{CF.lineas.add(name);btn.classList.add('on');}
   CF.linea='';
   updateCfHint();
+  updateCfDdLabel('lineas');
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
   else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
 }
@@ -1711,6 +1765,70 @@ function setLineasView(view, btn){
     if(el) el.style.display=(v===view)?'':'none';
   });
 }
+// ─── Dropdown multi-select helpers ────────────────────────
+function toggleCfDd(which){
+  const panel=document.getElementById('cfb-'+which+'-panel');
+  if(!panel) return;
+  const isOpen=panel.style.display!=='none';
+  // Close all
+  ['tipos','lineas'].forEach(w=>{
+    const p=document.getElementById('cfb-'+w+'-panel');
+    if(p) p.style.display='none';
+  });
+  if(!isOpen){
+    const btn=document.getElementById('cfb-'+which+'-btn');
+    if(btn){
+      const r=btn.getBoundingClientRect();
+      panel.style.top=(r.bottom+4)+'px';
+      panel.style.left=Math.max(4,r.left)+'px';
+    }
+    panel.style.display='';
+  }
+}
+function clearCfTiposEvt(e){
+  e.stopPropagation();
+  CF.tipos.clear();
+  document.querySelectorAll('#cfb-tipos-panel .cfb-ms-item').forEach(b=>b.classList.remove('on'));
+  document.getElementById('cfb-tipos-all')?.classList.add('on');
+  updateCfDdLabel('tipos');
+  if(activeTab==='com'){clearComBuilt();navigate(activeSection);}
+  else if(activeTab==='mkt'){clearMktBuilt();navigate(activeSection);}
+}
+function clearCfLineasEvt(e){
+  e.stopPropagation();
+  CF.lineas.clear();
+  document.querySelectorAll('#cfb-lineas-panel .cfb-ms-item').forEach(b=>b.classList.remove('on'));
+  document.getElementById('cfb-lineas-all')?.classList.add('on');
+  updateCfDdLabel('lineas');
+  if(activeTab==='com'){clearComBuilt();navigate(activeSection);}
+  else if(activeTab==='mkt'){clearMktBuilt();navigate(activeSection);}
+}
+function updateCfDdLabel(which){
+  const btn=document.getElementById('cfb-'+which+'-btn');
+  if(!btn) return;
+  const setObj=which==='tipos'?CF.tipos:CF.lineas;
+  const allBtn=document.getElementById('cfb-'+which+'-all');
+  if(setObj.size===0){
+    btn.textContent='Todos ▾';
+    btn.classList.remove('active');
+    if(allBtn) allBtn.classList.add('on');
+  } else {
+    const names=Array.from(setObj).map(t=>t.replace(' (Facoemulsif.)','').replace(' (Refractiva)','').replace('D. Sala (Cirugías)','D.Sala'));
+    const lbl=setObj.size===1?names[0]:setObj.size+' selec.';
+    btn.innerHTML=lbl+' <span class="cfb-ms-count">'+setObj.size+'</span> ▾';
+    btn.classList.add('active');
+    if(allBtn) allBtn.classList.remove('on');
+  }
+}
+// Cerrar dropdown al hacer click fuera
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.cfb-ms-wrap')&&!e.target.closest('.cfb-ms-panel')){
+    ['tipos','lineas'].forEach(w=>{
+      const p=document.getElementById('cfb-'+w+'-panel');
+      if(p) p.style.display='none';
+    });
+  }
+},true);
 // ─── C10: Toggle LASIK/PRK pesos vs unidades ─────────────────
 function setLasikView(view, btn){
   if(btn) btn.closest('.itog-grp').querySelectorAll('.itog-btn').forEach(b=>b.classList.toggle('active',b===btn));
@@ -4128,7 +4246,8 @@ function buildComInicio(){
   </div>
 
   ${hasFilters?`
-  <!-- KPIs filtrados — solo facturación comercial, sin mezclar P&L -->
+  ${mLbl?`
+  <!-- KPIs filtrados por mes — D[] solo válido con filtro mensual activo -->
   <div class="kpis k3" style="margin-bottom:4px">
     ${yrsOk.map((y,i)=>{
       const d=yrD[y];
@@ -4142,7 +4261,7 @@ function buildComInicio(){
     ℹ️ <strong>Esta sección muestra ingresos por servicio (facturación real del Google Sheet).</strong>
     El análisis de costos (CMV, G&A) y márgenes está disponible en la pestaña <strong>EEFF</strong>.
     ${CF.years.has(2026)?'<br>⚠️ Datos de P&amp;L de marzo 2026 aún pendientes de estados financieros de cierre.':''}
-  </div>
+  </div>`:''}
   <div class="kpis k3" style="margin-bottom:${hasDr?8:16}px">
     ${CF.years.has(2024)&&cir24>0?kpiCard('Cirugías 2024'+(mBadge?' · '+mBadge:''),cir24.toLocaleString(),'Derechos de Sala'):''}
     ${CF.years.has(2025)&&cir25>0?kpiCard('Cirugías 2025'+(mBadge?' · '+mBadge:''),cir25.toLocaleString(),fp(pctVar(cir25,cir24))+' vs 2024'):''}
@@ -4153,12 +4272,13 @@ function buildComInicio(){
     <div style="font-size:11px;font-weight:700;color:#2dc5ab;margin-bottom:8px">Médicos seleccionados</div>
     <div class="kpis k3">
       ${visDocList.map(c=>{
-        const bStr=yrsOk.map(y=>(y===2026?'YTD':y)+': '+fv(drBill(c,y))).join(' · ');
-        const cStr=yrsOk.map(y=>drCir(c,y)+' cir.'+y).join(' · ');
+        const yList=Array.from(CF.years).sort();
+        const bStr=yList.map(y=>(y===2026?'YTD':y)+': '+fv(drBill(c,y))).join(' · ');
+        const cStr=yList.map(y=>drCir(c,y)+' cir.').join(' · ');
         return kpiCard(c.name.replace(/^Dr[a]?\. /,''),bStr,cStr,'');
       }).join('')}
     </div>
-    <div style="font-size:10px;color:#607d76;margin-top:6px">ℹ️ Facturación por médico disponible en forma anual</div>
+    <div style="font-size:10px;color:#607d76;margin-top:6px">ℹ️ Facturación comercial del médico (Google Sheets, proporcional YTD)</div>
   </div>`:''}`:`
   <!-- Vista anual — todo YTD comparable (mismo corte entre años) -->
   ${(()=>{
@@ -5271,13 +5391,17 @@ function buildComCirujanos(){
             const pct=h26!==null&&b26>0?(h26/b26*100):null;
             return {name:c.name,b26,h26,net,pct};
           });
+          const withData=rows.filter(r=>r.h26!==null);
+          const noData=rows.filter(r=>r.h26===null);
           return '<table class="hon-cmp-tbl"><thead><tr><th>Cirujano</th><th>Facturación Q1-26</th><th>Honorarios Q1-26</th><th>Neto (UB)</th><th>Hon/Fact %</th></tr></thead><tbody>'+
-          rows.map(r=>`<tr><td style="font-weight:500">${r.name}</td><td>${fv(r.b26)}</td>`+
-            `<td>${r.h26!==null?fv(r.h26):'<span class="nd">Sin datos</span>'}</td>`+
-            `<td class="${r.net!==null?(r.net>=0?'pos':'neg'):'nd'}">${r.net!==null?fv(r.net):'—'}</td>`+
-            `<td class="${r.pct!==null?(r.pct<30?'pos':r.pct<50?'':'neg'):'nd'}">${r.pct!==null?r.pct.toFixed(1)+'%':'—'}</td>`+
+          withData.map(r=>`<tr><td style="font-weight:500">${r.name}</td><td>${fv(r.b26)}</td>`+
+            `<td>${fv(r.h26)}</td>`+
+            `<td class="${r.net>=0?'pos':'neg'}">${fv(r.net)}</td>`+
+            `<td class="${r.pct<30?'pos':r.pct<50?'':'neg'}">${r.pct.toFixed(1)+'%'}</td>`+
             '</tr>').join('')+
-          '</tbody></table><p style="font-size:10.5px;color:#607d76;margin-top:6px">ℹ️ Datos de honorarios por médico disponibles para Q1-2026 (Ene-Mar). Para completar el detalle de todos los médicos, se requiere sincronizar el desglose de honorarios por proveedor desde Google Sheets.</p>';
+          (withData.length===0?'<tr><td colspan="5" style="color:#607d76;font-style:italic;padding:10px">Sin datos de honorarios individuales disponibles para el período seleccionado.</td></tr>':'')+
+          (noData.length?`<tr><td colspan="5" style="color:#607d76;font-size:10.5px;padding:6px 10px;border-top:1px dashed rgba(45,197,171,.2)">Sin datos honorarios Q1-26: ${noData.map(r=>r.name.replace(/^Dr[a]?\. /,'')).join(' · ')}</td></tr>`:'')+
+          '</tbody></table><p style="font-size:10.5px;color:#607d76;margin-top:6px">ℹ️ Honorarios Q1-2026 de médicos staff disponibles. Para el detalle de todos los médicos se requiere desglose por proveedor desde Google Sheets.</p>';
         })()}
       </div>
     </div>
