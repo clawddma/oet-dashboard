@@ -5620,10 +5620,16 @@ function buildComCirujanos(){
     return v;
   };
   const _toDSala=(drList,y)=>{
-    const totCir=drList.reduce((s,d)=>s+d.cir,0);
-    if(!totCir) return drList.map(d=>({...d,bill:0}));
     const clinicDS=_dSalaClinic(y);
-    return drList.map(d=>({...d,bill:Math.round(clinicDS*d.cir/totCir)}));
+    if(!clinicDS) return drList.map(d=>({...d,bill:0}));
+    // Denominator = ALL doctors (clinic total), never just the filtered subset
+    const allTotCir=CIR.cirujanos.reduce((s,c)=>s+(y===2024?c.cir24:y===2025?c.cir25:c.cir26),0);
+    if(!allTotCir) return drList.map(d=>({...d,bill:0}));
+    return drList.map(d=>{
+      const orig=CIR.cirujanos.find(c=>c.name===d.name);
+      const drCir=orig?(y===2024?orig.cir24:y===2025?orig.cir25:orig.cir26):0;
+      return {...d,bill:Math.round(clinicDS*drCir/allTotCir)};
+    });
   };
   const _ds24=_toDSala(_drVis24,2024);
   const _ds25=_toDSala(_drVis25,2025);
