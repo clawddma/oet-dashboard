@@ -962,7 +962,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,371,426,415,125,0,0,0,0,0,0,0],  // total=1712 (2026-05-13 12:00) /* AUTO */
+  mes_26:[375,371,426,415,125,0,0,0,0,0,0,0],  // total=1712 (2026-05-13 11:30) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -1372,6 +1372,7 @@ function cfLineYear(y){
   if(partial && LMON[y][partial.month]){
     LMON[y][partial.month].forEach((v,i)=>result[i]+=Math.round(v*partial.factor));
   }
+  if(CF.doctors.size>0){const f=drBillFraction(y);return result.map(v=>Math.round(v*f));}
   return result;
 }
 function cfTipoYear(y){
@@ -1382,7 +1383,28 @@ function cfTipoYear(y){
   if(partial && TMON[y][partial.month]){
     TMON[y][partial.month].forEach((v,i)=>result[i]+=Math.round(v*partial.factor));
   }
+  if(CF.doctors.size>0){const f=drBillFraction(y);return result.map(v=>Math.round(v*f));}
   return result;
+}
+function drBillFraction(y){
+  if(CF.doctors.size===0) return 1;
+  if(!DMON[y]) return 0;
+  const { months, partial } = cfYtdMonths();
+  let allBill=0, selBill=0;
+  months.forEach(m=>{
+    if(DMON[y][m]) DMON[y][m].forEach(d=>{
+      allBill+=d.bill;
+      if(CF.doctors.has(d.name)) selBill+=d.bill;
+    });
+  });
+  if(partial && DMON[y][partial.month]){
+    DMON[y][partial.month].forEach(d=>{
+      const v=Math.round(d.bill*partial.factor);
+      allBill+=v;
+      if(CF.doctors.has(d.name)) selBill+=v;
+    });
+  }
+  return allBill>0?selBill/allBill:0;
 }
 function cfDoctorYear(y){
   if(!DMON[y]) return CIR.cirujanos.map(c=>({name:c.name,bill:0,cir:0,esp:c.esp}));
@@ -1569,6 +1591,7 @@ function initComFilters(){
   });
   const tg=document.getElementById('cfb-tipos-group');
   if(tg) CIR.tipos.forEach(t=>{
+    if(t==='Otros') return;
     const btn=document.createElement('button');
     btn.className='cfb-pill cfb-tipo-pill';
     btn.dataset.tipo=t;
@@ -1672,6 +1695,12 @@ function setCirView(view, btn){
   ['bill','cir','hon'].forEach(v=>{
     const el=document.getElementById('cir-view-'+v);
     if(el) el.style.display=(v===view)?'':'none';
+  });
+  requestAnimationFrame(()=>{
+    ['ch-cir-bill','ch-cir-vol','ch-cir-tipos'].forEach(id=>{
+      const cv=document.getElementById(id);
+      if(cv){const ch=Chart.getChart(cv);if(ch) ch.resize();}
+    });
   });
 }
 // ─── C6: Toggle vista de servicios (facturacion / procedimientos) ──
@@ -4433,7 +4462,8 @@ function buildComInicio(){
     const _tipLabels=CIR.tipos;
     // YTD comparable: usa cfTipoYear (mismo corte entre años según MTD_RAW)
     const _tYTD24=cfTipoYear(2024), _tYTD25=cfTipoYear(2025), _tYTD26=cfTipoYear(2026);
-    const _tOrder=[..._tipLabels.keys()].sort((a,b)=>_tYTD25[b]-_tYTD25[a]);
+    const _tiIdxFilt=cfTiposIdx();
+    const _tOrder=[..._tiIdxFilt].sort((a,b)=>_tYTD25[b]-_tYTD25[a]);
     // Etiquetas cortas para eje X vertical (evita solapamiento)
     const _tLblShort=_tOrder.map(i=>{
       const t=_tipLabels[i];
@@ -4635,7 +4665,7 @@ function buildComLineas(){
     const _mixRef=liT26.some(v=>v>0)?liT26:(liT25.some(v=>v>0)?liT25:liT24);
     const _mixTotal=_mixRef.reduce((a,b)=>a+b,0);
     const _mixYear=liT26.some(v=>v>0)?'2026':(liT25.some(v=>v>0)?'2025':'2024');
-    new Chart(document.getElementById('ch-lnl-month-mix'),{
+    mkChart('ch-lnl-month-mix',{
       type:'doughnut',
       data:{labels:liLabels,datasets:[{
         data:_mixRef.map(v=>_mixTotal?+(v/_mixTotal*100).toFixed(1):0),
@@ -5221,30 +5251,15 @@ function buildComCirujanos(){
     <button class="itog-btn" onclick="setCirView('hon',this)">📊 Neto vs Honorarios</button>
   </div>
   <div id="cir-view-bill">
-  <div class="gfull">
-    <div class="card">
-      <div class="card-hdr"><h3>💰 ¿Quién factura más para la clínica?</h3><span class="badge">Facturación por cirujano${mLbl?' — '+mLbl:''} · ordenado por 2025</span></div>
-      <div class="card-body">
-        <div class="chart-wrap" style="height:280px"><canvas id="ch-cir-bill"></canvas></div>
-        <div style="margin-top:8px;font-size:11.5px;color:#2d3f38;background:#f5f8f7;padding:9px 12px;border-radius:8px">
-          📖 <strong>Cómo leer:</strong> cada barra es la facturación generada por las cirugías de ese médico.
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="gfull">${chartCard('ch-cir-bill','💰 ¿Quién factura más para la clínica?','Facturación por cirujano'+(mLbl?' — '+mLbl:'')+' · ordenado por 2025',280,'<div style="margin-top:8px;font-size:11.5px;color:#2d3f38;background:#f5f8f7;padding:9px 12px;border-radius:8px">📖 <strong>Cómo leer:</strong> cada barra es la facturación generada por las cirugías de ese médico.</div>')}</div>
   </div>
   <div id="cir-view-cir" style="display:none">
-  <div class="gfull">
-    <div class="card">
-      <div class="card-hdr"><h3>🔢 ¿Quién hace más cirugías?</h3><span class="badge">Volumen${mLbl?' — '+mLbl:''}</span></div>
-      <div class="card-body"><div class="chart-wrap" style="height:280px"><canvas id="ch-cir-vol"></canvas></div></div>
-    </div>
-  </div>
+  <div class="gfull">${chartCard('ch-cir-vol','🔢 ¿Quién hace más cirugías?','Volumen'+(mLbl?' — '+mLbl:''),280,'')}</div>
   </div>
   <div id="cir-view-hon" style="display:none">
   <div class="gfull">
     <div class="card">
-      <div class="card-hdr"><h3>📊 Neto vs Honorarios — Q1 2026</h3><span class="badge">Facturación − Honorarios pagados · Solo médicos con datos exactos en EEFF</span></div>
+      <div class="card-hdr"><h3>📊 Facturación vs Honorarios — Médicos Staff</h3><span class="badge">Facturación (Google Sheets) − Honorarios pagados (Q1-2026) · Solo médicos con detalle disponible</span></div>
       <div class="card-body">
         ${(()=>{
           const honRows=HONORARIOS.proveedores.filter(p=>p.ligaCirName&&(CF.doctors.size===0||CF.doctors.has(p.ligaCirName)));
@@ -5258,22 +5273,18 @@ function buildComCirujanos(){
           });
           return '<table class="hon-cmp-tbl"><thead><tr><th>Cirujano</th><th>Facturación Q1-26</th><th>Honorarios Q1-26</th><th>Neto (UB)</th><th>Hon/Fact %</th></tr></thead><tbody>'+
           rows.map(r=>`<tr><td style="font-weight:500">${r.name}</td><td>${fv(r.b26)}</td>`+
-            `<td>${r.h26!==null?fv(r.h26):'<span class="nd">Sin datos EEFF</span>'}</td>`+
+            `<td>${r.h26!==null?fv(r.h26):'<span class="nd">Sin datos</span>'}</td>`+
             `<td class="${r.net!==null?(r.net>=0?'pos':'neg'):'nd'}">${r.net!==null?fv(r.net):'—'}</td>`+
             `<td class="${r.pct!==null?(r.pct<30?'pos':r.pct<50?'':'neg'):'nd'}">${r.pct!==null?r.pct.toFixed(1)+'%':'—'}</td>`+
             '</tr>').join('')+
-          '</tbody></table><p style="font-size:10.5px;color:#607d76;margin-top:6px">⚠️ Honorarios exactos disponibles en EEFF solo para Dr. M.A. Jaramillo N. y Dr. M. Jaramillo M. (Q1-2026). Resto: pendiente de detalle contable.</p>';
+          '</tbody></table><p style="font-size:10.5px;color:#607d76;margin-top:6px">ℹ️ Datos de honorarios por médico disponibles para Q1-2026 (Ene-Mar). Para completar el detalle de todos los médicos, se requiere sincronizar el desglose de honorarios por proveedor desde Google Sheets.</p>';
         })()}
       </div>
     </div>
   </div>
   </div>
-  <div class="g2">
-    <div class="card" style="display:none"><div class="card-hdr"></div></div>
-    <div class="card">
-      <div class="card-hdr"><h3>🏥 ¿Qué procedimientos generan más?</h3><span class="badge">Por tipo${mLbl?' — '+mLbl:''}</span></div>
-      <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-cir-tipos"></canvas></div></div>
-    </div>
+  <div class="gfull" style="margin-top:8px">
+  ${chartCard('ch-cir-tipos','🏥 ¿Qué procedimientos generan más?','Por tipo'+(mLbl?' — '+mLbl:''),240,'')}
   </div>
   ${mLbl?`<div class="gfull">${chartCard('ch-cir-mes','Cirugías Mensuales — Todas las clínicas','resalta '+mLbl,200,'')}</div>`:''}
   <div class="tbl-wrap" style="margin-top:16px"><table class="tbl">
