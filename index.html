@@ -5851,7 +5851,7 @@ function buildComCirujanos(){
         return v>0?v:null;
       });
       _honMDs.push({
-        label:y===2026?'2026 YTD':String(y),
+        label:String(y),
         data,
         backgroundColor:y===2024?C24:y===2025?C25:C26,
         borderColor:y===2024?B24:y===2025?B25:B26,
@@ -5895,7 +5895,7 @@ function buildComCirujanos(){
       // Stacked by doctor within each year group (stack key per year)
       const _selDrsMes=[...CF.doctors];
       _yrsMes.forEach(y=>{
-        const yLbl=y===2026?'YTD':''+y;
+        const yLbl=String(y);
         _selDrsMes.forEach((name,di)=>{
           const data=Array.from({length:12},(_,mi)=>{
             const m=mi+1;
