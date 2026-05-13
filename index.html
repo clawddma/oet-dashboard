@@ -486,7 +486,7 @@ a{text-decoration:none;color:inherit;}
 .hon-cmp-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
 .hon-cmp-tbl th{background:rgba(45,197,171,0.12);color:#2dc5ab;font-weight:700;
   padding:7px 10px;text-align:left;border-bottom:2px solid rgba(45,197,171,0.2);}
-.hon-cmp-tbl td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05);color:#cce8e2;}
+.hon-cmp-tbl td{padding:7px 10px;border-bottom:1px solid rgba(45,197,171,0.12);color:#2d3f38;font-size:12px;}
 .hon-cmp-tbl tr:hover td{background:rgba(45,197,171,0.04);}
 .hon-cmp-tbl .pos{color:#2dc5ab;font-weight:600;}
 .hon-cmp-tbl .neg{color:#ef5350;font-weight:600;}
@@ -1143,15 +1143,18 @@ const HONORARIOS = {
 function _honSum(y){
   const arr = y===2024 ? HONORARIOS.m24 : y===2025 ? HONORARIOS.m25 : y===2026 ? HONORARIOS.m26 : null;
   if(!arr) return 0;
-  // C13 FIX: si hay filtro de médico, sumar solo proveedores que coincidan
-  if(CF.doctors.size>0){
+  // Doctor filter: solo aplica cuando hay datos Q1 por proveedor Y el período activo es Q1
+  // En cualquier otro caso cae al total mensual (no tenemos desglose mensual por médico)
+  if(CF.doctors.size>0 && _honIsQ1Period()){
     const matched=HONORARIOS.proveedores.filter(p=>p.ligaCirName&&CF.doctors.has(p.ligaCirName));
-    if(!matched.length) return 0;
-    if(y===2025) return matched.reduce((s,p)=>s+(p.q1_2025||0),0);
-    if(y===2026) return matched.reduce((s,p)=>s+(p.q1_2026||0),0);
-    return 0; // 2024 sin detalle por proveedor
+    if(matched.length>0){
+      if(y===2025) return matched.reduce((s,p)=>s+(p.q1_2025||0),0);
+      if(y===2026) return matched.reduce((s,p)=>s+(p.q1_2026||0),0);
+      // 2024: sin desglose Q1 por proveedor — cae al total Q1 abajo
+    }
+    // No hay match o año 2024: cae al total mensual del período
   }
-  // Sin filtro de médico: usar totales mensuales
+  // Total mensual respetando filtro de meses
   if(CF.months.size>0){
     return [...CF.months].reduce((s,m)=>s+(arr[m-1]||0),0);
   }
