@@ -5533,29 +5533,89 @@ function buildComCirujanos(){
   <div id="cir-view-hon" style="display:none">
   <div class="gfull">
     <div class="card">
-      <div class="card-hdr"><h3>📊 Facturación vs Honorarios — Médicos Staff</h3><span class="badge">Facturación (Google Sheets) − Honorarios pagados (Q1-2026) · Solo médicos con detalle disponible</span></div>
+      <div class="card-hdr"><h3>⚖️ D.Sala · Hon.Cirujano · Honorarios Pagados OET</h3><span class="badge" id="hon-view-badge">Por período filtrado · estimado proporcional</span></div>
       <div class="card-body">
         ${(()=>{
-          const honRows=HONORARIOS.proveedores.filter(p=>p.ligaCirName&&(CF.doctors.size===0||CF.doctors.has(p.ligaCirName)));
-          const all=CIR.cirujanos.filter(c=>CF.doctors.size===0||CF.doctors.has(c.name));
-          const rows=all.map(c=>{
-            const hp=honRows.find(p=>p.ligaCirName===c.name);
-            const b26=c.bill26||0; const h26=hp?hp.q1_2026:null;
-            const net=h26!==null?b26-h26:null;
-            const pct=h26!==null&&b26>0?(h26/b26*100):null;
-            return {name:c.name,b26,h26,net,pct};
+          const {months:_ms, partial:_pt} = cfYtdMonths();
+          const MNS=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+          const _pLbl = _ms.length===12?'Año completo':_ms.map(m=>MNS[m]).join(', ');
+          const visCirc=CIR.cirujanos.filter(c=>CF.doctors.size===0||CF.doctors.has(c.name));
+          const _yrs=[...CF.years].sort();
+
+          // Per year: precompute allBill for billing fraction denominator
+          const _allBill=(y)=>{
+            let v=0;
+            _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>v+=d.bill);});
+            if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>v+=Math.round(d.bill*_pt.factor));
+            return v;
+          };
+          const _allCirAnnual=(y)=>CIR.cirujanos.reduce((s,c)=>s+(y===2024?c.cir24:y===2025?c.cir25:c.cir26),0);
+
+          const _clinicLine=(y,li)=>{
+            let v=0;
+            _ms.forEach(m=>{if(LMON[y]&&LMON[y][m]) v+=LMON[y][m][li]||0;});
+            if(_pt&&LMON[y]&&LMON[y][_pt.month]) v+=Math.round((LMON[y][_pt.month][li]||0)*_pt.factor);
+            return v;
+          };
+          const _clinicHonPaid=(y)=>{
+            const arr=y===2024?HONORARIOS.m24:y===2025?HONORARIOS.m25:HONORARIOS.m26;
+            let v=0;
+            _ms.forEach(m=>v+=arr[m-1]||0);
+            if(_pt) v+=Math.round((arr[_pt.month-1]||0)*_pt.factor);
+            return v;
+          };
+
+          let html='';
+          _yrs.forEach(y=>{
+            const abill=_allBill(y);
+            const acir=_allCirAnnual(y);
+            const clinicDS=_clinicLine(y,0);
+            const clinicHB=_clinicLine(y,1);
+            const clinicHP=_clinicHonPaid(y);
+            const drVis=cfDoctorYear(y).filter(d=>CF.doctors.size===0||CF.doctors.has(d.name));
+
+            html+=`<div style="font-size:12px;font-weight:700;color:#1a3a2a;margin:10px 0 4px">${y} · <span style="font-weight:400;color:#607d76">${_pLbl}</span></div>`;
+            html+='<div class="tbl-wrap"><table class="hon-cmp-tbl"><thead><tr>'+
+              '<th style="text-align:left">Cirujano</th>'+
+              '<th>D. Sala</th><th>Hon. Cirujano¹</th><th>Total Fact.</th>'+
+              '<th>Hon. Pagados OET²</th><th>Neto</th><th>%</th>'+
+              '</tr></thead><tbody>';
+
+            visCirc.forEach(c=>{
+              const entry=drVis.find(d=>d.name===c.name)||{bill:0,cir:0};
+              if(!entry.bill&&!entry.cir) return;
+              // D.Sala by surgery share
+              const drCirAnn=y===2024?c.cir24:y===2025?c.cir25:c.cir26;
+              const dsala=acir>0?Math.round(clinicDS*drCirAnn/acir):0;
+              // Billing fraction for Hon.Cirujano and Hon.Pagados
+              let drBill_=0;
+              _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>{if(d.name===c.name)drBill_+=d.bill;});});
+              if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>{if(d.name===c.name)drBill_+=Math.round(d.bill*_pt.factor);});
+              const bf=abill>0?drBill_/abill:0;
+              const honBill=Math.round(clinicHB*bf);
+              const totalFact=entry.bill;
+              const honPaid=Math.round(clinicHP*bf);
+              const neto=totalFact-honPaid;
+              const pct=totalFact>0?honPaid/totalFact*100:null;
+              const nc=neto>=0?'pos':'neg';
+              const pc=pct!==null?(pct<30?'pos':pct<50?'':'neg'):'';
+              html+=`<tr>
+                <td style="font-weight:500">${c.name}</td>
+                <td>${fv(dsala)}</td>
+                <td>${fv(honBill)}</td>
+                <td style="font-weight:600">${fv(totalFact)}</td>
+                <td>${honPaid>0?fv(honPaid):'—'}</td>
+                <td class="${nc}">${honPaid>0?fv(neto):'—'}</td>
+                <td class="${pc}">${pct!==null?pct.toFixed(1)+'%':'—'}</td>
+              </tr>`;
+            });
+            html+='</tbody></table></div>';
           });
-          const withData=rows.filter(r=>r.h26!==null);
-          const noData=rows.filter(r=>r.h26===null);
-          return '<table class="hon-cmp-tbl"><thead><tr><th>Cirujano</th><th>Facturación Q1-26</th><th>Honorarios Q1-26</th><th>Neto (UB)</th><th>Hon/Fact %</th></tr></thead><tbody>'+
-          withData.map(r=>`<tr><td style="font-weight:500">${r.name}</td><td>${fv(r.b26)}</td>`+
-            `<td>${fv(r.h26)}</td>`+
-            `<td class="${r.net>=0?'pos':'neg'}">${fv(r.net)}</td>`+
-            `<td class="${r.pct<30?'pos':r.pct<50?'':'neg'}">${r.pct.toFixed(1)+'%'}</td>`+
-            '</tr>').join('')+
-          (withData.length===0?'<tr><td colspan="5" style="color:#607d76;font-style:italic;padding:10px">Sin datos de honorarios individuales disponibles para el período seleccionado.</td></tr>':'')+
-          (noData.length?`<tr><td colspan="5" style="color:#607d76;font-size:10.5px;padding:6px 10px;border-top:1px dashed rgba(45,197,171,.2)">Sin datos honorarios Q1-26: ${noData.map(r=>r.name.replace(/^Dr[a]?\. /,'')).join(' · ')}</td></tr>`:'')+
-          '</tbody></table><p style="font-size:10.5px;color:#607d76;margin-top:6px">ℹ️ Honorarios Q1-2026 de médicos staff disponibles. Para el detalle de todos los médicos se requiere desglose por proveedor desde Google Sheets.</p>';
+          html+=`<p style="font-size:10.5px;color:#607d76;margin-top:8px">
+            ¹ Hon. Cirujano = lo que factura la clínica al paciente/EPS por honorarios del cirujano (línea de ingresos).<br>
+            ² Hon. Pagados OET = lo que OET paga al médico (Cta. 62101001). Distribuido proporcionalmente al billing del médico.
+          </p>`;
+          return html;
         })()}
       </div>
     </div>
