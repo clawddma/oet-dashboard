@@ -1623,9 +1623,9 @@ function initComFilters(){
     btn.addEventListener('click',()=>toggleComDoctor(c.name,btn));
     dg.appendChild(btn);
   });
-  // Tipos dropdown — incluye TODOS los tipos (incluido Otros)
   const tp=document.getElementById('cfb-tipos-panel');
   if(tp) CIR.tipos.forEach(t=>{
+    if(t==='Otros') return;
     const btn=document.createElement('button');
     btn.className='cfb-ms-item';
     btn.dataset.tipo=t;
@@ -4247,15 +4247,31 @@ function buildComInicio(){
 
   ${hasFilters?`
   ${mLbl?`
-  <!-- KPIs filtrados por mes — D[] solo válido con filtro mensual activo -->
+  <!-- KPIs filtrados por mes y médico — usa DMON (facturación real Google Sheets) -->
   <div class="kpis k3" style="margin-bottom:4px">
-    ${yrsOk.map((y,i)=>{
-      const d=yrD[y];
-      const prev=i>0?yrD[yrsOk[i-1]]:null;
-      const varLabel=prev?fp(pctVar(d.ing,prev.ing))+' vs '+mLbl+'-'+yrsOk[i-1]:'Facturación del mes';
-      return kpiCard('Ingresos '+(y===2026?'2026':''+y)+' · '+mLbl,
-        fv(d.ing), varLabel);
-    }).join('')}
+    ${(()=>{
+      const _cmi=(y)=>{
+        if(!DMON[y]) return 0;
+        let t=0;
+        mArr.forEach(m=>{
+          if(!DMON[y][m]) return;
+          if(CF.doctors.size===0){
+            const arr=y===2024?COM.ing_m24:y===2025?COM.ing_m25:COM.ing_m26;
+            t+=arr[m-1]||0;
+          } else {
+            DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name)) t+=d.bill;});
+          }
+        });
+        return t;
+      };
+      return yrsOk.map((y,i)=>{
+        const v=_cmi(y);
+        const prev=i>0?_cmi(yrsOk[i-1]):0;
+        const varLabel=prev>0?fp(pctVar(v,prev))+' vs '+mLbl+'-'+yrsOk[i-1]:'Facturación del mes';
+        return kpiCard('Ingresos '+(y===2026?'2026':''+y)+' · '+mLbl,
+          fv(v), varLabel);
+      }).join('');
+    })()}
   </div>
   <div style="background:#f0faf7;border-left:3px solid #2dc5ab;padding:8px 12px;border-radius:4px;margin-bottom:10px;font-size:11px;color:#607d76">
     ℹ️ <strong>Esta sección muestra ingresos por servicio (facturación real del Google Sheet).</strong>
@@ -4453,8 +4469,21 @@ function buildComInicio(){
   // ═══ ch-com-yoy: Barras agrupadas interanuales (12 meses × 3 años) ════════
   {
     const _yoyMns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    // Usa COM.ing_m (facturación real Google Sheets), NO D[].ing (EEFF/P&L)
-    const _yoyGet=(y)=>{const arr=y===2024?COM.ing_m24:y===2025?COM.ing_m25:COM.ing_m26;return arr.map(v=>v>0?v:null);};
+    // Usa DMON cuando hay filtro de médico; COM.ing_m cuando no hay filtro
+    const _yoyGet=(y)=>{
+      if(CF.doctors.size===0){
+        const arr=y===2024?COM.ing_m24:y===2025?COM.ing_m25:COM.ing_m26;
+        return arr.map(v=>v>0?v:null);
+      }
+      const result=new Array(12).fill(null);
+      for(let m=1;m<=12;m++){
+        if(!DMON[y]||!DMON[y][m]) continue;
+        let t=0;
+        DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name)) t+=d.bill;});
+        if(t>0) result[m-1]=t;
+      }
+      return result;
+    };
     const _yoy24=_yoyGet(2024), _yoy25=_yoyGet(2025), _yoy26=_yoyGet(2026);
     const _yoyDs=[];
     if(CF.years.has(2024)) _yoyDs.push({label:'2024',data:_yoy24,
