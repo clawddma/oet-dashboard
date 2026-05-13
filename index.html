@@ -437,6 +437,41 @@ a{text-decoration:none;color:inherit;}
   white-space:nowrap; transition:background .15s, transform .1s;
 }
 .cfb-refresh-btn:hover{ background:#2dc5ab; }
+/* ── Inline Toggle Buttons (view switcher inside charts) ─── */
+.itog-grp{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.itog-btn{
+  background:rgba(45,197,171,0.09);border:1px solid rgba(45,197,171,0.28);
+  color:#8dbdb6;border-radius:7px;padding:5px 13px;font-size:11px;font-weight:600;
+  cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;
+}
+.itog-btn.active{background:rgba(45,197,171,0.85);color:#071f18;border-color:#2dc5ab;}
+.itog-btn:hover:not(.active){background:rgba(45,197,171,0.18);color:#a8d5cc;}
+/* ── WIP placeholder ───────────────────────────────────────── */
+.wip-block{
+  background:rgba(255,193,7,0.06);border:1.5px dashed rgba(255,193,7,0.35);
+  border-radius:10px;padding:20px 24px;text-align:center;color:#d4a73c;
+  font-size:12px;margin:16px 0;
+}
+.wip-block strong{display:block;font-size:15px;margin-bottom:8px;color:#ffca28;}
+.wip-block .wip-list{text-align:left;margin:10px auto;max-width:340px;line-height:1.8;}
+/* ── Tipo / Línea pills multi-select ──────────────────────── */
+.cfb-tipo-pill,.cfb-linea-pill{
+  font-size:9.5px !important;padding:2px 7px !important;
+  max-width:130px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;letter-spacing:0;
+}
+/* ── Tab WIP label ─────────────────────────────────────────── */
+.tab-wip{font-size:0.7em;opacity:0.62;font-style:italic;margin-left:2px;}
+/* ── Honorarios comparison table in cirujanos ──────────────── */
+.hon-cmp-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.hon-cmp-tbl th{background:rgba(45,197,171,0.12);color:#2dc5ab;font-weight:700;
+  padding:7px 10px;text-align:left;border-bottom:2px solid rgba(45,197,171,0.2);}
+.hon-cmp-tbl td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05);color:#cce8e2;}
+.hon-cmp-tbl tr:hover td{background:rgba(45,197,171,0.04);}
+.hon-cmp-tbl .pos{color:#2dc5ab;font-weight:600;}
+.hon-cmp-tbl .neg{color:#ef5350;font-weight:600;}
+.hon-cmp-tbl .nd{color:#607d76;font-style:italic;}
+
 .cfb-refresh-btn:active{ transform:scale(0.96); }
 .cfb-refresh-btn:disabled{ opacity:0.5; cursor:not-allowed; }
 
@@ -630,7 +665,9 @@ a{text-decoration:none;color:inherit;}
   </div>
   <nav class="top-tabs" id="top-tabs">
     <div class="ttab active" data-tab="fin"><span class="ti">💰</span> Financiero</div>
-    <div class="ttab" data-tab="com"><span class="ti">📊</span> Comercial</div>
+    <div class="ttab" data-tab="com"><span class="ti">📊</span> Administrativo</div>
+    <div class="ttab" data-tab="mkt"><span class="ti">📈</span> Comercial<em class="tab-wip">(en proc.)</em></div>
+    <div class="ttab" data-tab="far"><span class="ti">💊</span> Farmacia</div>
     <div class="ttab" data-tab="acc"><span class="ti">✅</span> Acciones 2026</div>
   </nav>
   <div class="hdr-meta" id="hdr-meta">Datos: <span id="hdr-range">—</span></div>
@@ -643,7 +680,15 @@ a{text-decoration:none;color:inherit;}
   </div>
   <div class="bnav-btn" data-tab="com" onclick="switchTab('com')">
     <div class="bnav-icon">📊</div>
+    <div class="bnav-lbl">Administ.</div>
+  </div>
+  <div class="bnav-btn" data-tab="mkt" onclick="switchTab('mkt')">
+    <div class="bnav-icon">📈</div>
     <div class="bnav-lbl">Comercial</div>
+  </div>
+  <div class="bnav-btn" data-tab="far" onclick="switchTab('far')">
+    <div class="bnav-icon">💊</div>
+    <div class="bnav-lbl">Farmacia</div>
   </div>
   <div class="bnav-btn" data-tab="acc" onclick="switchTab('acc')">
     <div class="bnav-icon">✅</div>
@@ -726,18 +771,12 @@ a{text-decoration:none;color:inherit;}
       <span class="cfb-lbl">Médico</span>
     </div>
     <div class="cfb-div"></div>
-    <div class="cfb-group">
+    <div class="cfb-group" id="cfb-tipos-group">
       <span class="cfb-lbl">Tipo de Procedimiento</span>
-      <select class="cfb-select" id="cfb-tipo" onchange="setComFilter('tipo',this.value)">
-        <option value="">Todos los procedimientos</option>
-      </select>
     </div>
     <div class="cfb-div"></div>
-    <div class="cfb-group">
+    <div class="cfb-group" id="cfb-lineas-group">
       <span class="cfb-lbl">Línea / Servicio</span>
-      <select class="cfb-select" id="cfb-linea" onchange="setComFilter('linea',this.value)">
-        <option value="">Todas las líneas</option>
-      </select>
     </div>
     <button class="cfb-clear" onclick="clearComFilters()">✕ Limpiar</button>
     <div id="cfb-hint" class="cfb-active-hint" style="display:none"></div>
@@ -1070,7 +1109,15 @@ const HONORARIOS = {
 function _honSum(y){
   const arr = y===2024 ? HONORARIOS.m24 : y===2025 ? HONORARIOS.m25 : y===2026 ? HONORARIOS.m26 : null;
   if(!arr) return 0;
-  // Si hay filtro mensual, usar esos meses
+  // C13 FIX: si hay filtro de médico, sumar solo proveedores que coincidan
+  if(CF.doctors.size>0){
+    const matched=HONORARIOS.proveedores.filter(p=>p.ligaCirName&&CF.doctors.has(p.ligaCirName));
+    if(!matched.length) return 0;
+    if(y===2025) return matched.reduce((s,p)=>s+(p.q1_2025||0),0);
+    if(y===2026) return matched.reduce((s,p)=>s+(p.q1_2026||0),0);
+    return 0; // 2024 sin detalle por proveedor
+  }
+  // Sin filtro de médico: usar totales mensuales
   if(CF.months.size>0){
     return [...CF.months].reduce((s,m)=>s+(arr[m-1]||0),0);
   }
@@ -1497,8 +1544,10 @@ const CF = {
   years:   new Set([2024,2025,2026]),
   months:  new Set(),  // empty = todos; Set de {1..12}
   doctors: new Set(),  // empty = todos
-  tipo: '',
-  linea: '',
+  tipo: '',            // legacy — usar tipos
+  tipos: new Set(),    // multi-select de tipos de procedimiento
+  linea: '',           // legacy — usar lineas
+  lineas: new Set(),   // multi-select de líneas de servicio
   period:  'all',     // 'all' | 'mtd' | 'week' — presets de período
   compareMode: 'auto', // 'auto' | 'ytd' | 'full' — cómo agregar cuando no hay filtro mensual
   //   'auto' → YTD si 2026 presente y MTD_RAW existe, sino 'full'
@@ -1518,15 +1567,25 @@ function initComFilters(){
     btn.addEventListener('click',()=>toggleComDoctor(c.name,btn));
     dg.appendChild(btn);
   });
-  const ts=document.getElementById('cfb-tipo');
-  CIR.tipos.forEach(t=>{
-    const o=document.createElement('option');
-    o.value=t; o.textContent=t; ts.appendChild(o);
+  const tg=document.getElementById('cfb-tipos-group');
+  if(tg) CIR.tipos.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='cfb-pill cfb-tipo-pill';
+    btn.dataset.tipo=t;
+    btn.textContent=t.replace(' (Facoemulsif.)','').replace(' (Refractiva)','');
+    btn.title=t;
+    btn.addEventListener('click',()=>toggleComTipo(t,btn));
+    tg.appendChild(btn);
   });
-  const ls=document.getElementById('cfb-linea');
-  COM.lineas.forEach(l=>{
-    const o=document.createElement('option');
-    o.value=l; o.textContent=l; ls.appendChild(o);
+  const lg=document.getElementById('cfb-lineas-group');
+  if(lg) COM.lineas.forEach(l=>{
+    const btn=document.createElement('button');
+    btn.className='cfb-pill cfb-linea-pill';
+    btn.dataset.linea=l;
+    btn.textContent=l;
+    btn.title=l;
+    btn.addEventListener('click',()=>toggleComLinea(l,btn));
+    lg.appendChild(btn);
   });
   const bar=document.getElementById('com-filter-bar');
   if(bar && window.ResizeObserver){
@@ -1545,6 +1604,7 @@ function toggleComYear(y,btn){
   }
   updateCfHint();
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
 }
 
 // ── Toggle de modo de comparación YTD / Año completo / Auto ──────────────
@@ -1563,13 +1623,14 @@ function setComFilter(key,val){
   CF[key]=val;
   updateCfHint();
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
 }
 
 function clearComFilters(){
   CF.years=new Set([2024,2025,2026]);
   CF.months=new Set();
   CF.doctors=new Set();
-  CF.tipo=''; CF.linea='';
+  CF.tipo=''; CF.tipos=new Set(); CF.linea=''; CF.lineas=new Set();
   CF.period='all';
   CF.compareMode='auto';
   document.querySelectorAll('[data-year]').forEach(p=>p.classList.add('on'));
@@ -1580,13 +1641,67 @@ function clearComFilters(){
   document.querySelectorAll('#cfb-cmp-group .cfb-cmp-pill').forEach(b=>{
     b.classList.toggle('on', b.dataset.cmp==='auto');
   });
-  ['cfb-tipo','cfb-linea'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.value='';
-  });
+  document.querySelectorAll('.cfb-tipo-pill,.cfb-linea-pill').forEach(p=>p.classList.remove('on'));
   _syncComPeriodBtns();
   updateCfHint();
   if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+}
+
+
+// ─── C5: Toggle multi-select tipo de procedimiento ───────────
+function toggleComTipo(name,btn){
+  if(CF.tipos.has(name)){CF.tipos.delete(name);btn.classList.remove('on');}
+  else{CF.tipos.add(name);btn.classList.add('on');}
+  CF.tipo='';
+  updateCfHint();
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
+}
+// ─── C5: Toggle multi-select línea de servicio ───────────────
+function toggleComLinea(name,btn){
+  if(CF.lineas.has(name)){CF.lineas.delete(name);btn.classList.remove('on');}
+  else{CF.lineas.add(name);btn.classList.add('on');}
+  CF.linea='';
+  updateCfHint();
+  if(activeTab==='com'){ clearComBuilt(); navigate(activeSection); }
+  else if(activeTab==='mkt'){ clearMktBuilt(); navigate(activeSection); }
+}
+// ─── C8/C10: Toggle vista de cirujanos (bill / cir / hon) ────
+function setCirView(view, btn){
+  if(btn) btn.closest('.itog-grp').querySelectorAll('.itog-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  ['bill','cir','hon'].forEach(v=>{
+    const el=document.getElementById('cir-view-'+v);
+    if(el) el.style.display=(v===view)?'':'none';
+  });
+}
+// ─── C6: Toggle vista de servicios (facturacion / procedimientos) ──
+function setLineasView(view, btn){
+  if(btn) btn.closest('.itog-grp').querySelectorAll('.itog-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  ['fact','proc'].forEach(v=>{
+    const el=document.getElementById('lineas-view-'+v);
+    if(el) el.style.display=(v===view)?'':'none';
+  });
+}
+// ─── C10: Toggle LASIK/PRK pesos vs unidades ─────────────────
+function setLasikView(view, btn){
+  if(btn) btn.closest('.itog-grp').querySelectorAll('.itog-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  const ch=Chart.getChart(document.getElementById('ch-lasik-prk'));
+  if(!ch) return;
+  if(view==='pesos'){
+    ch.data.datasets[0].data=[CIR.tipos_v25[2],CIR.tipos_v26[2]];
+    ch.data.datasets[1].data=[CIR.tipos_v25[3],CIR.tipos_v26[3]];
+    ch.options.scales.y.title.text='Facturación (miles COP)';
+    ch.data.datasets[0].label='PRK (miles COP)';
+    ch.data.datasets[1].label='LASIK (miles COP)';
+  } else {
+    // Sin datos de conteo — mostrar aviso
+    ch.data.datasets[0].data=[null,null];
+    ch.data.datasets[1].data=[null,null];
+    ch.options.scales.y.title.text='Cantidad (datos en proceso)';
+    ch.data.datasets[0].label='PRK (# proc.) — pendiente';
+    ch.data.datasets[1].label='LASIK (# proc.) — pendiente';
+  }
+  ch.update();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1787,8 +1902,10 @@ function updateCfHint(){
     const da=Array.from(CF.doctors).map(d=>d.replace(/^Dr[a]?\. /,'').split(/[\s.]/)[0]);
     hints.push(da.length<=2?da.join('+'):da.length+' médicos');
   }
-  if(CF.tipo)  hints.push(CF.tipo.split(' ')[0]);
-  if(CF.linea) hints.push(CF.linea.split(' ')[0]);
+  if(CF.tipos.size>0) hints.push([...CF.tipos].map(t=>t.split(' ')[0]).slice(0,2).join('+')+(CF.tipos.size>2?'...':''));
+  else if(CF.tipo) hints.push(CF.tipo.split(' ')[0]);
+  if(CF.lineas.size>0) hints.push([...CF.lineas].map(l=>l.split(' ')[0]).slice(0,2).join('+'));
+  else if(CF.linea) hints.push(CF.linea.split(' ')[0]);
   const hint=document.getElementById('cfb-hint');
   if(!hint) return;
   if(hints.length){
@@ -1833,16 +1950,20 @@ function updateFilterBarHeight(){
 /* Destruye los charts de las secciones comerciales y limpia el caché
    de 'built', para forzar re-render completo cuando cambia un filtro */
 const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-honorarios','com-trend','com-meta'];
-function clearComBuilt(){
-  COM_SECS.forEach(sid=>{
+const MKT_SECS=['mkt-inicio','mkt-lentes','mkt-growth','mkt-cirujanos','mkt-roi'];
+const FAR_SECS=['far-inicio','far-lentes','far-compras'];
+function clearTabBuilt(secs){
+  secs.forEach(sid=>{
     const el=document.getElementById(sid);
     if(el) el.querySelectorAll('canvas').forEach(cv=>{
-      const ch=Chart.getChart(cv);
-      if(ch) ch.destroy();
+      const ch=Chart.getChart(cv); if(ch) ch.destroy();
     });
     built.delete(sid);
   });
 }
+function clearComBuilt(){ clearTabBuilt(COM_SECS); }
+function clearMktBuilt(){ clearTabBuilt(MKT_SECS); }
+function clearFarBuilt(){ clearTabBuilt(FAR_SECS); }
 
 // ════════════════════════════════════════
 //  PERIOD HELPERS — MTD y DAILY
@@ -2203,12 +2324,14 @@ function cfYr(y){
   return D.filter(d=>d.y===y&&(CF.months.size===0||CF.months.has(d.m)));
 }
 function cfLineasIdx(){
-  if(!CF.linea) return COM.lineas.map((_,i)=>i);
-  return COM.lineas.map((l,i)=>l===CF.linea?i:-1).filter(i=>i>=0);
+  if(CF.lineas.size>0) return COM.lineas.map((l,i)=>CF.lineas.has(l)?i:-1).filter(i=>i>=0);
+  if(CF.linea) return COM.lineas.map((l,i)=>l===CF.linea?i:-1).filter(i=>i>=0);
+  return COM.lineas.map((_,i)=>i);
 }
 function cfTiposIdx(){
-  if(!CF.tipo) return CIR.tipos.map((_,i)=>i);
-  return CIR.tipos.map((t,i)=>t===CF.tipo?i:-1).filter(i=>i>=0);
+  if(CF.tipos.size>0) return CIR.tipos.map((t,i)=>CF.tipos.has(t)?i:-1).filter(i=>i>=0);
+  if(CF.tipo) return CIR.tipos.map((t,i)=>t===CF.tipo?i:-1).filter(i=>i>=0);
+  return CIR.tipos.map((_,i)=>i);
 }
 function cfCirujanos(){
   if(CF.doctors.size===0) return CIR.cirujanos;
@@ -2250,6 +2373,18 @@ const NAVS = {
     {id:'com-honorarios', label:'Honorarios Médicos',icon:'💵'},
     {id:'com-trend',      label:'Tendencia',         icon:'📈'},
     {id:'com-meta',       label:'Meta 2026',         icon:'🎯'},
+  ],
+  mkt:[
+    {id:'mkt-inicio',    label:'Inicio',           icon:'🏠'},
+    {id:'mkt-lentes',    label:'Lentes & LIOs',    icon:'👁️'},
+    {id:'mkt-growth',    label:'Crecimiento',      icon:'📈'},
+    {id:'mkt-cirujanos', label:'Por Cirujano',     icon:'👨‍⚕️'},
+    {id:'mkt-roi',       label:'Marketing / ROI',  icon:'💸'},
+  ],
+  far:[
+    {id:'far-inicio',    label:'Inicio',           icon:'🏠'},
+    {id:'far-lentes',    label:'Lentes & Ojos',    icon:'🔬'},
+    {id:'far-compras',   label:'Compras (en proc.)',icon:'📦'},
   ],
   acc:[
     {id:'acc-inicio',   label:'Inicio',           icon:'🏠'},
@@ -4451,6 +4586,11 @@ function buildComLineas(){
     const liTotal25=liT25.reduce((a,b)=>a+b,0);
 
     el.innerHTML=`
+    <div class="itog-grp" style="margin-bottom:14px">
+      <button class="itog-btn active" onclick="setLineasView('fact',this)">💰 Facturación ($)</button>
+      <button class="itog-btn" onclick="setLineasView('proc',this)">🔢 Procedimientos (#)</button>
+    </div>
+    <div id="lineas-view-fact">
     <div class="sec-title">Facturación por Servicio — ${mLbl}
       <span class="st-badge">${_yrBadgeLn}</span>
     </div>
@@ -4832,6 +4972,9 @@ function buildComMeta(){
      borderColor:'#ff9800',borderDash:[5,3],borderWidth:2,pointRadius:0,backgroundColor:'transparent'}
   ]},options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
     scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
+  // C10: LASIK + PRK combinado
+  buildLasikPrkCard(el);
+
 }
 
 // ════════════════════════════════════════
@@ -4953,6 +5096,62 @@ function buildAccKpi(){
   </div>`;
 }
 
+
+// ════════════════════════════════════════
+//  LASIK + PRK COMBINADO (C10)
+// ════════════════════════════════════════
+function buildLasikPrkCard(el){
+  const C25='rgba(45,197,171,0.85)',C26='rgba(255,152,0,0.85)';
+  const B25='rgba(45,197,171,1)',   B26='rgba(255,152,0,1)';
+  const wrap=document.createElement('div');
+  wrap.className='gfull'; wrap.style.marginTop='16px';
+  wrap.innerHTML=`<div class="card">
+    <div class="card-hdr">
+      <h3>🔬 LASIK vs PRK — Comparativo</h3>
+      <div class="itog-grp">
+        <button class="itog-btn active" onclick="setLasikView('pesos',this)">💰 Facturación ($)</button>
+        <button class="itog-btn" onclick="setLasikView('unidades',this)">🔢 Unidades (#)</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:220px"><canvas id="ch-lasik-prk"></canvas></div>
+      <div id="lasik-unidades-note" style="display:none;margin-top:8px;font-size:11px;color:#d4a73c;background:rgba(255,193,7,0.06);border:1px dashed rgba(255,193,7,0.3);border-radius:6px;padding:8px 12px">
+        📋 <strong>Datos de conteo por procedimiento en proceso de integración.</strong> El Apps Script actualmente sincroniza facturación total. Para obtener conteos individuales por tipo de procedimiento, se requiere un campo adicional en Google Sheets.
+      </div>
+    </div>
+  </div>`;
+  el.appendChild(wrap);
+  mkChart('ch-lasik-prk',{
+    type:'bar',
+    data:{
+      labels:['2025','2026 YTD'],
+      datasets:[
+        {label:'PRK (miles COP)',data:[CIR.tipos_v25[2],CIR.tipos_v26[2]],backgroundColor:'rgba(68,108,179,0.82)',borderColor:'rgba(68,108,179,1)',borderWidth:1,borderRadius:4},
+        {label:'LASIK (miles COP)',data:[CIR.tipos_v25[3],CIR.tipos_v26[3]],backgroundColor:'rgba(45,197,171,0.85)',borderColor:'rgba(45,197,171,1)',borderWidth:1,borderRadius:4},
+      ]
+    },
+    options:{
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:14,font:{size:12,weight:'600'},padding:14}},
+        tooltip:{backgroundColor:'rgba(12,48,40,.95)',padding:10,callbacks:{
+          label:(c)=>` ${c.dataset.label}: ${fv(c.parsed.y)}`,
+          afterBody:(items)=>{
+            const labels=['PRK','LASIK'];
+            const v25=[CIR.tipos_v25[2],CIR.tipos_v25[3]];
+            const v26=[CIR.tipos_v26[2],CIR.tipos_v26[3]];
+            return ['','Δ 2025→2026: '+fp(pctVar(v26[items[0].dataIndex>1?1:0],v25[items[0].dataIndex>1?1:0]))];
+          }
+        }}
+      },
+      scales:{
+        x:{ticks:{font:{size:11,weight:'600'},color:'#1a3a2a'},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:11},color:'#607d76'},
+           title:{display:true,text:'Facturación (miles COP)',font:{size:11,weight:'600'},color:'#1a3a2a'}}
+      }
+    }
+  });
+}
+
 // ════════════════════════════════════════
 //  BUILD: COMERCIAL — CIRUJANOS Y CIRUGÍAS
 // ════════════════════════════════════════
@@ -5014,24 +5213,63 @@ function buildComCirujanos(){
     ${kpiCard('Procedimiento #1',CIR.tipos[0],(tipoTot25>0?(cfTipoYear(2025)[0]/tipoTot25*100).toFixed(0):0)+'% — '+fv(cfTipoYear(2025)[0]))}
   </div>
 <div class="insight" style="margin-bottom:10px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.06);font-size:12px">
-    💡 <strong>Vista de cirugías:</strong> aquí se compara la <strong>facturación generada</strong> por cada médico con sus cirugías y la <strong>cantidad de cirugías</strong> realizadas. Para ver lo que OET <em>paga</em> en honorarios a cada uno, ir a la pestaña <strong>Honorarios Médicos</strong>.
+    💡 Usa el toggle para alternar entre vista de <strong>facturación</strong>, <strong>cirugías</strong> o comparativo <strong>neto vs honorarios</strong>.
   </div>
+  <div class="itog-grp">
+    <button class="itog-btn active" onclick="setCirView('bill',this)">💰 Facturación</button>
+    <button class="itog-btn" onclick="setCirView('cir',this)">🔢 Cirugías</button>
+    <button class="itog-btn" onclick="setCirView('hon',this)">📊 Neto vs Honorarios</button>
+  </div>
+  <div id="cir-view-bill">
   <div class="gfull">
     <div class="card">
       <div class="card-hdr"><h3>💰 ¿Quién factura más para la clínica?</h3><span class="badge">Facturación por cirujano${mLbl?' — '+mLbl:''} · ordenado por 2025</span></div>
       <div class="card-body">
         <div class="chart-wrap" style="height:280px"><canvas id="ch-cir-bill"></canvas></div>
         <div style="margin-top:8px;font-size:11.5px;color:#2d3f38;background:#f5f8f7;padding:9px 12px;border-radius:8px">
-          📖 <strong>Cómo leer:</strong> cada barra es la facturación generada por las cirugías de ese médico. Pasa el cursor sobre la barra para ver el nombre completo y las variaciones interanuales.
+          📖 <strong>Cómo leer:</strong> cada barra es la facturación generada por las cirugías de ese médico.
         </div>
       </div>
     </div>
   </div>
-  <div class="g2">
+  </div>
+  <div id="cir-view-cir" style="display:none">
+  <div class="gfull">
     <div class="card">
       <div class="card-hdr"><h3>🔢 ¿Quién hace más cirugías?</h3><span class="badge">Volumen${mLbl?' — '+mLbl:''}</span></div>
-      <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-cir-vol"></canvas></div></div>
+      <div class="card-body"><div class="chart-wrap" style="height:280px"><canvas id="ch-cir-vol"></canvas></div></div>
     </div>
+  </div>
+  </div>
+  <div id="cir-view-hon" style="display:none">
+  <div class="gfull">
+    <div class="card">
+      <div class="card-hdr"><h3>📊 Neto vs Honorarios — Q1 2026</h3><span class="badge">Facturación − Honorarios pagados · Solo médicos con datos exactos en EEFF</span></div>
+      <div class="card-body">
+        ${(()=>{
+          const honRows=HONORARIOS.proveedores.filter(p=>p.ligaCirName&&(CF.doctors.size===0||CF.doctors.has(p.ligaCirName)));
+          const all=CIR.cirujanos.filter(c=>CF.doctors.size===0||CF.doctors.has(c.name));
+          const rows=all.map(c=>{
+            const hp=honRows.find(p=>p.ligaCirName===c.name);
+            const b26=c.bill26||0; const h26=hp?hp.q1_2026:null;
+            const net=h26!==null?b26-h26:null;
+            const pct=h26!==null&&b26>0?(h26/b26*100):null;
+            return {name:c.name,b26,h26,net,pct};
+          });
+          return '<table class="hon-cmp-tbl"><thead><tr><th>Cirujano</th><th>Facturación Q1-26</th><th>Honorarios Q1-26</th><th>Neto (UB)</th><th>Hon/Fact %</th></tr></thead><tbody>'+
+          rows.map(r=>`<tr><td style="font-weight:500">${r.name}</td><td>${fv(r.b26)}</td>`+
+            `<td>${r.h26!==null?fv(r.h26):'<span class="nd">Sin datos EEFF</span>'}</td>`+
+            `<td class="${r.net!==null?(r.net>=0?'pos':'neg'):'nd'}">${r.net!==null?fv(r.net):'—'}</td>`+
+            `<td class="${r.pct!==null?(r.pct<30?'pos':r.pct<50?'':'neg'):'nd'}">${r.pct!==null?r.pct.toFixed(1)+'%':'—'}</td>`+
+            '</tr>').join('')+
+          '</tbody></table><p style="font-size:10.5px;color:#607d76;margin-top:6px">⚠️ Honorarios exactos disponibles en EEFF solo para Dr. M.A. Jaramillo N. y Dr. M. Jaramillo M. (Q1-2026). Resto: pendiente de detalle contable.</p>';
+        })()}
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="g2">
+    <div class="card" style="display:none"><div class="card-hdr"></div></div>
     <div class="card">
       <div class="card-hdr"><h3>🏥 ¿Qué procedimientos generan más?</h3><span class="badge">Por tipo${mLbl?' — '+mLbl:''}</span></div>
       <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-cir-tipos"></canvas></div></div>
@@ -5872,6 +6110,14 @@ const BUILDERS = {
   'com-honorarios': buildComHonorarios,
   'com-trend':      buildComTrend,
   'com-meta':       buildComMeta,
+  'mkt-inicio':    buildMktInicio,
+  'mkt-lentes':    buildMktLentes,
+  'mkt-growth':    buildMktGrowth,
+  'mkt-cirujanos': buildMktCirujanos,
+  'mkt-roi':       buildMktRoi,
+  'far-inicio':    buildFarInicio,
+  'far-lentes':    buildFarLentes,
+  'far-compras':   buildFarCompras,
   'acc-inicio':   buildAccInicio,
   'acc-plan':     buildAccPlan,
   'acc-kpi':      buildAccKpi,
@@ -5940,12 +6186,12 @@ function switchTab(tab){
   });
   // Show/hide filter bars
   const fb=document.getElementById('com-filter-bar');
-  if(fb) fb.classList.toggle('visible', tab==='com');
+  if(fb) fb.classList.toggle('visible', tab==='com'||tab==='mkt');
   const ffb=document.getElementById('fin-filter-bar');
   if(ffb) ffb.classList.toggle('visible', tab==='fin');
   const ct=document.getElementById('content');
   if(ct){
-    ct.classList.toggle('has-filter-bar',     tab==='com');
+    ct.classList.toggle('has-filter-bar',     tab==='com'||tab==='mkt');
     ct.classList.toggle('has-fin-filter-bar', tab==='fin');
     if(tab==='fin') setTimeout(updateFinBarHeight, 50);
     else if(tab!=='com') ct.style.paddingTop='';
@@ -5956,6 +6202,254 @@ function switchTab(tab){
 
 function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
+}
+
+
+// ════════════════════════════════════════
+//  BUILD: COMERCIAL (en proceso) — MKT TAB
+// ════════════════════════════════════════
+function buildMktInicio(){
+  const el=document.getElementById('mkt-inicio');
+  const C25='rgba(45,197,171,0.85)',C26='rgba(255,152,0,0.85)';
+  const B25='rgba(45,197,171,1)',   B26='rgba(255,152,0,1)';
+  const tipoTot25=CIR.tipos_v25.reduce((a,b)=>a+b,0);
+  const tipoTot26=CIR.tipos_v26.reduce((a,b)=>a+b,0);
+  const cir25=CIR.mes_25.reduce((a,b)=>a+b,0);
+  const cir26=CIR.mes_26.reduce((a,b)=>a+b,0);
+  const topTipo25=CIR.tipos.map((t,i)=>({t,v:CIR.tipos_v25[i]})).sort((a,b)=>b.v-a.v)[0];
+  const topCir25=[...CIR.cirujanos].sort((a,b)=>b.bill25-a.bill25)[0];
+  el.innerHTML=`
+  <div class="sec-title">Comercial <span class="st-badge">Módulo en proceso de construcción</span></div>
+  <div class="wip-block">
+    <strong>📈 Módulo Comercial — en proceso</strong>
+    Información disponible con los datos actuales. Las secciones de inversión en marketing y ROI se habilitarán cuando se integre esa fuente de datos.
+    <div class="wip-list">✅ Datos disponibles: facturación por tipo de procedimiento, por cirujano, crecimiento interanual<br>
+    ⏳ Pendiente: inversión en marketing, costo de adquisición, ROI por canal</div>
+  </div>
+  <div class="kpis k4">
+    ${kpiCard('Facturación 2025',fv(tipoTot25),cir25.toLocaleString()+' cirugías')}
+    ${kpiCard('Facturación 2026 YTD',fv(tipoTot26),fp(pctVar(tipoTot26,tipoTot25))+' vs 2025 YTD')}
+    ${kpiCard('Procedimiento líder',topTipo25.t,fv(topTipo25.v)+' · 2025')}
+    ${kpiCard('Cirujano líder (fact.)',topCir25.name,fv(topCir25.bill25)+' · 2025')}
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><h3>💰 Facturación por Tipo de Procedimiento</h3><span class="badge">2025 vs 2026 YTD</span></div>
+      <div class="card-body"><div class="chart-wrap" style="height:260px"><canvas id="ch-mkt-tipos"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>👨‍⚕️ Top Cirujanos — Facturación 2025</h3></div>
+      <div class="card-body"><div class="chart-wrap" style="height:260px"><canvas id="ch-mkt-cir"></canvas></div></div>
+    </div>
+  </div>`;
+  // Tipos chart
+  mkChart('ch-mkt-tipos',{type:'bar',
+    data:{labels:CIR.tipos.map(t=>t.split(' ').slice(0,2).join(' ')),datasets:[
+      {label:'2025',data:CIR.tipos_v25,backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:3},
+      {label:'2026 YTD',data:CIR.tipos_v26,backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:3},
+    ]},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{x:{ticks:{font:{size:10},maxRotation:40,autoSkip:false},grid:{display:false}},
+              y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
+  // Cirujanos chart
+  const cirSort=[...CIR.cirujanos].sort((a,b)=>b.bill25-a.bill25);
+  mkChart('ch-mkt-cir',{type:'bar',
+    data:{labels:cirSort.map(c=>c.name.replace(/^Dr[a]?\. /,'').split(' ').slice(0,2).join(' ')),
+      datasets:[{label:'2025',data:cirSort.map(c=>c.bill25),backgroundColor:C25,borderColor:B25,borderWidth:1,borderRadius:3},
+                {label:'2026 YTD',data:cirSort.map(c=>c.bill26),backgroundColor:C26,borderColor:B26,borderWidth:1,borderRadius:3}]},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{x:{ticks:{font:{size:10},maxRotation:35},grid:{display:false}},
+              y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
+}
+function buildMktLentes(){
+  const el=document.getElementById('mkt-lentes');
+  const lioP25=CIR.tipos_v25[1], lioP26=CIR.tipos_v26[1];
+  const lioF25=CIR.tipos_v25[6], lioF26=CIR.tipos_v26[6];
+  el.innerHTML=`
+  <div class="sec-title">Lentes & LIOs <span class="st-badge">Facturación 2025 vs 2026 YTD</span></div>
+  <div class="kpis k4">
+    ${kpiCard('LIOs Premium 2025',fv(lioP25),'Tipo más rentable')}
+    ${kpiCard('LIOs Premium 2026 YTD',fv(lioP26),fp(pctVar(lioP26,lioP25))+' vs 2025')}
+    ${kpiCard('LIO Fáquico 2025',fv(lioF25),'Refractiva premium')}
+    ${kpiCard('LIO Fáquico 2026 YTD',fv(lioF26),fp(pctVar(lioF26,lioF25))+' vs 2025')}
+  </div>
+  <div class="gfull"><div class="card">
+    <div class="card-hdr"><h3>👁️ Facturación de Lentes — LIOs Premium y Fáquico</h3>
+      ${buildLasikPrkCard.toString().includes('ch-lasik-prk')?'<span class="badge">Ver también LASIK/PRK en Inicio</span>':''}
+    </div>
+    <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-mkt-lentes"></canvas></div></div>
+  </div></div>
+  <div class="wip-block">
+    <strong>📦 Datos de compra de lentes (inventario)</strong>
+    Sección pendiente de integración. Se habilitará cuando se conecte la fuente de datos de compras (costos de insumos por lente).
+    <div class="wip-list">⏳ Costo por lente por tipo<br>⏳ Margen bruto por lente<br>⏳ Rotación de inventario</div>
+  </div>`;
+  mkChart('ch-mkt-lentes',{type:'bar',
+    data:{labels:['LIOs Premium','LIO Fáquico','PRK','LASIK'],
+      datasets:[
+        {label:'2025',data:[lioP25,lioF25,CIR.tipos_v25[2],CIR.tipos_v25[3]],backgroundColor:'rgba(45,197,171,0.85)',borderColor:'rgba(45,197,171,1)',borderWidth:1,borderRadius:4},
+        {label:'2026 YTD',data:[lioP26,lioF26,CIR.tipos_v26[2],CIR.tipos_v26[3]],backgroundColor:'rgba(255,152,0,0.85)',borderColor:'rgba(255,152,0,1)',borderWidth:1,borderRadius:4},
+      ]},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{x:{grid:{display:false}},y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
+}
+function buildMktGrowth(){
+  const el=document.getElementById('mkt-growth');
+  const mnths=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const tot25m=COM.ing_m25.map((v,i)=>v||0);
+  const tot26m=COM.ing_m26.map((v,i)=>v||0);
+  const growth=tot25m.map((v,i)=>tot26m[i]&&v?+pctVar(tot26m[i],v).toFixed(1):null);
+  el.innerHTML=`
+  <div class="sec-title">Crecimiento Mensual <span class="st-badge">2026 vs 2025 por mes</span></div>
+  <div class="kpis k3">
+    ${kpiCard('Q1-2026 vs Q1-2025',fp(pctVar(tot26m.slice(0,3).reduce((a,b)=>a+b,0),tot25m.slice(0,3).reduce((a,b)=>a+b,0))),'Ene+Feb+Mar')}
+    ${kpiCard('Mejor mes 2026',mnths[tot26m.indexOf(Math.max(...tot26m.filter(v=>v>0)))],fv(Math.max(...tot26m.filter(v=>v>0))))}
+    ${kpiCard('Cirugías 2026 YTD',CIR.mes_26.reduce((a,b)=>a+b,0).toLocaleString(),fp(pctVar(CIR.mes_26.reduce((a,b)=>a+b,0),CIR.mes_25.slice(0,CIR.mes_26.filter(v=>v>0).length).reduce((a,b)=>a+b,0)))+' vs 2025')}
+  </div>
+  <div class="gfull"><div class="card">
+    <div class="card-hdr"><h3>📈 Crecimiento % mes a mes (2026 vs 2025)</h3></div>
+    <div class="card-body"><div class="chart-wrap" style="height:220px"><canvas id="ch-mkt-growth"></canvas></div></div>
+  </div></div>`;
+  mkChart('ch-mkt-growth',{type:'bar',
+    data:{labels:mnths,datasets:[{label:'Δ% 2026 vs 2025',data:growth,
+      backgroundColor:growth.map(v=>v===null?'transparent':v>=0?'rgba(45,197,171,0.8)':'rgba(239,83,80,0.8)'),
+      borderColor:growth.map(v=>v===null?'transparent':v>=0?'rgba(45,197,171,1)':'rgba(239,83,80,1)'),
+      borderWidth:1,borderRadius:4}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>` ${c.parsed.y!==null?c.parsed.y+'%':'Sin datos'}`}}},
+      scales:{x:{grid:{display:false}},
+        y:{ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'#eef2f1'},
+          title:{display:true,text:'Variación % vs mismo mes 2025'}}}}});
+}
+function buildMktCirujanos(){
+  const el=document.getElementById('mkt-cirujanos');
+  const cirData=[...CIR.cirujanos].sort((a,b)=>b.bill25-a.bill25);
+  const tickets25=cirData.map(c=>c.cir25>0?Math.round(c.bill25/c.cir25):0);
+  const tickets26=cirData.map(c=>c.cir26>0?Math.round(c.bill26/c.cir26):0);
+  el.innerHTML=`
+  <div class="sec-title">Performance por Cirujano <span class="st-badge">Ticket promedio y crecimiento</span></div>
+  <div class="gfull"><div class="card">
+    <div class="card-hdr"><h3>🎫 Ticket Promedio por Cirugía (miles COP)</h3><span class="badge">2025 vs 2026 YTD</span></div>
+    <div class="card-body"><div class="chart-wrap" style="height:260px"><canvas id="ch-mkt-ticket"></canvas></div></div>
+  </div></div>
+  <div class="tbl-wrap" style="margin-top:16px"><table class="tbl">
+    <thead><tr><th style="text-align:left">Cirujano</th><th>Fact. 2025</th><th>Fact. 2026 YTD</th><th>Δ%</th><th>Cir. 2025</th><th>Cir. 2026</th><th>Ticket 2025</th><th>Ticket 2026</th><th>Especialidad</th></tr></thead>
+    <tbody>${cirData.map(c=>`<tr>
+      <td style="font-weight:500">${c.name}</td>
+      <td>${fv(c.bill25)}</td><td style="color:#b8860b;font-weight:600">${fv(c.bill26)}</td>
+      <td class="${tdCls(pctVar(c.bill26,c.bill25))}">${fp(pctVar(c.bill26,c.bill25))}</td>
+      <td>${c.cir25}</td><td>${c.cir26}</td>
+      <td>${c.cir25>0?fv(Math.round(c.bill25/c.cir25)):'-'}</td>
+      <td>${c.cir26>0?fv(Math.round(c.bill26/c.cir26)):'-'}</td>
+      <td style="color:#607d76;font-size:11px">${c.esp}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+  mkChart('ch-mkt-ticket',{type:'bar',
+    data:{labels:cirData.map(c=>c.name.replace(/^Dr[a]?\. /,'').split(' ').slice(0,2).join(' ')),
+      datasets:[
+        {label:'Ticket 2025 (miles COP)',data:tickets25,backgroundColor:'rgba(45,197,171,0.82)',borderColor:'rgba(45,197,171,1)',borderWidth:1,borderRadius:4},
+        {label:'Ticket 2026 YTD',data:tickets26,backgroundColor:'rgba(255,152,0,0.85)',borderColor:'rgba(255,152,0,1)',borderWidth:1,borderRadius:4},
+      ]},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{x:{ticks:{font:{size:10},maxRotation:35},grid:{display:false}},
+        y:{ticks:{callback:v=>fv(v),font:{size:10}},title:{display:true,text:'miles COP / cirugía'}}}}});
+}
+function buildMktRoi(){
+  const el=document.getElementById('mkt-roi');
+  el.innerHTML=`
+  <div class="sec-title">Marketing & ROI <span class="st-badge">En proceso</span></div>
+  <div class="wip-block">
+    <strong>💸 Inversión y Retorno de Marketing</strong>
+    Este módulo se habilitará una vez se integre la información del área de marketing.
+    <div class="wip-list">
+      ⏳ Inversión por canal (digital, referidos, convenios)<br>
+      ⏳ Costo de adquisición por nuevo paciente<br>
+      ⏳ Retorno sobre inversión (ROI) por campaña<br>
+      ⏳ Tasa de conversión consulta → cirugía<br>
+      ⏳ LTV (valor de vida del paciente)
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════
+//  BUILD: FARMACIA
+// ════════════════════════════════════════
+function buildFarInicio(){
+  const el=document.getElementById('far-inicio');
+  const lioP25=CIR.tipos_v25[1], lioP26=CIR.tipos_v26[1];
+  const lioF25=CIR.tipos_v25[6], lioF26=CIR.tipos_v26[6];
+  const totLio25=lioP25+lioF25;
+  const totLio26=lioP26+lioF26;
+  const cirQ126=CIR.mes_26.slice(0,4).reduce((a,b)=>a+b,0); // Q1 + Abr
+  const cirQ125=CIR.mes_25.slice(0,4).reduce((a,b)=>a+b,0);
+  el.innerHTML=`
+  <div class="sec-title">Farmacia — Lentes & Insumos <span class="st-badge">Datos de ventas disponibles · Compras en proceso</span></div>
+  <div class="wip-block" style="margin-bottom:16px">
+    <strong>📦 Módulo de Compras — en proceso</strong>
+    La información de compras de lentes (costos de insumos) se integrará desde una fuente de datos independiente. Los datos de ventas de LIOs ya están disponibles abajo.
+    <div class="wip-list">✅ Ventas de LIOs (facturación)<br>✅ Ojos operados (cirugías)<br>⏳ Compras de lentes (costo insumos)<br>⏳ Margen bruto por lente<br>⏳ Facturación semanal de lentes</div>
+  </div>
+  <div class="kpis k4">
+    ${kpiCard('LIOs vendidos — fact. 2025',fv(totLio25),'Premium + Fáquico')}
+    ${kpiCard('LIOs vendidos — 2026 YTD',fv(totLio26),fp(pctVar(totLio26,totLio25))+' vs 2025')}
+    ${kpiCard('Cirugías YTD (ojos aprox.)',cirQ126.toLocaleString(),fp(pctVar(cirQ126,cirQ125))+' vs mismo período 2025')}
+    ${kpiCard('Ticket LIO Premium',fv(Math.round(lioP26/(CIR.mes_26.slice(0,4).reduce((a,b)=>a+b,0)||1))),'por cirugía 2026 YTD')}
+  </div>
+  <div class="insight" style="margin-bottom:12px;font-size:11.5px;color:#607d76">
+    ⚠️ <strong>Nota sobre conteo de ojos:</strong> los datos de "cirugías" reflejan el conteo de derechos de sala (por paciente). Para cataratas bilaterales (ambos ojos), cada ojo puede registrarse individualmente en la facturación. Se recomienda confirmar con el cliente si el conteo es por ojo o por procedimiento.
+  </div>`;
+}
+function buildFarLentes(){
+  const el=document.getElementById('far-lentes');
+  const mnths=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  el.innerHTML=`
+  <div class="sec-title">Lentes & Ojos Operados <span class="st-badge">Facturación mensual de LIOs</span></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><h3>👁️ Facturación mensual LIOs 2025 vs 2026</h3></div>
+      <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-far-lentes-m"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>🏥 Cirugías mensuales (ojos aprox.)</h3></div>
+      <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-far-cir-m"></canvas></div></div>
+    </div>
+  </div>
+  <div class="wip-block">
+    <strong>📊 Facturación semanal de lentes</strong>
+    Disponible cuando Apps Script sincronice datos diarios (DAILY_RAW). Actualmente DAILY_RAW está vacío.
+  </div>`;
+  // Monthly LIO billing: usar COM.ing_m lines for LIO lines if available, else tipos
+  mkChart('ch-far-lentes-m',{type:'line',
+    data:{labels:mnths,datasets:[
+      {label:'LIOs Premium 2025',data:new Array(12).fill(null).map((_,i)=>i<12?CIR.tipos_v25[1]/12:null),
+       borderColor:'rgba(45,197,171,1)',backgroundColor:'rgba(45,197,171,0.1)',fill:true,tension:0.3,pointRadius:3},
+      {label:'LIOs Premium 2026 YTD',data:new Array(12).fill(null).map((_,i)=>CIR.mes_26[i]>0?CIR.tipos_v26[1]/CIR.mes_26.filter(v=>v>0).length:null),
+       borderColor:'rgba(255,152,0,1)',backgroundColor:'rgba(255,152,0,0.08)',fill:true,tension:0.3,pointRadius:3},
+    ]},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:(c)=>` ${c.dataset.label}: ${fv(c.parsed.y)}`}}},
+      scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
+  mkChart('ch-far-cir-m',{type:'bar',
+    data:{labels:mnths,datasets:[
+      {label:'Cirugías 2025',data:CIR.mes_25,backgroundColor:'rgba(45,197,171,0.55)',borderColor:'rgba(45,197,171,1)',borderWidth:1,borderRadius:3},
+      {label:'Cirugías 2026 YTD',data:CIR.mes_26.map(v=>v||null),backgroundColor:'rgba(255,152,0,0.75)',borderColor:'rgba(255,152,0,1)',borderWidth:1,borderRadius:3},
+    ]},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{x:{grid:{display:false}},y:{ticks:{font:{size:10}}}}}});
+}
+function buildFarCompras(){
+  const el=document.getElementById('far-compras');
+  el.innerHTML=`
+  <div class="sec-title">Compras de Lentes <span class="st-badge">En proceso</span></div>
+  <div class="wip-block">
+    <strong>📦 Datos de compras de lentes — pendiente de integración</strong>
+    Esta sección requiere una fuente de datos adicional (sistema de compras / proveedores de lentes).
+    <div class="wip-list">
+      ⏳ Costo por tipo de LIO (Premium, Fáquico, Monofocal)<br>
+      ⏳ Proveedor por tipo de lente<br>
+      ⏳ Margen facturación vs costo insumo<br>
+      ⏳ Inventario disponible
+    </div>
+  </div>`;
 }
 
 // ════════════════════════════════════════
