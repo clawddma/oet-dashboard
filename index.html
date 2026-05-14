@@ -7047,6 +7047,18 @@ function buildComLentes(){
     if(CF.doctors.size===0) return CIR.cirujanos.reduce((s,c)=>s+(c[k]||0),0);
     return CIR.cirujanos.filter(c=>CF.doctors.has(c.name)).reduce((s,c)=>s+(c[k]||0),0);
   };
+  // Estimación monthly per-doctor: clinic monthly × (selected docs annual / all docs annual)
+  // Mismo patrón que DMON usa para distribuir totales mensuales por médico.
+  const _lioMonthDr=(y,m,which)=>{
+    const arr=_lioMonthArr(y,which);
+    const clinicM=arr[m-1]||0;
+    if(CF.doctors.size===0||clinicM===0) return clinicM;
+    const k='lio_'+which+(y===2024?'24':y===2025?'25':'26');
+    const allAn=CIR.cirujanos.reduce((s,c)=>s+(c[k]||0),0);
+    if(allAn===0) return 0;
+    const selAn=CIR.cirujanos.filter(c=>CF.doctors.has(c.name)).reduce((s,c)=>s+(c[k]||0),0);
+    return Math.round(clinicM*selAn/allAn);
+  };
   // Para KPIs/clínica completa usa _lioY; para filtro médico usa _lioDrY
   const _useDrFilter=CF.doctors.size>0;
   const lcir24=_useDrFilter?_lioDrY(2024,'cir'):_lioY(2024,'cir');
@@ -7165,15 +7177,23 @@ function buildComLentes(){
     <br>⚠️ Facturación por cirujano: estimación proporcional al billing. Conteo por cirujano: dato real de Derechos de Sala.
   </div>`;
 
-  // Chart 1: Monthly billing — only _showMs on X axis
+  // Chart 1: Monthly billing — only _showMs on X axis. Respeta filtro de médico vía DMON share mensual.
   {
     const _mnsL=_showMs.map(m=>MN[m]);
+    const _drFracYM=(y,m)=>{
+      if(CF.doctors.size===0) return 1;
+      if(!DMON[y]||!DMON[y][m]) return 0;
+      let allB=0,selB=0;
+      DMON[y][m].forEach(d=>{allB+=d.bill; if(CF.doctors.has(d.name)) selB+=d.bill;});
+      return allB>0?selB/allB:0;
+    };
     const _dsL=[];
     [[2024,C24,B24],[2025,C25,B25],[2026,C26,B26]].forEach(([y,bg,bc])=>{
       if(!CF.years.has(y)) return;
       const data=_showMs.map(m=>{
         if(!TMON[y]||!TMON[y][m]) return null;
         let v=0; window._ltTipos.forEach(i=>v+=TMON[y][m][i]||0);
+        v=Math.round(v*_drFracYM(y,m));
         return v>0?v:null;
       });
       _dsL.push({label:String(y),data,backgroundColor:bg,borderColor:bc,borderWidth:1,borderRadius:3});
@@ -7298,21 +7318,19 @@ function buildComLentes(){
   if(_hasLioData){
     const _mnsL=_showMs.map(m=>MN[m]);
     const _dsLA=[];
-    // Para cada año seleccionado: 2 series (cirugías, lentes) — agrupadas por año
+    // Para cada año seleccionado: 2 series (cirugías, lentes) — respetan filtro de médico
     [[2024,'24'],[2025,'25'],[2026,'26']].forEach(([y,suf])=>{
       if(!CF.years.has(y)) return;
-      const ac=COM['lio_cir_m'+suf]||new Array(12).fill(0);
-      const au=COM['lio_uni_m'+suf]||new Array(12).fill(0);
       _dsLA.push({
         label:'👁️ Cir '+y,
-        data:_showMs.map(m=>ac[m-1]||null),
+        data:_showMs.map(m=>{const v=_lioMonthDr(y,m,'cir'); return v>0?v:null;}),
         backgroundColor:y===2024?'rgba(68,108,179,0.75)':y===2025?LC:'rgba(255,152,0,0.85)',
         borderColor:y===2024?B24:y===2025?LCB:'rgba(255,152,0,1)',
         borderWidth:1,borderRadius:3,stack:'cir_'+y
       });
       _dsLA.push({
         label:'💎 Lentes '+y,
-        data:_showMs.map(m=>au[m-1]||null),
+        data:_showMs.map(m=>{const v=_lioMonthDr(y,m,'uni'); return v>0?v:null;}),
         backgroundColor:y===2024?'rgba(68,108,179,0.40)':y===2025?LU:'rgba(255,152,0,0.45)',
         borderColor:y===2024?'rgba(68,108,179,0.85)':y===2025?LUB:'rgba(255,152,0,0.85)',
         borderWidth:1,borderRadius:3,stack:'uni_'+y
@@ -7321,7 +7339,7 @@ function buildComLentes(){
     mkChart('ch-lnl-uni-mes',{type:'bar',data:{labels:_mnsL,datasets:_dsLA},options:{
       plugins:{legend:{position:'top',labels:{boxWidth:11,font:{size:10},padding:8}},
         tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(12,48,40,.95)',padding:10,bodyFont:{size:11},
-          callbacks:{label:c=>c.raw!=null?` ${c.dataset.label}: ${c.raw.toLocaleString()}`:''}}},
+          callbacks:{label:c=>c.raw!=null?` ${c.dataset.label}: ${c.raw.toLocaleString()}${_useDrFilter?' (est. médico)':''}`:''}}},
       scales:{x:{ticks:{font:{size:11}},grid:{display:false}},
         y:{ticks:{font:{size:10}},grid:{color:'#eef2f1'},
            title:{display:true,text:'Unidades',font:{size:11},color:'#1a3a2a'}}}}});
