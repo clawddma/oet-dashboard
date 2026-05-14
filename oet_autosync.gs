@@ -13,6 +13,8 @@
  *    C (2)  = Mes (1-12)
  *    D (3)  = Año (2024, 2025, 2026 — también "3026" por typo → 2026)
  *    M (12) = Tipo Producto
+ *    Q (16) = Servicio (detalle por línea)
+ *    R (17) = Cantidad (unidades por fila — usado para contar lentes en LIOs)
  *    V (21) = Valor Total (pesos COP)
  *    W (22) = Medico (nombre completo en mayúsculas)
  *
@@ -39,14 +41,16 @@ var CFG = {
 
 // Índices de columna (0-based, A=0 … W=22)
 var COL = {
-  FECHA:  0,   // ← Columna A: fecha del servicio (Date object)
-               //   Si la fecha está en otra columna, cambia este índice.
-               //   Ej: columna B = 1, columna E = 4
-  MES:    2,
-  ANO:    3,
-  TIPO:   12,
-  VALOR:  21,
-  MEDICO: 22,
+  FECHA:    0,   // ← Columna A: fecha del servicio (Date object)
+                 //   Si la fecha está en otra columna, cambia este índice.
+                 //   Ej: columna B = 1, columna E = 4
+  MES:      2,
+  ANO:      3,
+  TIPO:     12,
+  SERVICIO: 16,  // ← Columna Q: detalle del servicio
+  CANTIDAD: 17,  // ← Columna R: unidades por fila (lentes implantados en filas LIOS)
+  VALOR:    21,
+  MEDICO:   22,
 };
 
 // Tipo Producto → índice en COM.lineas
@@ -107,6 +111,18 @@ function syncDashboard() {
       for (var m = 1; m <= 12; m++) monthBill[y][m] = 0;
     });
 
+    // 3a-ter. Acumuladores LIOs — Unidad de Negocio Lentes
+    //  lioCir[y][m]   = nº de filas con tipo='LIOS' (= cirugías de lente = pacientes-evento)
+    //  lioUni[y][m]   = suma columna R (Cantidad) en filas LIOS (= lentes implantados)
+    //  lioCirMed[y]  = nº de filas LIOS por médico
+    //  lioUniMed[y]  = suma Cantidad LIOS por médico
+    var lioCir = {}, lioUni = {}, lioCirMed = {}, lioUniMed = {};
+    years.forEach(function(y) {
+      lioCir[y] = {}; lioUni[y] = {};
+      lioCirMed[y] = {}; lioUniMed[y] = {};
+      for (var m = 1; m <= 12; m++) { lioCir[y][m] = 0; lioUni[y][m] = 0; }
+    });
+
     // 3b. Acumuladores MTD (mes actual en curso)
     var todayColombiaStr = Utilities.formatDate(now, CFG.timezone, 'yyyy-MM-dd');
     var todayY = parseInt(todayColombiaStr.substring(0,4), 10);
@@ -115,6 +131,7 @@ function syncDashboard() {
     var daysInMonth = new Date(todayY, todayM, 0).getDate(); // días totales del mes
     var mtd = {
       ing: 0, cir: 0,
+      lio_cir: 0, lio_uni: 0,  // LIOs MTD: nº cirugías de lente y lentes implantados
       lineas: [0,0,0,0,0,0],
       medBill: {}, medCir: {}
     };
@@ -131,6 +148,10 @@ function syncDashboard() {
       var tipo   = (row[COL.TIPO]   || '').toString().trim().toUpperCase();
       var valor  = Number(row[COL.VALOR]) || 0;
       var medico = (row[COL.MEDICO] || '').toString().trim().toUpperCase();
+      // Cantidad (columna R) — usa 1 si está vacía o no es número válido
+      var cantidadRaw = row[COL.CANTIDAD];
+      var cantidad = Number(cantidadRaw);
+      if (!isFinite(cantidad) || cantidad <= 0) cantidad = 1;
 
       // Normalizar typo 3026 → 2026
       var ano = (anoRaw === 3026) ? 2026 : Number(anoRaw);
@@ -151,6 +172,18 @@ function syncDashboard() {
         if (medico) medCir[ano][medico] = (medCir[ano][medico] || 0) + 1;
       }
 
+      // ── LIOs: Unidad de Negocio Lentes ────────────────────────────
+      // 1 fila con tipo=LIOS = 1 cirugía de lente (1 paciente-evento)
+      // Cantidad (col R) = nº de lentes implantados en esa cirugía (1 ó 2)
+      if (tipo === 'LIOS') {
+        lioCir[ano][mes]++;
+        lioUni[ano][mes] += cantidad;
+        if (medico) {
+          lioCirMed[ano][medico] = (lioCirMed[ano][medico] || 0) + 1;
+          lioUniMed[ano][medico] = (lioUniMed[ano][medico] || 0) + cantidad;
+        }
+      }
+
       // ── Facturación total del médico ──────────────────────────────
       if (medico) medBill[ano][medico] = (medBill[ano][medico] || 0) + valor;
 
@@ -158,6 +191,7 @@ function syncDashboard() {
       if (ano === todayY && mes === todayM) {
         mtd.ing += valor;
         if (tipo === 'DERECHOS SALA') mtd.cir++;
+        if (tipo === 'LIOS') { mtd.lio_cir++; mtd.lio_uni += cantidad; }
         if (TIPO_IDX.hasOwnProperty(tipo)) mtd.lineas[TIPO_IDX[tipo]] += valor;
         if (medico) {
           mtd.medBill[medico] = (mtd.medBill[medico] || 0) + valor;
@@ -224,6 +258,18 @@ function syncDashboard() {
     var cir26 = m26.reduce(function(a,b){return a+b;},0);
     var cirPct = cir24>0 ? Math.round((cir25/cir24-1)*1000)/10 : 0;
 
+    // ── LIOs mensuales: cirugías de lente y lentes implantados ──────
+    function lioArr(year, dict) {
+      var a = [];
+      for (var m = 1; m <= 12; m++) a.push(dict[year][m] || 0);
+      return a;
+    }
+    var lcir24 = lioArr(2024, lioCir), lcir25 = lioArr(2025, lioCir), lcir26 = lioArr(2026, lioCir);
+    var luni24 = lioArr(2024, lioUni), luni25 = lioArr(2025, lioUni), luni26 = lioArr(2026, lioUni);
+    var lcir26Tot = lcir26.reduce(function(a,b){return a+b;},0);
+    var luni26Tot = luni26.reduce(function(a,b){return a+b;},0);
+    llog('💎 LIOs 2026 — cirugías: '+lcir26Tot+' · lentes implantados: '+luni26Tot+' · ratio: '+(lcir26Tot>0?(luni26Tot/lcir26Tot).toFixed(2):'-'));
+
     var lastMes26 = 0;
     for (var mm = 12; mm >= 1; mm--) { if (m26[mm-1]>0) { lastMes26=mm; break; } }
     var ytdLabel = lastMes26>0 ? MES_NAMES[lastMes26]+' 2026 (YTD)' : '2026 YTD';
@@ -265,6 +311,8 @@ function syncDashboard() {
     var mtdJson = '{y:'+todayY+',m:'+todayM+',d:'+todayD+
       ',ing:'+Math.round(mtd.ing/1000)+
       ',cir:'+mtd.cir+
+      ',lio_cir:'+mtd.lio_cir+
+      ',lio_uni:'+mtd.lio_uni+
       ',daysInMonth:'+daysInMonth+
       ',lineas:['+mtdLineas.join(',')+']'+
       ',cirujanos:['+mtdCirujanos.join(',')+']}';
@@ -348,8 +396,36 @@ function syncDashboard() {
       'ing_m26: ['+ib26.join(',')+'],  /* AUTO-ING */'
     );
 
+    // ── LIOs mensuales — Unidad de Negocio Lentes ───────────────────
+    //  lio_cir_mYY = nº de cirugías de lente por mes
+    //  lio_uni_mYY = nº de lentes implantados por mes (suma de Cantidad)
     block = block.replace(
-      /\{name:'([^']+)',\s*sheetName:'([^']+)',\s*bill24:\d+,\s*bill25:\d+,\s*bill26:\d+,\s*cir24:\d+,\s*cir25:\d+,\s*cir26:\d+,\s*esp:'([^']*)'\},\s*\/\* AUTO \*\//g,
+      /lio_cir_m24:\s*\[[^\]]*\],\s*\/\* AUTO-LIO \*\//,
+      'lio_cir_m24: ['+lcir24.join(',')+'],  /* AUTO-LIO */'
+    );
+    block = block.replace(
+      /lio_cir_m25:\s*\[[^\]]*\],\s*\/\* AUTO-LIO \*\//,
+      'lio_cir_m25: ['+lcir25.join(',')+'],  /* AUTO-LIO */'
+    );
+    block = block.replace(
+      /lio_cir_m26:\s*\[[^\]]*\],\s*\/\* AUTO-LIO \*\//,
+      'lio_cir_m26: ['+lcir26.join(',')+'],  /* AUTO-LIO */'
+    );
+    block = block.replace(
+      /lio_uni_m24:\s*\[[^\]]*\],\s*\/\* AUTO-LIO \*\//,
+      'lio_uni_m24: ['+luni24.join(',')+'],  /* AUTO-LIO */'
+    );
+    block = block.replace(
+      /lio_uni_m25:\s*\[[^\]]*\],\s*\/\* AUTO-LIO \*\//,
+      'lio_uni_m25: ['+luni25.join(',')+'],  /* AUTO-LIO */'
+    );
+    block = block.replace(
+      /lio_uni_m26:\s*\[[^\]]*\],\s*\/\* AUTO-LIO \*\//,
+      'lio_uni_m26: ['+luni26.join(',')+'],  /* AUTO-LIO */'
+    );
+
+    block = block.replace(
+      /\{name:'([^']+)',\s*sheetName:'([^']+)',\s*bill24:\d+,\s*bill25:\d+,\s*bill26:\d+,\s*cir24:\d+,\s*cir25:\d+,\s*cir26:\d+,\s*lio_cir24:\d+,\s*lio_cir25:\d+,\s*lio_cir26:\d+,\s*lio_uni24:\d+,\s*lio_uni25:\d+,\s*lio_uni26:\d+,\s*esp:'([^']*)'\},\s*\/\* AUTO \*\//g,
       function(match, displayName, sheetName, esp) {
         var b24 = Math.round((medBill[2024][sheetName]||0)/1000);
         var b25 = Math.round((medBill[2025][sheetName]||0)/1000);
@@ -357,10 +433,18 @@ function syncDashboard() {
         var c24 = medCir[2024][sheetName] || 0;
         var c25 = medCir[2025][sheetName] || 0;
         var c26 = medCir[2026][sheetName] || 0;
-        llog('  👨‍⚕️ '+displayName+' → bill='+b24+'/'+b25+'/'+b26+' cir='+c24+'/'+c25+'/'+c26);
+        var lc24 = lioCirMed[2024][sheetName] || 0;
+        var lc25 = lioCirMed[2025][sheetName] || 0;
+        var lc26 = lioCirMed[2026][sheetName] || 0;
+        var lu24 = lioUniMed[2024][sheetName] || 0;
+        var lu25 = lioUniMed[2025][sheetName] || 0;
+        var lu26 = lioUniMed[2026][sheetName] || 0;
+        llog('  👨‍⚕️ '+displayName+' → bill='+b24+'/'+b25+'/'+b26+' cir='+c24+'/'+c25+'/'+c26+' lio_cir='+lc24+'/'+lc25+'/'+lc26+' lio_uni='+lu24+'/'+lu25+'/'+lu26);
         return "{name:'"+displayName+"', sheetName:'"+sheetName+
                "', bill24:"+b24+", bill25:"+b25+", bill26:"+b26+
                ", cir24:"+c24+", cir25:"+c25+", cir26:"+c26+
+               ", lio_cir24:"+lc24+", lio_cir25:"+lc25+", lio_cir26:"+lc26+
+               ", lio_uni24:"+lu24+", lio_uni25:"+lu25+", lio_uni26:"+lu26+
                ", esp:'"+esp+"'}, /* AUTO */";
       }
     );

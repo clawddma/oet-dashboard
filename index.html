@@ -969,6 +969,15 @@ const COM = {
   pct25: [37.0,23.8,20.4,5.9,5.1,2.4],
   cirugias: {v24:2955, v25:3918, v26:1712, pct:32.6}, /* AUTO */
   pacientes: {v24:8884, v25:10122, pct:13.9},
+  // LIOs — Unidad de Negocio Lentes — auto-sync (espera primer sync con columnas Q+R)
+  //  lio_cir_mYY = nº de cirugías de lente por mes (1 fila LIOS = 1 cirugía-paciente)
+  //  lio_uni_mYY = nº de lentes implantados por mes (suma columna Cantidad)
+  lio_cir_m24: [0,0,0,0,0,0,0,0,0,0,0,0],  /* AUTO-LIO */
+  lio_cir_m25: [0,0,0,0,0,0,0,0,0,0,0,0],  /* AUTO-LIO */
+  lio_cir_m26: [0,0,0,0,0,0,0,0,0,0,0,0],  /* AUTO-LIO */
+  lio_uni_m24: [0,0,0,0,0,0,0,0,0,0,0,0],  /* AUTO-LIO */
+  lio_uni_m25: [0,0,0,0,0,0,0,0,0,0,0,0],  /* AUTO-LIO */
+  lio_uni_m26: [0,0,0,0,0,0,0,0,0,0,0,0],  /* AUTO-LIO */
   meta26: 23500000
 };
 
@@ -976,16 +985,16 @@ const COM = {
 const CIR = {
   // Por Facturación (ingresos que genera cada médico, miles de COP) — sheetName = nombre exacto en col W /* AUTO */
   cirujanos:[
-    {name:'Dr. M.A. Jaramillo N.', sheetName:'DR. MIGUEL ANTONIO JARAMILLO NOGUERA', bill24:2860301, bill25:4023210, bill26:1166372, cir24:402, cir25:486, cir26:134, esp:'Catarata · LIO Premium'}, /* AUTO */
-    {name:'Dr. Jon K. Balparda', sheetName:'DR. JON KEPA BALPARDA', bill24:1390703, bill25:1763729, bill26:692509, cir24:915, cir25:863, cir26:295, esp:'Alta volumen · Catarata'}, /* AUTO */
-    {name:'Dr. M. Jaramillo M.', sheetName:'DR. MIGUEL JARAMILLO MARTINEZ', bill24:889091, bill25:1750688, bill26:727771, cir24:134, cir25:236, cir26:92, esp:'Vitreoretina · Catarata'}, /* AUTO */
-    {name:'Dr. J.E. Jaramillo N.', sheetName:'DR. JORGE EMILIO JARAMILLO NOGUERA', bill24:1414026, bill25:757236, bill26:12885, cir24:194, cir25:97, cir26:1, esp:'Retirado 2025'}, /* AUTO */
-    {name:'Dr. J.A. Jaramillo H.', sheetName:'DR. JORGE ALEJANDRO JARAMILLO HENRIQUEZ', bill24:526311, bill25:1185346, bill26:486693, cir24:66, cir25:117, cir26:53, esp:'Catarata · Córnea'}, /* AUTO */
-    {name:'Dr. J.G. Sánchez M.', sheetName:'DR. JUAN GONZALO SANCHEZ MONTOYA', bill24:210306, bill25:924652, bill26:446346, cir24:33, cir25:200, cir26:118, esp:'Glaucoma · Catarata'}, /* AUTO */
-    {name:'Dr. B.A. Ramírez S.', sheetName:'DR. BORIS ARTURO RAMIREZ SERAFINOFF', bill24:389869, bill25:666632, bill26:328683, cir24:331, cir25:525, cir26:241, esp:'Catarata · Refractiva'}, /* AUTO */
-    {name:'Dr. J.A. Jaramillo S.', sheetName:'DR. JOSE AGUSTIN JARAMILLO SOLA', bill24:296152, bill25:699091, bill26:328109, cir24:63, cir25:118, cir26:50, esp:'LIO · Córnea'}, /* AUTO */
-    {name:'Dr. J.C. Gil Muñoz', sheetName:'DR. JUAN CARLOS GIL MUÑOZ', bill24:240702, bill25:400033, bill26:123188, cir24:133, cir25:212, cir26:71, esp:'Catarata'}, /* AUTO */
-    {name:'Dra. C. Sardi Correa', sheetName:'DRA. CAROLINA SARDI CORREA', bill24:231289, bill25:338178, bill26:113220, cir24:28, cir25:35, cir26:23, esp:'Refractiva'}, /* AUTO */
+    {name:'Dr. M.A. Jaramillo N.', sheetName:'DR. MIGUEL ANTONIO JARAMILLO NOGUERA', bill24:2860301, bill25:4023210, bill26:1166372, cir24:402, cir25:486, cir26:134, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'Catarata · LIO Premium'}, /* AUTO */
+    {name:'Dr. Jon K. Balparda', sheetName:'DR. JON KEPA BALPARDA', bill24:1390703, bill25:1763729, bill26:692509, cir24:915, cir25:863, cir26:295, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'Alta volumen · Catarata'}, /* AUTO */
+    {name:'Dr. M. Jaramillo M.', sheetName:'DR. MIGUEL JARAMILLO MARTINEZ', bill24:889091, bill25:1750688, bill26:727771, cir24:134, cir25:236, cir26:92, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'Vitreoretina · Catarata'}, /* AUTO */
+    {name:'Dr. J.E. Jaramillo N.', sheetName:'DR. JORGE EMILIO JARAMILLO NOGUERA', bill24:1414026, bill25:757236, bill26:12885, cir24:194, cir25:97, cir26:1, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'Retirado 2025'}, /* AUTO */
+    {name:'Dr. J.A. Jaramillo H.', sheetName:'DR. JORGE ALEJANDRO JARAMILLO HENRIQUEZ', bill24:526311, bill25:1185346, bill26:486693, cir24:66, cir25:117, cir26:53, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'Catarata · Córnea'}, /* AUTO */
+    {name:'Dr. J.G. Sánchez M.', sheetName:'DR. JUAN GONZALO SANCHEZ MONTOYA', bill24:210306, bill25:924652, bill26:446346, cir24:33, cir25:200, cir26:118, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'Glaucoma · Catarata'}, /* AUTO */
+    {name:'Dr. B.A. Ramírez S.', sheetName:'DR. BORIS ARTURO RAMIREZ SERAFINOFF', bill24:389869, bill25:666632, bill26:328683, cir24:331, cir25:525, cir26:241, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'Catarata · Refractiva'}, /* AUTO */
+    {name:'Dr. J.A. Jaramillo S.', sheetName:'DR. JOSE AGUSTIN JARAMILLO SOLA', bill24:296152, bill25:699091, bill26:328109, cir24:63, cir25:118, cir26:50, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'LIO · Córnea'}, /* AUTO */
+    {name:'Dr. J.C. Gil Muñoz', sheetName:'DR. JUAN CARLOS GIL MUÑOZ', bill24:240702, bill25:400033, bill26:123188, cir24:133, cir25:212, cir26:71, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'Catarata'}, /* AUTO */
+    {name:'Dra. C. Sardi Correa', sheetName:'DRA. CAROLINA SARDI CORREA', bill24:231289, bill25:338178, bill26:113220, cir24:28, cir25:35, cir26:23, lio_cir24:0, lio_cir25:0, lio_cir26:0, lio_uni24:0, lio_uni25:0, lio_uni26:0, esp:'Refractiva'}, /* AUTO */
   ],
   // Por tipo de procedimiento (facturación, miles COP) — actualización manual
   tipos:['Catarata (Facoemulsif.)','LIOs Premium','PRK (Refractiva)','LASIK (Refractiva)','Vitrectomía','Blefaroplastia','LIO Fáquico','Crosslinking','Otros'],
@@ -6873,12 +6882,54 @@ function buildComLentes(){
   const C24='rgba(68,108,179,0.82)',B24='rgba(68,108,179,1)';
   const C25='rgba(45,197,171,0.88)',B25='rgba(45,197,171,1)';
   const C26='rgba(255,152,0,0.85)',B26='rgba(255,152,0,1)';
+  // Colores específicos LIO: cirugías=teal-oscuro, lentes=violeta (diferencia visual clara)
+  const LC='rgba(38,166,154,0.85)', LCB='rgba(38,166,154,1)';   // Cirugías de lente
+  const LU='rgba(149,117,205,0.85)',LUB='rgba(149,117,205,1)';  // Lentes implantados
   const _abbr2=name=>{const p=name.replace(/^Dr[a]?\. /,'').split(' ');return(p[0]+(p[1]?' '+p[1]:'')).substring(0,14);};
 
   const {months:_ms, partial:_pt}=cfYtdMonths();
   const mLbl=CF.months.size>0?[...CF.months].sort((a,b)=>a-b).map(m=>MN[m]).join(', '):null;
   const _yrBadge=[...CF.years].sort().join(', ');
   const _showMs=CF.months.size>0?[...CF.months].sort((a,b)=>a-b):[..._ms].sort((a,b)=>a-b);
+
+  // ═══ LIO HELPERS — Unidad de Negocio Lentes ═══
+  // Solo filas tipo=LIOS en el sheet. 1 fila = 1 cirugía (paciente-evento).
+  // COM.lio_cir_mYY = nº cirugías por mes (clínica completa)
+  // COM.lio_uni_mYY = nº lentes implantados por mes (suma columna R Cantidad)
+  // CIR.cirujanos[i].lio_cir/uniYY = totales anuales por médico
+  const _lioMonthArr=(y,which)=>{
+    const k='lio_'+which+'_m'+(y===2024?'24':y===2025?'25':'26');
+    return COM[k]||new Array(12).fill(0);
+  };
+  // Totales clínica para período seleccionado (respeta CF.months y _pt)
+  const _lioY=(y,which)=>{
+    const arr=_lioMonthArr(y,which);
+    let v=0; _ms.forEach(m=>v+=arr[m-1]||0);
+    if(_pt) v+=Math.round((arr[_pt.month-1]||0)*_pt.factor);
+    return v;
+  };
+  // Totales por médico (anual completo — no hay monthly per-doctor)
+  const _lioDrY=(y,which)=>{
+    const k='lio_'+which+(y===2024?'24':y===2025?'25':'26');
+    if(CF.doctors.size===0) return CIR.cirujanos.reduce((s,c)=>s+(c[k]||0),0);
+    return CIR.cirujanos.filter(c=>CF.doctors.has(c.name)).reduce((s,c)=>s+(c[k]||0),0);
+  };
+  // Para KPIs/clínica completa usa _lioY; para filtro médico usa _lioDrY
+  const _useDrFilter=CF.doctors.size>0;
+  const lcir24=_useDrFilter?_lioDrY(2024,'cir'):_lioY(2024,'cir');
+  const lcir25=_useDrFilter?_lioDrY(2025,'cir'):_lioY(2025,'cir');
+  const lcir26=_useDrFilter?_lioDrY(2026,'cir'):_lioY(2026,'cir');
+  const luni24=_useDrFilter?_lioDrY(2024,'uni'):_lioY(2024,'uni');
+  const luni25=_useDrFilter?_lioDrY(2025,'uni'):_lioY(2025,'uni');
+  const luni26=_useDrFilter?_lioDrY(2026,'uni'):_lioY(2026,'uni');
+  // Facturación LIOs: COM.v24/25/26[2] (índice 2 = 'LIOs ★')
+  const _lioFactY=y=>{
+    if(_useDrFilter) return 0; // No tenemos facturación LIOs por médico
+    return (y===2024?COM.v24:y===2025?COM.v25:COM.v26)[2]||0;
+  };
+  const _hasLioData=(lcir24+lcir25+lcir26+luni24+luni25+luni26)>0;
+  const _ratio=(u,c)=>c>0?(u/c).toFixed(2):'—';
+  const _pctBilat=(u,c)=>c>0?(((u-c)/c)*100).toFixed(0)+'%':'—'; // (lentes − cirugías) / cirugías = % bilateral
 
   // Billing: sum selected tipos for a year+period
   const _tipoTotalY=y=>{
@@ -6925,7 +6976,29 @@ function buildComLentes(){
     <div style="display:flex;gap:6px;flex-wrap:wrap">${_tipoChips}</div>
   </div>
 
-  <div style="font-size:12px;font-weight:700;color:#1a3a2a;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.05em">💰 Facturación</div>
+  <div style="background:linear-gradient(135deg,#f5f0fa 0%,#eef5f3 100%);border-radius:10px;padding:14px 16px;margin-bottom:18px;border-left:4px solid #9575cd">
+    <div style="font-size:13px;font-weight:700;color:#5e35b1;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">🎯 Unidad de Negocio Lentes</div>
+    <div style="font-size:11px;color:#607d76;margin-bottom:14px">Solo filas con <strong>Tipo = LIOS</strong>. <strong>1 fila</strong> = 1 cirugía de lente (paciente-evento). <strong>Cantidad (col R)</strong> = nº de lentes implantados (1 unilateral, 2 bilateral). ${_useDrFilter?'<span style="color:#ff9800;font-weight:600">⚠️ Filtro médico activo:</span> totales <strong>anuales</strong> (no monthly per-doctor).':''}</div>
+    ${!_hasLioData?'<div style="background:#fff3e0;border-radius:6px;padding:10px 12px;font-size:11.5px;color:#e65100;margin-bottom:10px">⏳ <strong>Esperando primer auto-sync con columnas Q+R.</strong> Despliega el Apps Script actualizado y ejecuta <code>syncDashboard()</code> manualmente para poblar estos datos.</div>':''}
+    <div class="kpis k4" style="margin-bottom:0">
+      ${CF.years.has(2024)?kpiCard('👁️ Cirugías Lente 2024',lcir24.toLocaleString(),'pacientes-evento'):''}
+      ${CF.years.has(2025)?kpiCard('👁️ Cirugías Lente 2025',lcir25.toLocaleString(),fp(pctVar(lcir25,lcir24))+' vs 2024'):''}
+      ${CF.years.has(2026)?kpiCard('👁️ Cirugías Lente 2026'+(mLbl?' · '+mLbl:''),lcir26.toLocaleString(),fp(pctVar(lcir26,lcir25))+' vs 2025'):''}
+      ${CF.years.has(2026)?kpiCard('💎 Lentes Implantados 2026'+(mLbl?' · '+mLbl:''),luni26.toLocaleString(),'ratio '+_ratio(luni26,lcir26)+'/cir · '+_pctBilat(luni26,lcir26)+' bilateral'):(CF.years.has(2025)?kpiCard('💎 Lentes Implantados 2025',luni25.toLocaleString(),'ratio '+_ratio(luni25,lcir25)+'/cir · '+_pctBilat(luni25,lcir25)+' bilateral'):'')}
+    </div>
+  </div>
+
+  ${_hasLioData?`<div class="g2" style="margin-bottom:18px">
+    ${chartCard('ch-lnl-uni-mes','📊 Evolución mensual — Cirugías vs Lentes','Comparativo mensual por año'+(mLbl?' — '+mLbl:''),240,'')}
+    ${chartCard('ch-lnl-uni-dr','👨‍⚕️ Por médico — Cirugías y Lentes implantados','Totales anuales por cirujano',240,'')}
+  </div>
+  <div class="insight" style="margin-bottom:22px;background:#f5f0fa;border-left-color:#9575cd">
+    💡 <strong>Ratio Lentes/Cirugía:</strong> indica el % de pacientes con cirugía bilateral (ambos ojos). Ratio 1.0 = todos unilaterales · 2.0 = todos bilaterales. El típico en oftalmología es 1.2–1.5.
+    ${lcir26>0?`<br>📈 <strong>2026${mLbl?' '+mLbl:''}:</strong> ${lcir26.toLocaleString()} cirugías · ${luni26.toLocaleString()} lentes · ratio ${_ratio(luni26,lcir26)} · ${_pctBilat(luni26,lcir26)} bilateral.`:''}
+  </div>`:''}
+
+  <div style="border-top:2px solid #dce9e5;margin:0 0 14px;padding-top:14px"></div>
+  <div style="font-size:12px;font-weight:700;color:#1a3a2a;margin:4px 0 10px;text-transform:uppercase;letter-spacing:.05em">💰 Facturación — por Tipo de Procedimiento Seleccionado</div>
   <div class="kpis k3" style="margin-bottom:16px">
     ${CF.years.has(2024)?kpiCard('Selección 2024',fv(tot24),(allTot24>0?(tot24/allTot24*100).toFixed(1)+'% del total':'')):''}
     ${CF.years.has(2025)?kpiCard('Selección 2025',fv(tot25),fp(pctVar(tot25,tot24))+' vs 2024 · '+(allTot25>0?(tot25/allTot25*100).toFixed(1)+'% del total':'')):''}
@@ -7086,6 +7159,86 @@ function buildComLentes(){
         y:{ticks:{font:{size:10}},grid:{color:'#eef2f1'},
            title:{display:true,text:'Nº de cirugías',font:{size:11},color:'#1a3a2a'}}}}});
   }
+
+  // ═══ LIO Chart A: Evolución mensual — Cirugías vs Lentes ═══
+  // Solo se renderiza si hay datos (after first sync con columnas Q+R)
+  if(_hasLioData){
+    const _mnsL=_showMs.map(m=>MN[m]);
+    const _dsLA=[];
+    // Para cada año seleccionado: 2 series (cirugías, lentes) — agrupadas por año
+    [[2024,'24'],[2025,'25'],[2026,'26']].forEach(([y,suf])=>{
+      if(!CF.years.has(y)) return;
+      const ac=COM['lio_cir_m'+suf]||new Array(12).fill(0);
+      const au=COM['lio_uni_m'+suf]||new Array(12).fill(0);
+      _dsLA.push({
+        label:'👁️ Cir '+y,
+        data:_showMs.map(m=>ac[m-1]||null),
+        backgroundColor:y===2024?'rgba(68,108,179,0.75)':y===2025?LC:'rgba(255,152,0,0.85)',
+        borderColor:y===2024?B24:y===2025?LCB:'rgba(255,152,0,1)',
+        borderWidth:1,borderRadius:3,stack:'cir_'+y
+      });
+      _dsLA.push({
+        label:'💎 Lentes '+y,
+        data:_showMs.map(m=>au[m-1]||null),
+        backgroundColor:y===2024?'rgba(68,108,179,0.40)':y===2025?LU:'rgba(255,152,0,0.45)',
+        borderColor:y===2024?'rgba(68,108,179,0.85)':y===2025?LUB:'rgba(255,152,0,0.85)',
+        borderWidth:1,borderRadius:3,stack:'uni_'+y
+      });
+    });
+    mkChart('ch-lnl-uni-mes',{type:'bar',data:{labels:_mnsL,datasets:_dsLA},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:11,font:{size:10},padding:8}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(12,48,40,.95)',padding:10,bodyFont:{size:11},
+          callbacks:{label:c=>c.raw!=null?` ${c.dataset.label}: ${c.raw.toLocaleString()}`:''}}},
+      scales:{x:{ticks:{font:{size:11}},grid:{display:false}},
+        y:{ticks:{font:{size:10}},grid:{color:'#eef2f1'},
+           title:{display:true,text:'Unidades',font:{size:11},color:'#1a3a2a'}}}}});
+
+    // ═══ LIO Chart B: Por médico — Cirugías y Lentes (anual) ═══
+    const _cirLio=[...CIR.cirujanos]
+      .filter(c=>CF.doctors.size===0||CF.doctors.has(c.name))
+      .sort((a,b)=>(b.lio_cir25||0)-(a.lio_cir25||0));
+    const _drLioDs=[];
+    [[2024,'24',C24,B24],[2025,'25',LC,LCB],[2026,'26','rgba(255,152,0,0.85)','rgba(255,152,0,1)']].forEach(([y,suf,bg,bc])=>{
+      if(!CF.years.has(y)) return;
+      // Cirugías
+      _drLioDs.push({
+        label:'👁️ Cir '+y,
+        data:_cirLio.map(c=>c['lio_cir'+suf]||null),
+        backgroundColor:bg,borderColor:bc,borderWidth:1,borderRadius:3,stack:'g'+y
+      });
+      // Lentes (color más claro de la misma familia)
+      _drLioDs.push({
+        label:'💎 Lentes '+y,
+        data:_cirLio.map(c=>{
+          const u=c['lio_uni'+suf]||0, ci=c['lio_cir'+suf]||0;
+          return u>ci?u-ci:null; // muestra solo el "extra" bilateral
+        }),
+        backgroundColor:bg.replace('0.85','0.40').replace('0.82','0.40'),
+        borderColor:bc.replace('1)','0.7)'),
+        borderWidth:1,borderRadius:3,stack:'g'+y
+      });
+    });
+    mkChart('ch-lnl-uni-dr',{type:'bar',data:{labels:_cirLio.map(c=>_abbr2(c.name)),datasets:_drLioDs},options:{
+      plugins:{legend:{position:'top',labels:{boxWidth:11,font:{size:10},padding:8}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:12},bodyFont:{size:11},
+          callbacks:{title:items=>_cirLio[items[0].dataIndex].name,
+            label:c=>c.raw!=null?` ${c.dataset.label}: ${c.raw}`:'',
+            afterBody:items=>{
+              if(!items.length) return [];
+              const c=_cirLio[items[0].dataIndex];
+              const lines=[];
+              [['24',2024],['25',2025],['26',2026]].forEach(([suf,y])=>{
+                if(!CF.years.has(y)) return;
+                const ci=c['lio_cir'+suf]||0, un=c['lio_uni'+suf]||0;
+                if(ci>0) lines.push('Ratio '+y+': '+(un/ci).toFixed(2)+'/cir');
+              });
+              return lines;
+            }}}},
+      scales:{x:{stacked:true,ticks:{font:{size:10,weight:'600'},color:'#1a3a2a',maxRotation:35,minRotation:20,autoSkip:false},grid:{display:false}},
+        y:{stacked:true,ticks:{font:{size:10}},grid:{color:'#eef2f1'},
+           title:{display:true,text:'Cirugías + bilaterales',font:{size:11},color:'#1a3a2a'}}}}});
+  }
+
   requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
 
