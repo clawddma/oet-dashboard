@@ -5869,12 +5869,23 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
 
   // ─── Gráfica 4: Honorarios pagados por OET — mensual
   {
-    const _mnsLbl=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const _MNamesHon=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    // Eje X: si hay filtro de meses, solo esos; sino, YTD (último con datos en años seleccionados)
+    const _yrsHonMP=Array.from(CF.years).sort();
+    const _msHonManual=CF.months.size>0?[...CF.months].sort((a,b)=>a-b):null;
+    const _lastMHon=Math.max(
+      ...(_yrsHonMP.includes(2026)?[HONORARIOS.m26.reduce((a,v,i)=>v>0?i+1:a,0)]:[0]),
+      ...(_yrsHonMP.includes(2025)?[12]:[0]),
+      ...(_yrsHonMP.includes(2024)?[12]:[0]),
+      1
+    );
+    const _msHonM=_msHonManual||Array.from({length:_lastMHon},(_,i)=>i+1);
+    const _mnsLbl=_msHonM.map(m=>_MNamesHon[m-1]);
     const _honMDs=[];
-    Array.from(CF.years).sort().forEach(y=>{
+    _yrsHonMP.forEach(y=>{
       const arr=y===2024?HONORARIOS.m24:y===2025?HONORARIOS.m25:HONORARIOS.m26;
-      const data=arr.map((v,i)=>{
-        if(CF.months.size>0&&!CF.months.has(i+1)) return null;
+      const data=_msHonM.map(m=>{
+        const v=arr[m-1]||0;
         return v>0?v:null;
       });
       _honMDs.push({
@@ -5912,29 +5923,39 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
 
   // Monthly surgery chart — shows when month filter OR doctor filter active
   if(mLbl || CF.doctors.size>0){
-    const mnsAll=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const _MNamesMes=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const mesDs=[];
     const mesClrs=['rgba(45,197,171,0.35)','rgba(45,197,171,0.85)','rgba(255,152,0,0.8)'];
     const mesYrs=[2024,2025,2026];
     const _yrsMes=Array.from(CF.years).sort();
+    const _multiYearMes=_yrsMes.length>1;
+    // Eje X respeta filtro de meses (CF.months) o cae a YTD
+    const _msMesManual=CF.months.size>0?[...CF.months].sort((a,b)=>a-b):null;
+    const _lastMRefM=Math.max(
+      ...(_yrsMes.includes(2026)?[CIR.mes_26.reduce((a,v,i)=>v>0?i+1:a,0)]:[0]),
+      ...(_yrsMes.includes(2025)?[12]:[0]),
+      ...(_yrsMes.includes(2024)?[12]:[0]),
+      1
+    );
+    const _msMes=_msMesManual||Array.from({length:_lastMRefM},(_,i)=>i+1);
+    const _mnsMes=_msMes.map(m=>_MNamesMes[m-1]);
 
     if(CF.doctors.size>0){
       // Stacked by doctor within each year group (stack key per year)
       const _selDrsMes=[...CF.doctors];
       _yrsMes.forEach(y=>{
-        const yLbl=String(y);
         _selDrsMes.forEach((name,di)=>{
-          const data=Array.from({length:12},(_,mi)=>{
-            const m=mi+1;
+          const data=_msMes.map(m=>{
             if(!DMON[y]||!DMON[y][m]) return null;
             const dr=DMON[y][m].find(d=>d.name===name);
             return dr&&dr.cir>0?dr.cir:null;
           });
           mesDs.push({
-            label:_abbr(name)+' '+yLbl,
+            label:_abbr(name),
             data,
             backgroundColor:_drPalette[di%_drPalette.length],
-            borderRadius:2, stack:'mes'+y
+            borderRadius:2, stack:'mes'+y,
+            _yearTag:y, _drIdx:di
           });
         });
       });
@@ -5944,23 +5965,49 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
         const arr=y===2024?CIR.mes_24:y===2025?CIR.mes_25:CIR.mes_26;
         mesDs.push({
           label:String(y),
-          data:arr.map((v,mi)=>v||null),
-          backgroundColor:arr.map((v,mi)=>
-            mArr2.includes(mi+1)
+          data:_msMes.map(m=>arr[m-1]||null),
+          backgroundColor:_msMes.map(m=>
+            mArr2.includes(m)
               ? (y===2026?'rgba(255,152,0,1)':'rgba(45,197,171,1)')
               : mesClrs[mesYrs.indexOf(y)]
           ),borderRadius:2
         });
       });
     }
-    mkChart('ch-cir-mes',{type:'bar',data:{labels:mnsAll,datasets:mesDs},options:{
+    mkChart('ch-cir-mes',{type:'bar',data:{labels:_mnsMes,datasets:mesDs},options:{
       plugins:{
-        legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:8}},
+        legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:8,
+          // Dedupe por médico cuando hay multi-año (1 entrada por nombre)
+          generateLabels:CF.doctors.size>0?(chart)=>{
+            const seen=new Set();
+            return chart.data.datasets.map((ds,i)=>{
+              const key=ds._drIdx;
+              if(key===undefined||seen.has(key)) return null;
+              seen.add(key);
+              return {text:ds.label,fillStyle:ds.backgroundColor,strokeStyle:ds.backgroundColor,
+                hidden:!chart.isDatasetVisible(i),datasetIndex:i};
+            }).filter(Boolean);
+          }:undefined
+        },
+          onClick:CF.doctors.size>0?(e,legendItem,legend)=>{
+            const chart=legend.chart;
+            const drIdx=chart.data.datasets[legendItem.datasetIndex]._drIdx;
+            const visible=chart.isDatasetVisible(legendItem.datasetIndex);
+            chart.data.datasets.forEach((ds,i)=>{
+              if(ds._drIdx===drIdx) chart.setDatasetVisibility(i,!visible);
+            });
+            chart.update();
+          }:undefined
+        },
         tooltip:{
           mode:'index',intersect:false,
           backgroundColor:'rgba(12,48,40,.95)',padding:8,bodyFont:{size:11},
           callbacks:{
-            label:c=>c.raw!=null?` ${c.dataset.label}: ${c.parsed.y.toLocaleString()} cir.`:'',
+            label:c=>{
+              if(c.raw==null) return '';
+              const yTag=c.dataset._yearTag;
+              return _multiYearMes&&yTag?` ${c.dataset.label} '${String(yTag).slice(-2)}: ${c.parsed.y.toLocaleString()} cir.`:` ${c.dataset.label}: ${c.parsed.y.toLocaleString()} cir.`;
+            },
             footer:CF.doctors.size>1?items=>{
               const totByYear={};
               items.forEach(i=>{if(i.raw!=null){const y=i.dataset.stack?.replace('mes','');totByYear[y]=(totByYear[y]||0)+i.parsed.y;}});
