@@ -4832,8 +4832,18 @@ function buildComLineas(){
   if(mLbl){
     // ── MONTHLY VIEW — solo datos de facturación por servicio (Google Sheets) ─
     // aggMonthIng: usa COM.ing_m (facturación real Google Sheets, no EEFF)
+    // Respeta filtro de médico: si hay médicos seleccionados, suma directo desde DMON
     function aggMonthIng(y){
       const ms=mArr2.length>0?mArr2:[1,2,3,4,5,6,7,8,9,10,11,12];
+      if(CF.doctors.size>0){
+        if(!DMON[y]) return null;
+        let t=0;
+        ms.forEach(m=>{
+          if(!DMON[y][m]) return;
+          DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name)) t+=d.bill;});
+        });
+        return t>0?t:null;
+      }
       const arr=y===2024?COM.ing_m24:y===2025?COM.ing_m25:COM.ing_m26;
       const vals=ms.map(m=>arr[m-1]||0).filter(v=>v>0);
       return vals.length?vals.reduce((s,v)=>s+v,0):null;
@@ -4847,11 +4857,23 @@ function buildComLineas(){
     const liT24=li24, liT25=li25, liT26=li26;
     const liTotal26=liT26.reduce((a,b)=>a+b,0);
     const liTotal25=liT25.reduce((a,b)=>a+b,0);
-    // Surgery counts for selected months (total clinic, used in proc view KPIs)
-    const _sumCirMLn=(arr)=>mArr2.reduce((s,m)=>s+(arr[m-1]||0),0);
-    const cir24m=_sumCirMLn(CIR.mes_24);
-    const cir25m=_sumCirMLn(CIR.mes_25);
-    const cir26m=_sumCirMLn(CIR.mes_26);
+    // Surgery counts para los meses seleccionados — respeta filtro de médico
+    const _sumCirMLn=(y)=>{
+      if(CF.doctors.size>0){
+        if(!DMON[y]) return 0;
+        let t=0;
+        mArr2.forEach(m=>{
+          if(!DMON[y][m]) return;
+          DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name)) t+=d.cir;});
+        });
+        return t;
+      }
+      const arr=y===2024?CIR.mes_24:y===2025?CIR.mes_25:CIR.mes_26;
+      return mArr2.reduce((s,m)=>s+(arr[m-1]||0),0);
+    };
+    const cir24m=_sumCirMLn(2024);
+    const cir25m=_sumCirMLn(2025);
+    const cir26m=_sumCirMLn(2026);
 
     el.innerHTML=`
     <div class="itog-grp" style="margin-bottom:14px">
@@ -4927,13 +4949,21 @@ function buildComLineas(){
     });
 
     // ── Contexto anual: todos los meses resaltando el seleccionado ───────────
+    // Fuente: COM.ing_m (Google Sheets, mismo origen que la sección) — respeta médico vía DMON
     const cmpDs=[];
     const cmpClrs=['rgba(45,197,171,0.3)','rgba(45,197,171,0.8)','rgba(255,193,7,0.75)'];
     const yrsArr=[2024,2025,2026];
+    const _ingMonthDr=(y,m)=>{
+      if(CF.doctors.size===0){
+        const arr=y===2024?COM.ing_m24:y===2025?COM.ing_m25:COM.ing_m26;
+        return arr[m-1]||null;
+      }
+      if(!DMON[y]||!DMON[y][m]) return null;
+      let t=0; DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name)) t+=d.bill;});
+      return t>0?t:null;
+    };
     Array.from(CF.years).sort().forEach((y,ki)=>{
-      const allMnData=[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>{
-        const d=D.find(x=>x.y===y&&x.m===m); return d?d.ing:null;
-      });
+      const allMnData=[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>_ingMonthDr(y,m));
       cmpDs.push({
         label:String(y),data:allMnData,
         backgroundColor:[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>
@@ -5495,11 +5525,23 @@ function buildComCirujanos(){
   function drBill(c,y){ return y===2024?_cdrLookup(_cdr24,c.name).bill:y===2025?_cdrLookup(_cdr25,c.name).bill:_cdrLookup(_cdr26,c.name).bill; }
   function drCir(c,y){ return y===2024?_cdrLookup(_cdr24,c.name).cir:y===2025?_cdrLookup(_cdr25,c.name).cir:_cdrLookup(_cdr26,c.name).cir; }
 
-  // Monthly surgery counts (total, not per surgeon — only total available)
-  function sumCirM(arr){ return mArr2.reduce((s,m)=>s+(arr[m-1]||0),0); }
-  const cir24m=mLbl?sumCirM(CIR.mes_24):null;
-  const cir25m=mLbl?sumCirM(CIR.mes_25):null;
-  const cir26m=mLbl?sumCirM(CIR.mes_26):null;
+  // Monthly surgery counts — respeta filtro de médico
+  function sumCirM(y){
+    if(CF.doctors.size>0){
+      if(!DMON[y]) return 0;
+      let t=0;
+      mArr2.forEach(m=>{
+        if(!DMON[y][m]) return;
+        DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name)) t+=d.cir;});
+      });
+      return t;
+    }
+    const arr=y===2024?CIR.mes_24:y===2025?CIR.mes_25:CIR.mes_26;
+    return mArr2.reduce((s,m)=>s+(arr[m-1]||0),0);
+  }
+  const cir24m=mLbl?sumCirM(2024):null;
+  const cir25m=mLbl?sumCirM(2025):null;
+  const cir26m=mLbl?sumCirM(2026):null;
 
   const C24='rgba(68,108,179,0.82)',B24='rgba(68,108,179,1)';
   const C25='rgba(45,197,171,0.88)',B25='rgba(45,197,171,1)';
@@ -5513,12 +5555,12 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
   </div>
   ${mLbl?`
   <div class="kpis k3" style="margin-bottom:12px">
-    ${CF.years.has(2024)&&cir24m>0?kpiCard('Cirugías '+mLbl+'-24',cir24m.toLocaleString(),'Total clínica ese mes'):''}
+    ${CF.years.has(2024)&&cir24m>0?kpiCard('Cirugías '+mLbl+'-24',cir24m.toLocaleString(),CF.doctors.size>0?'Médicos filtrados':'Total clínica ese mes'):''}
     ${CF.years.has(2025)&&cir25m>0?kpiCard('Cirugías '+mLbl+'-25',cir25m.toLocaleString(),fp(pctVar(cir25m,cir24m||0))+' vs '+mLbl+'-24'):''}
     ${CF.years.has(2026)&&cir26m>0?kpiCard('Cirugías '+mLbl+'-26',cir26m.toLocaleString(),fp(pctVar(cir26m,cir25m||0))+' vs '+mLbl+'-25'):''}
   </div>
   <div class="insight" style="margin-bottom:8px;font-size:11px;color:#607d76">
-    ℹ️ Facturación por médico distribuida proporcionalmente al mes ${mLbl}. Cirugías arriba = total clínica mes ${mLbl}.
+    ℹ️ Facturación por médico distribuida proporcionalmente al mes ${mLbl}. Cirugías arriba = ${CF.doctors.size>0?'suma de médicos filtrados':'total clínica'} mes ${mLbl}.
   </div>`:''}
   <div class="kpis k3" style="margin-bottom:16px">
     ${kpiCard('Cirujano #1 Facturación',topBill.name,fv(topBill.bill)+' '+_yrBadge)}
