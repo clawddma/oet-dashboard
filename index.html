@@ -5979,9 +5979,19 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
 
   // ─── Gráfica: Evolución mensual de facturación apilada por cirujano
   {
-    const _mnsEv=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const _MNamesEv=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const _yrsEv=Array.from(CF.years).sort();
     const _multiYear=_yrsEv.length>1;
+    // Meses a mostrar: filtro manual si existe, sino YTD (meses con datos en algún año seleccionado)
+    const _msEvManual=CF.months.size>0?[...CF.months].sort((a,b)=>a-b):null;
+    const _lastMRef=Math.max(
+      ...(_yrsEv.includes(2026)?[CIR.mes_26.reduce((a,v,i)=>v>0?i+1:a,0)]:[0]),
+      ...(_yrsEv.includes(2025)?[12]:[0]),
+      ...(_yrsEv.includes(2024)?[12]:[0]),
+      1
+    );
+    const _msEv=_msEvManual||Array.from({length:_lastMRef},(_,i)=>i+1);
+    const _mnsEv=_msEv.map(m=>_MNamesEv[m-1]);
     const _evolDSala=(y,m,name)=>{
       if(!LMON[y]||!LMON[y][m]||!DMON[y]||!DMON[y][m]) return null;
       const clinicDS=LMON[y][m][0]||0; if(!clinicDS) return null;
@@ -5996,31 +6006,65 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
     const _evDs=[];
     _yrsEv.forEach(y=>{
       _drSorted.forEach((c,di)=>{
-        const data=Array.from({length:12},(_,mi)=>{
-          const m=mi+1;
+        const data=_msEv.map(m=>{
           if(!DMON[y]||!DMON[y][m]) return null;
           if(_isDSala) return _evolDSala(y,m,c.name);
           const entry=DMON[y][m].find(d=>d.name===c.name);
           return entry&&entry.bill>0?entry.bill:null;
         });
         _evDs.push({
-          label:_abbr(c.name)+(_multiYear?` '${String(y).slice(-2)}`:''),
+          label:_abbr(c.name),
           data,
           backgroundColor:_drPalette[di%_drPalette.length],
           borderRadius:3,
-          stack:_multiYear?'ev'+y:'ev'
+          stack:_multiYear?'ev'+y:'ev',
+          _yearTag:y, // metadata para tooltip
+          _drIdx:di   // para dedup de leyenda
         });
       });
     });
     const _evolYTitle=_isDSala?'D. Sala — derechos de cirugía (miles COP)':'Facturación total (miles COP)';
     mkChart('ch-cir-evol',{type:'bar',data:{labels:_mnsEv,datasets:_evDs},options:{
       plugins:{
-        legend:{position:'right',align:'start',labels:{boxWidth:12,font:{size:11},padding:8}},
+        legend:{position:'right',align:'start',
+          labels:{boxWidth:12,font:{size:11},padding:8,
+            // Dedupe: 1 entrada por médico (no por año), aunque haya múltiples años seleccionados
+            generateLabels:(chart)=>{
+              const seen=new Set();
+              return chart.data.datasets.map((ds,i)=>{
+                const key=ds._drIdx;
+                if(seen.has(key)) return null;
+                seen.add(key);
+                return {
+                  text:ds.label,
+                  fillStyle:ds.backgroundColor,
+                  strokeStyle:ds.backgroundColor,
+                  hidden:!chart.isDatasetVisible(i),
+                  datasetIndex:i
+                };
+              }).filter(Boolean);
+            }
+          },
+          // Click en leyenda toggle TODOS los datasets del mismo médico (todos los años)
+          onClick:(e,legendItem,legend)=>{
+            const chart=legend.chart;
+            const drIdx=chart.data.datasets[legendItem.datasetIndex]._drIdx;
+            const visible=chart.isDatasetVisible(legendItem.datasetIndex);
+            chart.data.datasets.forEach((ds,i)=>{
+              if(ds._drIdx===drIdx) chart.setDatasetVisibility(i,!visible);
+            });
+            chart.update();
+          }
+        },
         tooltip:{
           mode:'index',intersect:false,
           backgroundColor:'rgba(12,48,40,.95)',padding:10,titleFont:{size:12,weight:'600'},bodyFont:{size:11},
           callbacks:{
-            label:c=>c.raw!=null?` ${c.dataset.label}: ${fv(c.raw)}`:'',
+            label:c=>{
+              if(c.raw==null) return '';
+              const yTag=c.dataset._yearTag;
+              return _multiYear?` ${c.dataset.label} '${String(yTag).slice(-2)}: ${fv(c.raw)}`:` ${c.dataset.label}: ${fv(c.raw)}`;
+            },
             footer:items=>{
               if(_multiYear){
                 const totByStack={};
