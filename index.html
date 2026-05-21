@@ -961,13 +961,13 @@ const COM = {
   v24: [3911625,2419606,1763875,794067,534799,207394], /* AUTO */
   v25: [5682677,3663733,3128993,910896,780285,363360], /* AUTO */
 
-  v26: [2896744,1565591,1028604,418530,319393,173786],   // May 2026 (YTD) /* AUTO */
+  v26: [3024900,1641881,1095551,430174,329771,177687],   // May 2026 (YTD) /* AUTO */
   // Facturación mensual real por año — Google Sheets (todos los tipos) — auto-sync
   ing_m24: [502408,743383,800424,877574,801279,848154,815805,987861,896286,753531,1041208,938560],  /* AUTO-ING */
   ing_m25: [976326,959050,1095783,1202319,1323610,1010050,1417183,1537444,1054156,1643647,1496749,1649307],  /* AUTO-ING */
-  ing_m26: [1217968,1554089,1658337,1531112,848378,0,0,0,0,0,0,0],  /* AUTO-ING */
+  ing_m26: [1217968,1554089,1658337,1531112,1163104,0,0,0,0,0,0,0],  /* AUTO-ING */
   pct25: [37.0,23.8,20.4,5.9,5.1,2.4],
-  cirugias: {v24:2955, v25:3918, v26:1812, pct:32.6}, /* AUTO */
+  cirugias: {v24:2955, v25:3918, v26:1892, pct:32.6}, /* AUTO */
   pacientes: {v24:8884, v25:10122, pct:13.9},
   // LIOs — Unidad de Negocio Lentes — auto-sync (espera primer sync con columnas Q+R)
   //  lio_cir_mYY = nº de cirugías de lente por mes (1 fila LIOS = 1 cirugía-paciente)
@@ -1005,7 +1005,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,371,426,415,225,0,0,0,0,0,0,0],  // total=1812 (2026-05-21 08:30) /* AUTO */
+  mes_26:[375,371,426,415,305,0,0,0,0,0,0,0],  // total=1892 (2026-05-21 08:42) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -1022,7 +1022,7 @@ const CIR = {
 //   cirujanos: [{name,bill,cir}, ...]     // top cirujanos MTD
 // };
 // ==MTD_DATA_START==
-const MTD_RAW = {y:2026,m:5,d:21,ing:848378,cir:225,lio_cir:42,lio_uni:47,daysInMonth:31,lineas:[352157,192737,87270,68274,56322,30539],cirujanos:[{name:'Dr. M.A. Jaramillo N.',bill:143767,cir:23},{name:'Dr. Jon K. Balparda',bill:52825,cir:28},{name:'Dr. M. Jaramillo M.',bill:140239,cir:19},{name:'Dr. J.E. Jaramillo N.',bill:8103,cir:0},{name:'Dr. J.A. Jaramillo H.',bill:54404,cir:6},{name:'Dr. J.G. Sánchez M.',bill:81631,cir:20},{name:'Dr. B.A. Ramírez S.',bill:23491,cir:23},{name:'Dr. J.A. Jaramillo S.',bill:36564,cir:9},{name:'Dr. J.C. Gil Muñoz',bill:19705,cir:12},{name:'Dra. C. Sardi Correa',bill:35928,cir:6}]}; /* AUTO-MTD */
+const MTD_RAW = {y:2026,m:5,d:21,ing:1163104,cir:305,daysInMonth:31,lineas:[480313,269027,154216,79917,66700,34440],cirujanos:[{name:'Dr. M.A. Jaramillo N.',bill:245496,cir:39},{name:'Dr. Jon K. Balparda',bill:98193,cir:46},{name:'Dr. M. Jaramillo M.',bill:156663,cir:22},{name:'Dr. J.E. Jaramillo N.',bill:8103,cir:0},{name:'Dr. J.A. Jaramillo H.',bill:92486,cir:9},{name:'Dr. J.G. Sánchez M.',bill:84490,cir:21},{name:'Dr. B.A. Ramírez S.',bill:42726,cir:39},{name:'Dr. J.A. Jaramillo S.',bill:56647,cir:12},{name:'Dr. J.C. Gil Muñoz',bill:24672,cir:13},{name:'Dra. C. Sardi Correa',bill:35928,cir:6}]}; /* AUTO-MTD */
 // ==MTD_DATA_END==
 
 // ════════════════════════════════════════
