@@ -974,10 +974,10 @@ const COM = {
   //  lio_uni_mYY = nº de lentes implantados por mes (suma columna Cantidad)
   lio_cir_m24: [18,28,46,49,47,54,49,66,59,48,72,58],  /* AUTO-LIO */
   lio_cir_m25: [40,62,73,69,100,46,87,138,57,99,112,91],  /* AUTO-LIO */
-  lio_cir_m26: [59,85,85,75,42,0,0,0,0,0,0,0],  /* AUTO-LIO */
+  lio_cir_m26: [59,85,85,75,62,0,0,0,0,0,0,0],  /* AUTO-LIO */
   lio_uni_m24: [25,39,56,60,58,61,56,78,65,54,87,63],  /* AUTO-LIO */
   lio_uni_m25: [62,72,82,82,118,62,110,155,79,125,132,109],  /* AUTO-LIO */
-  lio_uni_m26: [71,99,103,88,47,0,0,0,0,0,0,0],  /* AUTO-LIO */
+  lio_uni_m26: [71,99,103,88,68,0,0,0,0,0,0,0],  /* AUTO-LIO */
   meta26: 23500000
 };
 
@@ -985,15 +985,15 @@ const COM = {
 const CIR = {
   // Por Facturación (ingresos que genera cada médico, miles de COP) — sheetName = nombre exacto en col W /* AUTO */
   cirujanos:[
-    {name:'Dr. M.A. Jaramillo N.', sheetName:'DR. MIGUEL ANTONIO JARAMILLO NOGUERA', bill24:2860301, bill25:4023210, bill26:1208807, cir24:402, cir25:486, cir26:143, lio_cir24:182, lio_cir25:271, lio_cir26:72, lio_uni24:231, lio_uni25:376, lio_uni26:98, esp:'Catarata · LIO Premium'}, /* AUTO */
-    {name:'Dr. Jon K. Balparda', sheetName:'DR. JON KEPA BALPARDA', bill24:1390703, bill25:1763729, bill26:695041, cir24:915, cir25:863, cir26:297, lio_cir24:70, lio_cir25:70, lio_cir26:14, lio_uni24:72, lio_uni25:74, lio_uni26:15, esp:'Alta volumen · Catarata'}, /* AUTO */
-    {name:'Dr. M. Jaramillo M.', sheetName:'DR. MIGUEL JARAMILLO MARTINEZ', bill24:889091, bill25:1750688, bill26:791197, cir24:134, cir25:236, cir26:100, lio_cir24:57, lio_cir25:121, lio_cir26:54, lio_uni24:72, lio_uni25:158, lio_uni26:70, esp:'Vitreoretina · Catarata'}, /* AUTO */
+    {name:'Dr. M.A. Jaramillo N.', sheetName:'DR. MIGUEL ANTONIO JARAMILLO NOGUERA', bill24:2860301, bill25:4023210, bill26:1310536, cir24:402, cir25:486, cir26:159, lio_cir24:182, lio_cir25:271, lio_cir26:81, lio_uni24:231, lio_uni25:376, lio_uni26:108, esp:'Catarata · LIO Premium'}, /* AUTO */
+    {name:'Dr. Jon K. Balparda', sheetName:'DR. JON KEPA BALPARDA', bill24:1390703, bill25:1763729, bill26:740408, cir24:915, cir25:863, cir26:315, lio_cir24:70, lio_cir25:70, lio_cir26:14, lio_uni24:72, lio_uni25:74, lio_uni26:15, esp:'Alta volumen · Catarata'}, /* AUTO */
+    {name:'Dr. M. Jaramillo M.', sheetName:'DR. MIGUEL JARAMILLO MARTINEZ', bill24:889091, bill25:1750688, bill26:807621, cir24:134, cir25:236, cir26:103, lio_cir24:57, lio_cir25:121, lio_cir26:55, lio_uni24:72, lio_uni25:158, lio_uni26:71, esp:'Vitreoretina · Catarata'}, /* AUTO */
     {name:'Dr. J.E. Jaramillo N.', sheetName:'DR. JORGE EMILIO JARAMILLO NOGUERA', bill24:1414026, bill25:757236, bill26:16831, cir24:194, cir25:97, cir26:1, lio_cir24:90, lio_cir25:51, lio_cir26:0, lio_uni24:107, lio_uni25:68, lio_uni26:0, esp:'Retirado 2025'}, /* AUTO */
-    {name:'Dr. J.A. Jaramillo H.', sheetName:'DR. JORGE ALEJANDRO JARAMILLO HENRIQUEZ', bill24:526311, bill25:1185346, bill26:517702, cir24:66, cir25:117, cir26:56, lio_cir24:67, lio_cir25:114, lio_cir26:50, lio_uni24:74, lio_uni25:146, lio_uni26:61, esp:'Catarata · Córnea'}, /* AUTO */
-    {name:'Dr. J.G. Sánchez M.', sheetName:'DR. JUAN GONZALO SANCHEZ MONTOYA', bill24:210306, bill25:924652, bill26:486383, cir24:33, cir25:200, cir26:129, lio_cir24:31, lio_cir25:131, lio_cir26:54, lio_uni24:38, lio_uni25:139, lio_uni26:55, esp:'Glaucoma · Catarata'}, /* AUTO */
-    {name:'Dr. B.A. Ramírez S.', sheetName:'DR. BORIS ARTURO RAMIREZ SERAFINOFF', bill24:389869, bill25:666632, bill26:336395, cir24:331, cir25:525, cir26:248, lio_cir24:3, lio_cir25:3, lio_cir26:5, lio_uni24:3, lio_uni25:3, lio_uni26:5, esp:'Catarata · Refractiva'}, /* AUTO */
-    {name:'Dr. J.A. Jaramillo S.', sheetName:'DR. JOSE AGUSTIN JARAMILLO SOLA', bill24:296152, bill25:699091, bill26:358265, cir24:63, cir25:118, cir26:58, lio_cir24:14, lio_cir25:41, lio_cir26:18, lio_uni24:16, lio_uni25:43, lio_uni26:21, esp:'LIO · Córnea'}, /* AUTO */
-    {name:'Dr. J.C. Gil Muñoz', sheetName:'DR. JUAN CARLOS GIL MUÑOZ', bill24:240702, bill25:400033, bill26:132081, cir24:133, cir25:212, cir26:78, lio_cir24:29, lio_cir25:53, lio_cir26:13, lio_uni24:29, lio_uni25:53, lio_uni26:13, esp:'Catarata'}, /* AUTO */
+    {name:'Dr. J.A. Jaramillo H.', sheetName:'DR. JORGE ALEJANDRO JARAMILLO HENRIQUEZ', bill24:526311, bill25:1185346, bill26:555785, cir24:66, cir25:117, cir26:59, lio_cir24:67, lio_cir25:114, lio_cir26:53, lio_uni24:74, lio_uni25:146, lio_uni26:64, esp:'Catarata · Córnea'}, /* AUTO */
+    {name:'Dr. J.G. Sánchez M.', sheetName:'DR. JUAN GONZALO SANCHEZ MONTOYA', bill24:210306, bill25:924652, bill26:489243, cir24:33, cir25:200, cir26:130, lio_cir24:31, lio_cir25:131, lio_cir26:55, lio_uni24:38, lio_uni25:139, lio_uni26:56, esp:'Glaucoma · Catarata'}, /* AUTO */
+    {name:'Dr. B.A. Ramírez S.', sheetName:'DR. BORIS ARTURO RAMIREZ SERAFINOFF', bill24:389869, bill25:666632, bill26:355630, cir24:331, cir25:525, cir26:264, lio_cir24:3, lio_cir25:3, lio_cir26:5, lio_uni24:3, lio_uni25:3, lio_uni26:5, esp:'Catarata · Refractiva'}, /* AUTO */
+    {name:'Dr. J.A. Jaramillo S.', sheetName:'DR. JOSE AGUSTIN JARAMILLO SOLA', bill24:296152, bill25:699091, bill26:378348, cir24:63, cir25:118, cir26:61, lio_cir24:14, lio_cir25:41, lio_cir26:19, lio_uni24:16, lio_uni25:43, lio_uni26:22, esp:'LIO · Córnea'}, /* AUTO */
+    {name:'Dr. J.C. Gil Muñoz', sheetName:'DR. JUAN CARLOS GIL MUÑOZ', bill24:240702, bill25:400033, bill26:137047, cir24:133, cir25:212, cir26:79, lio_cir24:29, lio_cir25:53, lio_cir26:15, lio_uni24:29, lio_uni25:53, lio_uni26:15, esp:'Catarata'}, /* AUTO */
     {name:'Dra. C. Sardi Correa', sheetName:'DRA. CAROLINA SARDI CORREA', bill24:231289, bill25:338178, bill26:137016, cir24:28, cir25:35, cir26:27, lio_cir24:11, lio_cir25:22, lio_cir26:4, lio_uni24:12, lio_uni25:22, lio_uni26:4, esp:'Refractiva'}, /* AUTO */
   ],
   // Por tipo de procedimiento (facturación, miles COP) — actualización manual
@@ -1005,7 +1005,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,371,426,415,305,0,0,0,0,0,0,0],  // total=1892 (2026-05-21 08:44) /* AUTO */
+  mes_26:[375,371,426,415,305,0,0,0,0,0,0,0],  // total=1892 (2026-05-21 09:00) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -1022,7 +1022,7 @@ const CIR = {
 //   cirujanos: [{name,bill,cir}, ...]     // top cirujanos MTD
 // };
 // ==MTD_DATA_START==
-const MTD_RAW = {y:2026,m:5,d:21,ing:1163104,cir:305,daysInMonth:31,lineas:[480313,269027,154216,79917,66700,34440],cirujanos:[{name:'Dr. M.A. Jaramillo N.',bill:245496,cir:39},{name:'Dr. Jon K. Balparda',bill:98193,cir:46},{name:'Dr. M. Jaramillo M.',bill:156663,cir:22},{name:'Dr. J.E. Jaramillo N.',bill:8103,cir:0},{name:'Dr. J.A. Jaramillo H.',bill:92486,cir:9},{name:'Dr. J.G. Sánchez M.',bill:84490,cir:21},{name:'Dr. B.A. Ramírez S.',bill:42726,cir:39},{name:'Dr. J.A. Jaramillo S.',bill:56647,cir:12},{name:'Dr. J.C. Gil Muñoz',bill:24672,cir:13},{name:'Dra. C. Sardi Correa',bill:35928,cir:6}]}; /* AUTO-MTD */
+const MTD_RAW = {y:2026,m:5,d:21,ing:1163104,cir:305,lio_cir:62,lio_uni:68,daysInMonth:31,lineas:[480313,269027,154216,79917,66700,34440],cirujanos:[{name:'Dr. M.A. Jaramillo N.',bill:245496,cir:39},{name:'Dr. Jon K. Balparda',bill:98193,cir:46},{name:'Dr. M. Jaramillo M.',bill:156663,cir:22},{name:'Dr. J.E. Jaramillo N.',bill:8103,cir:0},{name:'Dr. J.A. Jaramillo H.',bill:92486,cir:9},{name:'Dr. J.G. Sánchez M.',bill:84490,cir:21},{name:'Dr. B.A. Ramírez S.',bill:42726,cir:39},{name:'Dr. J.A. Jaramillo S.',bill:56647,cir:12},{name:'Dr. J.C. Gil Muñoz',bill:24672,cir:13},{name:'Dra. C. Sardi Correa',bill:35928,cir:6}]}; /* AUTO-MTD */
 // ==MTD_DATA_END==
 
 // ════════════════════════════════════════
@@ -1044,7 +1044,7 @@ const DAILY_RAW = []; /* AUTO-DAILY */
 // Formato: 'YYYY-MM-DD HH:mm' en hora Colombia (America/Bogota).
 // Si Apps Script no ha corrido nunca, queda en su valor inicial.
 // ==SYNC_TS_START==
-const LAST_SYNC = '2026-05-21 08:30'; /* AUTO-SYNC-TS */
+const LAST_SYNC = '2026-05-21 09:00'; /* AUTO-SYNC-TS */
 // ==SYNC_TS_END==
 
 // ════════════════════════════════════════
