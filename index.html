@@ -1068,6 +1068,14 @@ const SYNC_WEBHOOK_TOKEN = '1cfdb5a5-94b7-4657-921b-9c27afe746e6';
 // ════════════════════════════════════════
 const COMENTARIOS_MENSUALES = [
   {
+    periodo:'Abr-26',
+    archivo:'EEFF-OET-2026-04-Abril.xlsx',
+    archivo_periodo:'Abr-26 · Acumulado Ene-Abr 2026',
+    archivo_fecha:'Mayo 2026',
+    archivo_autora:'Elaborado por Paola / Asesores Financieros',
+    comentarios:[]
+  },
+  {
     periodo:'Mar-26',
     archivo:'EEFF-OET-2026-03-Marzo.xlsx',
     archivo_periodo:'Mar-26 · Q1 2026 acumulado',
@@ -1217,6 +1225,7 @@ const BSS = {
     {periodo:'Dic-25', f:'2025-12', y:2025, m:12, cash:178024, cxc:2103000, actCorr:2850000, actTotal:12929000, deudaBco:701000, cxpProv:276000, pasCorr:7796000, pasNoCorr:2810000, pasTotal:10606000, patrimonio:2322000},
     {periodo:'Feb-26', f:'2026-02', y:2026, m:2,  cash:-1793,  cxc:1914000, actCorr:2481000, actTotal:12982000, deudaBco:757000, cxpProv:335000, pasCorr:8491000, pasNoCorr:2142000, pasTotal:10633000, patrimonio:2349000},
     {periodo:'Mar-26', f:'2026-03', y:2026, m:3,  cash:43708,  cxc:2374000, actCorr:2987000, actTotal:13471000, deudaBco:736000, cxpProv:560000, pasCorr:5289000, pasNoCorr:2066000, pasTotal:7355000,  patrimonio:6116000},
+    {periodo:'Abr-26', f:'2026-04', y:2026, m:4,  cash:-45707, cxc:2458000, actCorr:2981000, actTotal:13419000, deudaBco:684000, cxpProv:323000, pasCorr:5151000, pasNoCorr:2115000, pasTotal:7266000,  patrimonio:6153000},
   ],
   // Compatibilidad: arrays paralelos derivados (NO editar — se generan automáticamente)
   get labels()    {return this.snapshots.map(s=>s.periodo);},
