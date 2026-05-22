@@ -1073,7 +1073,20 @@ const COMENTARIOS_MENSUALES = [
     archivo_periodo:'Abr-26 · Acumulado Ene-Abr 2026',
     archivo_fecha:'Mayo 2026',
     archivo_autora:'Elaborado por Paola / Asesores Financieros',
-    comentarios:[]
+    comentarios:[
+      {
+        autor:'Paola',
+        rol:'Contadora OET · Cierre Abril 2026',
+        fecha:'Mayo 2026',
+        items:[
+          'En abril se registró una <strong class="pos">utilidad de $37 MM</strong>, con una <strong class="neg">pérdida acumulada de $84 MM</strong> — una caída del <strong class="neg">−112.73%</strong> (−$747 MM) frente al mismo período del año anterior.',
+          'Los ingresos crecieron <strong class="pos">+40.75%</strong> (+$1.713 MM), pasando de $4.203 MM a $5.916 MM. Sin embargo, los costos y gastos crecieron en mayor proporción: <strong class="neg">+68.4%</strong> (+$2.422 MM), de $3.541 MM a $5.963 MM — explicado principalmente por honorarios, compra de insumos y gastos de operación (arrendamientos y honorarios administrativos).',
+          'Este desbalance entre ingresos y costos impactó negativamente el EBITDA, con una reducción del <strong class="neg">−70.82%</strong> (−$580 MM).',
+          'Frente al mes anterior, la utilidad mensual mejoró <strong class="pos">+$187 MM</strong> (de −$150 MM a +$37 MM), aunque el resultado acumulado sigue siendo negativo. La mejora se explica por menores costos y gastos en rubros relevantes: honorarios, compra de insumos, lente intraocular, seguros y mantenimiento.',
+        ],
+        nota:'En la hoja <em>Notas Abr-26</em> del EEFF oficial se encuentran las explicaciones del Balance — la estructura de activos y pasivos con la participación de cada rubro.'
+      }
+    ]
   },
   {
     periodo:'Mar-26',
@@ -4310,7 +4323,7 @@ function buildComInicio(){
   <div style="background:#f0faf7;border-left:3px solid #2dc5ab;padding:8px 12px;border-radius:4px;margin-bottom:10px;font-size:11px;color:#607d76">
     ℹ️ <strong>Esta sección muestra ingresos por servicio (facturación real del Google Sheet).</strong>
     El análisis de costos (CMV, G&A) y márgenes está disponible en la pestaña <strong>EEFF</strong>.
-    ${CF.years.has(2026)?'<br>⚠️ Datos de P&amp;L de marzo 2026 aún pendientes de estados financieros de cierre.':''}
+    ${(()=>{const _pend=D.filter(d=>d.y===2026&&d.eeffPending).map(d=>d.p);return CF.years.has(2026)&&_pend.length?'<br>⚠️ Datos de P&amp;L pendientes de estados financieros de cierre: '+_pend.join(', ')+'.':'';})()}
   </div>`:''}
   <div class="kpis k3" style="margin-bottom:${hasDr?8:16}px">
     ${CF.years.has(2024)&&cir24>0?kpiCard('Cirugías 2024'+(mBadge?' · '+mBadge:''),cir24.toLocaleString(),'Derechos de Sala'):''}
@@ -4541,7 +4554,7 @@ function buildComInicio(){
     ${hasFilters
       ? '📅 Período: '+_badge+'. Los valores por línea son proporcionales a la facturación mensual total — <em>no incluyen costos ni gastos</em>.'
       : '📈 Al ritmo actual, 2026 supera el promedio trimestral 2024. Para análisis de rentabilidad por línea, ver pestaña <strong>EEFF</strong>.'}
-    ${CF.years.has(2026)?'<br><span style="font-size:10px;color:#9e7b00">⚠️ Datos de cierre de P&amp;L de marzo 2026 pendientes de confirmación en estados financieros.</span>':''}
+    ${(()=>{const _pend=D.filter(d=>d.y===2026&&d.eeffPending).map(d=>d.p);return CF.years.has(2026)&&_pend.length?'<br><span style="font-size:10px;color:#9e7b00">⚠️ Datos de P&amp;L pendientes de confirmación en estados financieros: '+_pend.join(', ')+'.</span>':'';})()}
   </div>`;
 
   // ═══ ch-com-yoy: Barras agrupadas interanuales (12 meses × 3 años) ════════
