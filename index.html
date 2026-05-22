@@ -4549,7 +4549,7 @@ function buildComInicio(){
     </tr></tfoot>
   </table></div>
   <div class="insight">
-    ⭐ <strong>LIOs Premium</strong> — motor de mayor margen: ${fv(li26[2])} en Ene–Mar 2026.
+    ⭐ <strong>LIOs Premium</strong> — motor de mayor margen: ${fv(li26[2])} en Ene–${MN[META.lastM]} 2026.
     <strong>Derechos de Sala</strong> lidera en volumen: ${pct26[0].toFixed(0)}% del mix YTD 2026.<br>
     ${hasFilters
       ? '📅 Período: '+_badge+'. Los valores por línea son proporcionales a la facturación mensual total — <em>no incluyen costos ni gastos</em>.'
@@ -5283,8 +5283,8 @@ function buildComMeta(){
   </div>`:''}
   <div class="kpis k3">
     ${kpiCard('Meta 2026', fv(COM.meta26), '+52.9% estimado vs 2025')}
-    ${kpiCard('YTD 2026 (Ene-Mar)', fv(ytd26ing), pctMeta+'% de la meta anual alcanzado')}
-    ${kpiCard('Promedio mensual necesario', fv((COM.meta26-ytd26ing)/9), 'Para los 9 meses restantes')}
+    ${kpiCard('YTD 2026 (Ene-'+_MN_SHORT[META.lastM]+')', fv(ytd26ing), pctMeta+'% de la meta anual alcanzado')}
+    ${kpiCard('Promedio mensual necesario', fv((COM.meta26-ytd26ing)/(12-META.lastM)), 'Para los '+(12-META.lastM)+' meses restantes')}
   </div>
   <div class="gfull">
     <div class="card">
