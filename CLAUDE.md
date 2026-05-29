@@ -107,7 +107,7 @@ Fuente: contador OET. Daniel lo actualiza manualmente cada ~día 15.
   uo: ..., mop: ...,// utilidad operacional y %
   oInc: ..., oGas: ...,
   un: ..., mnp: ...,// utilidad neta y %
-  ebitda: ...,
+  ebitda: ...,      // tomar de la fila EBITDA de Paola, NO calcular uo+da (ver §10)
   mep: ...,         // margen EBITDA %
   eeffPending: true // si solo tiene `ing` (EEFF aún no llegan)
 }
@@ -462,8 +462,10 @@ Cuando el contador entrega los estados financieros de un nuevo mes:
   oGas: XXXX,     // otros gastos
   un: XXXX,       // utilidad neta
   mnp: XX.X,      // margen neto %
-  ebitda: XXXX,   // uo + da (o según metodología del contador)
-  mep: XX.X,      // margen EBITDA %
+  ebitda: XXXX,   // ⚠️ TOMAR DIRECTO de la fila "EBITDA" (fila 100) de la hoja "Resultados" de Paola.
+                  //    NO calcular como uo+da: la metodología de Paola no es consistente con esa fórmula
+                  //    (en 2026 ≈ UAI+da, pero en otros meses difiere). Paola es la fuente de verdad.
+  mep: XX.X,      // margen EBITDA % (= ebitda/ing*100, igual a fila "Margen EBITDA" de Paola)
 }
 // Sin eeffPending si los datos están completos
 ```
