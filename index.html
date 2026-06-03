@@ -2253,6 +2253,7 @@ const FF = {
   vista:  'abs',
   compareMode: 'auto', // 'auto' | 'ytd' | 'full' — cómo agregar cuando no hay filtro mensual manual
 };
+let _pnlCumM = null; // mes de corte para el comparativo acumulado (null = auto)
 
 function ffVal(d, f){
   if(d.eeffPending) return null;
@@ -2785,6 +2786,100 @@ function buildFinInicio(){
 }
 
 // ════════════════════════════════════════
+//  BUILD: P&L COMPARATIVO ACUMULADO
+// ════════════════════════════════════════
+function buildPnlCumTable(cutM){
+  const MNS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const pillsEl=document.getElementById('pnl-cum-pills');
+  const bodyEl=document.getElementById('pnl-cum-body');
+  if(!pillsEl||!bodyEl) return;
+  const latestEeffYear=Math.max(...D.filter(d=>!d.eeffPending).map(d=>d.y));
+  const maxAvail=Math.max(...D.filter(d=>d.y===latestEeffYear&&!d.eeffPending).map(d=>d.m));
+  if(cutM==null) cutM=maxAvail;
+  _pnlCumM=cutM;
+  // Pills
+  pillsEl.innerHTML='';
+  for(let m=1;m<=12;m++){
+    const btn=document.createElement('button');
+    btn.className='cfb-pill'+(m===cutM?' active':'');
+    btn.style.cssText='font-size:10px;padding:2px 8px';
+    btn.textContent=MNS[m-1];
+    btn.onclick=((_m)=>()=>{_pnlCumM=_m;buildPnlCumTable(_m);})(m);
+    pillsEl.appendChild(btn);
+  }
+  const rowDefs=[
+    {lbl:'Ingresos',f:'ing',b:true,cls:''},
+    {lbl:'(-) Costo Total',f:'cost',b:false,cls:''},
+    {lbl:'Ganancia Bruta',f:'ub',b:true,cls:'sub'},
+    {lbl:'  Margen Bruto %',f:'mbp',b:false,cls:'',pct:true},
+    {lbl:'(-) Gastos Adm.',f:'ga',b:false,cls:''},
+    {lbl:'Ganancia Operativa',f:'uo',b:true,cls:'sub'},
+    {lbl:'  Margen Operativo %',f:'mop',b:false,cls:'',pct:true},
+    {lbl:'EBITDA',f:'ebitda',b:true,cls:'sub'},
+    {lbl:'  Margen EBITDA %',f:'mep',b:false,cls:'',pct:true},
+    {lbl:'Ganancia Neta',f:'un',b:true,cls:'tot'},
+    {lbl:'  Margen Neto %',f:'mnp',b:false,cls:'',pct:true},
+  ];
+  const PCT_F={mbp:['ub','ing'],mop:['uo','ing'],mep:['ebitda','ing'],mnp:['un','ing']};
+  const years=[2024,2025,2026].filter(y=>FF.years.has(y));
+  function lastAvail(y){const ms=D.filter(d=>d.y===y&&!d.eeffPending).map(d=>d.m);return ms.length?Math.max(...ms):0;}
+  function cumAbs(y,f,mx){return D.filter(d=>d.y===y&&d.m>=1&&d.m<=mx&&!d.eeffPending).reduce((s,d)=>s+(d[f]||0),0);}
+  function cumVal(y,f,mx){
+    if(PCT_F[f]){const[n,dn]=PCT_F[f];const dv=cumAbs(y,dn,mx);return dv?(cumAbs(y,n,mx)/dv)*100:0;}
+    return cumAbs(y,f,mx);
+  }
+  // Header
+  let html=`<table class="tbl" style="min-width:480px"><thead><tr>
+    <th style="min-width:160px;vertical-align:middle;position:sticky;left:0;z-index:3;background:#0c3028">Concepto</th>`;
+  const YBG={2024:'#132848',2025:'#0a3a30',2026:'#2a3e00'};
+  years.forEach(y=>{
+    const av=Math.min(cutM,lastAvail(y));
+    const partial=av<cutM;
+    html+=`<th style="text-align:center;background:${YBG[y]||'#144838'};white-space:nowrap">${partial?'⚠️ Ene–'+MNS[av-1]:'Ene–'+MNS[cutM-1]}<br><small>${y}${partial?' (parcial)':''}</small></th>`;
+  });
+  if(years.length>=2){
+    for(let i=1;i<years.length;i++) html+=`<th style="text-align:center;background:#0c3028;white-space:nowrap">Var<br><small>${years[i]} vs ${years[i-1]}</small></th>`;
+  }
+  html+='</tr></thead><tbody>';
+  rowDefs.forEach(r=>{
+    const avails=years.map(y=>Math.min(cutM,lastAvail(y)));
+    const vals=years.map((y,i)=>avails[i]>=1?cumVal(y,r.f,avails[i]):null);
+    const sBg=r.cls==='tot'?'#0c3028':r.cls==='sub'?'#eef8f6':'#fafaf9';
+    const sFg=r.cls==='tot'?'#fff':'#1a2e28';
+    let row=`<tr class="${r.cls}"><td style="font-weight:${r.b?700:400};position:sticky;left:0;z-index:1;background:${sBg};color:${sFg}">${r.lbl}</td>`;
+    vals.forEach(v=>{
+      if(v===null){row+='<td style="color:#9e9e9e;font-style:italic;text-align:center">N/D</td>';return;}
+      if(r.pct) row+=`<td class="${v>=0?'pos':'neg'}">${v.toFixed(1)}%</td>`;
+      else row+=`<td class="${v<0&&!r.b?'neg':''}" style="font-weight:${r.b?700:400}">${fv(v)}</td>`;
+    });
+    if(years.length>=2){
+      for(let i=1;i<years.length;i++){
+        const v1=vals[i-1],v2=vals[i];
+        if(v1==null||v2==null){row+='<td style="color:#9e9e9e">—</td>';continue;}
+        if(r.pct){const d=v2-v1;row+=`<td class="${d>=0?'pos':'neg'}">${d>=0?'+':''}${d.toFixed(1)} pp</td>`;}
+        else if(Math.abs(v1)<1){row+='<td style="color:#9e9e9e">—</td>';}
+        else{const pv=pctVar(v2,v1);row+=`<td class="${pv>=0?'pos':'neg'}">${fp(pv)}</td>`;}
+      }
+    }
+    row+='</tr>';
+    html+=row;
+  });
+  html+='</tbody></table>';
+  // Insight automático
+  if(years.length>=2){
+    const ly=years[years.length-1],py=years[years.length-2];
+    const avL=Math.min(cutM,lastAvail(ly)),avP=Math.min(cutM,lastAvail(py));
+    const iL=cumAbs(ly,'ing',avL),iP=cumAbs(py,'ing',avP);
+    const uL=cumAbs(ly,'un',avL),uP=cumAbs(py,'un',avP);
+    const gL=cumAbs(ly,'ga',avL),gP=cumAbs(py,'ga',avP);
+    const varI=pctVar(iL,iP),varU=pctVar(uL,uP),varG=pctVar(gL,gP);
+    const alerta=(varG>varI+10)?`⚠️ <strong>G.Adm.</strong> crece ${fp(varG)} vs ingresos ${fp(varI)} — brecha ${(varG-varI).toFixed(1)} pp. `:'';
+    html+=`<div class="insight" style="margin-top:10px">💡 <strong>Ene–${MNS[avL>0?avL-1:0]} ${ly}:</strong> Ingresos ${fv(iL)} (${fp(varI)} vs ${py}). G. Neta ${fv(uL)} vs ${fv(uP)} (${fp(varU)}). ${alerta}</div>`;
+  }
+  bodyEl.innerHTML=html;
+}
+
+// ════════════════════════════════════════
 //  BUILD: FINANCIERO — P&L MENSUAL
 // ════════════════════════════════════════
 function buildFinPnl(){
@@ -2803,6 +2898,17 @@ function buildFinPnl(){
       <div class="card-hdr"><h3>Tabla Mensual Completa — 2024, 2025 y 2026</h3><span class="badge">Desplazar →</span></div>
       <div class="card-body">
         <div class="tbl-wrap" id="pnl-tabla-body"></div>
+      </div>
+    </div>
+  </div>
+  <div class="gfull">
+    <div class="card">
+      <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <h3>Acumulado hasta mes — Comparativo interanual</h3>
+        <div id="pnl-cum-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+      </div>
+      <div class="card-body" style="overflow-x:auto">
+        <div id="pnl-cum-body"></div>
       </div>
     </div>
   </div>`;
@@ -2913,7 +3019,7 @@ function buildFinPnl(){
   // Year totals separator rows
   // Rebuild with year headers
   let tableHtml2=`<table class="tbl" style="min-width:900px"><thead><tr>
-    <th rowspan="2" style="min-width:160px;vertical-align:middle">Concepto</th>`;
+    <th rowspan="2" style="min-width:160px;vertical-align:middle;position:sticky;left:0;z-index:3;background:#0c3028">Concepto</th>`;
   years.forEach(y=>{
     const n=D.filter(d=>d.y===y&&(FF.months.size===0||FF.months.has(d.m))).length;
     tableHtml2+=`<th colspan="${n}" style="text-align:center;background:#144838">${y}${y===2026?' (YTD)':''}</th>`;
@@ -2936,10 +3042,13 @@ function buildFinPnl(){
         else yrRow+=`<td class="${v<0?'neg':''}" style="font-weight:${r.b?700:400}">${fv(v||0)}</td>`;
       });
     });
-    tableHtml2+=`<tr class="${r.cls}"><td style="font-weight:${r.b?700:400}">${r.lbl}</td>${yrRow}</tr>`;
+    const _sBg=r.cls==='tot'?'#0c3028':r.cls==='sub'?'#eef8f6':'#fafaf9';
+    const _sFg=r.cls==='tot'?'#fff':'inherit';
+    tableHtml2+=`<tr class="${r.cls}"><td style="font-weight:${r.b?700:400};position:sticky;left:0;z-index:1;background:${_sBg};color:${_sFg}">${r.lbl}</td>${yrRow}</tr>`;
   });
   tableHtml2+='</tbody></table>';
   document.getElementById('pnl-tabla-body').innerHTML=tableHtml2;
+  buildPnlCumTable(_pnlCumM);
 }
 
 // ════════════════════════════════════════
