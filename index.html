@@ -558,6 +558,16 @@ a{text-decoration:none;color:inherit;}
 @media(max-width:767px){
   #fin-filter-bar{ left:0; top:calc(var(--hdr-h) + var(--snav-h)); padding:5px 8px; gap:5px 7px; }
 }
+#eps-filter-bar{
+  display:none;position:fixed;top:var(--hdr-h);left:200px;right:0;z-index:94;
+  background:rgba(13,46,40,.97);backdrop-filter:blur(6px);
+  border-bottom:1px solid rgba(45,197,171,.18);
+  padding:7px 14px;gap:6px 10px;align-items:center;flex-wrap:wrap;
+}
+#eps-filter-bar.visible{ display:flex; }
+#content.has-eps-filter-bar{ padding-top:52px; }
+@media(max-width:1023px){ #eps-filter-bar{ left:170px; } }
+@media(max-width:767px){ #eps-filter-bar{ left:0; top:calc(var(--hdr-h) + var(--snav-h)); padding:5px 8px; gap:5px 7px; } }
 
 /* ═══════════════════════════════════════
    EXPAND / FULLSCREEN MODAL
@@ -688,6 +698,7 @@ a{text-decoration:none;color:inherit;}
     <div class="ttab" data-tab="com"><span class="ti">📊</span> Administrativo</div>
     <div class="ttab" data-tab="mkt"><span class="ti">📈</span> Comercial<em class="tab-wip">(en proc.)</em></div>
     <div class="ttab" data-tab="far"><span class="ti">💊</span> Farmacia</div>
+    <div class="ttab" data-tab="eps"><span class="ti">🏥</span> Pagadores</div>
     <div class="ttab" data-tab="acc"><span class="ti">✅</span> Acciones 2026</div>
   </nav>
   <div class="hdr-meta" id="hdr-meta">Datos: <span id="hdr-range">—</span></div>
@@ -709,6 +720,10 @@ a{text-decoration:none;color:inherit;}
   <div class="bnav-btn" data-tab="far" onclick="switchTab('far')">
     <div class="bnav-icon">💊</div>
     <div class="bnav-lbl">Farmacia</div>
+  </div>
+  <div class="bnav-btn" data-tab="eps" onclick="switchTab('eps')">
+    <div class="bnav-icon">🏥</div>
+    <div class="bnav-lbl">Pagadores</div>
   </div>
   <div class="bnav-btn" data-tab="acc" onclick="switchTab('acc')">
     <div class="bnav-icon">✅</div>
@@ -888,6 +903,23 @@ a{text-decoration:none;color:inherit;}
     <button class="cfb-clear" onclick="clearFinFilters()">✕ Limpiar</button>
     <div id="ffb-hint" class="cfb-active-hint" style="display:none"></div>
   </div>
+  <div id="eps-filter-bar">
+    <div class="cfb-group">
+      <span class="cfb-lbl">Año</span>
+      <button class="cfb-pill on" data-epyear="2024" onclick="toggleEpsYear(2024,this)">2024</button>
+      <button class="cfb-pill on" data-epyear="2025" onclick="toggleEpsYear(2025,this)">2025</button>
+      <button class="cfb-pill on" data-epyear="2026" onclick="toggleEpsYear(2026,this)">2026 YTD</button>
+    </div>
+    <div class="cfb-div"></div>
+    <div class="cfb-group">
+      <span class="cfb-lbl">Tipo pagador</span>
+      <button class="cfb-pill on" id="epf-tipo-all"  onclick="setEpsTipo('all',this)">Todos</button>
+      <button class="cfb-pill"    id="epf-tipo-part" onclick="setEpsTipo('particular',this)">Particular</button>
+      <button class="cfb-pill"    id="epf-tipo-aseg" onclick="setEpsTipo('aseguradoras',this)">Aseguradoras</button>
+    </div>
+    <div class="cfb-div"></div>
+    <button class="cfb-clear" onclick="clearEpsFilters()">✕ Limpiar</button>
+  </div>
   <aside id="sidebar"></aside>
   <main id="content"></main>
 </div>
@@ -1056,6 +1088,73 @@ const LAST_SYNC = '2026-06-05 18:00'; /* AUTO-SYNC-TS */
 //   3. Ejecuta setRefreshToken() en Apps Script y pega el token
 const SYNC_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw-zgA7XrFOwGDfjjwdMACOWAB2dpprsGK4VERrXios5Uyz33gmimYutjVj4i2sURnShw/exec';
 const SYNC_WEBHOOK_TOKEN = '1cfdb5a5-94b7-4657-921b-9c27afe746e6';
+
+// ════════════════════════════════════════
+//  EPS — Facturación por pagador / aseguradora
+//  Fuente: Excel "FACTURACION TIPO PRODUCTO 2024 2025 Oficial"
+//  Valores en miles COP. Cubre ~60% de la facturación total (por tipo de producto disponible).
+// ════════════════════════════════════════
+const EPS = {
+  entidades:[
+    {name:'PARTICULAR',short:'Particular',
+     v24:5316215,v25:8101101,v26:2263282,c24:12384,c25:19597,c26:4105,
+     m24:[413102,524670,478676,450247,402689,424449,442133,391636,394177,407113,541507,445818],
+     m25:[661928,563730,473173,645613,682251,662769,816625,650450,565546,829158,800649,749210],
+     m26:[699688,1112773,450821],tipo:'Particular'},
+    {name:'SEGUROS DE VIDA SURAMERICANA S.A.',short:'SURA',
+     v24:1839169,v25:2374230,v26:810071,c24:5982,c25:7276,c26:1889,
+     m24:[68998,21830,124505,186133,141365,204835,94097,247392,189561,101636,208285,250532],
+     m25:[25880,85824,295660,220173,222354,50180,168276,423295,50587,275085,296391,260525],
+     m26:[250357,229645,330069],tipo:'Aseguradora'},
+    {name:'COOMEVA MEDICINA PREPAGADA S.A.',short:'Coomeva',
+     v24:222936,v25:373681,v26:130750,c24:1128,c25:1393,c26:337,
+     m24:[3369,6641,20324,27350,40627,13922,22329,10023,36199,15503,7474,19174],
+     m25:[28271,12488,16568,20671,46542,39759,37402,51198,44360,20647,32772,23004],
+     m26:[34897,48321,47532],tipo:'Aseguradora'},
+    {name:'BLACK MAMMOTH SURGICAL SAS',short:'Black Mammoth',
+     v24:2000,v25:252596,v26:84322,c24:2,c25:314,c26:109,
+     m24:[0,2000,0,0,0,0,0,0,0,0,0,0],
+     m25:[0,0,0,0,0,0,45307,0,5402,14299,22390,165199],
+     m26:[84322,0,0],tipo:'Empresa'},
+    {name:'ALLIANZ SEGUROS DE VIDA S.A.',short:'Allianz',
+     v24:98693,v25:131454,v26:25678,c24:382,c25:486,c26:100,
+     m24:[1165,1014,21190,7014,3140,433,10960,5098,21236,3581,6353,17510],
+     m25:[1590,7461,17270,8149,5671,22848,21760,7140,2041,29384,1355,6785],
+     m26:[15362,7946,2370],tipo:'Aseguradora'},
+    {name:'COLMEDICA MEDICINA PREPAGADA S A',short:'Colmédica',
+     v24:46180,v25:91452,v26:7062,c24:361,c25:446,c26:83,
+     m24:[0,0,0,2225,3914,0,6072,1591,3741,9384,361,18893],
+     m25:[0,0,0,4410,4809,8242,8223,10455,26783,11640,0,16890],
+     m26:[1311,1395,4356],tipo:'Aseguradora'},
+    {name:'COMPAÑIA DE SEGUROS BOLIVAR S A',short:'Bolívar Seg.',
+     v24:65768,v25:80985,v26:5672,c24:211,c25:332,c26:74,
+     m24:[292,25633,112,0,11136,5192,2614,512,5407,931,6738,7202],
+     m25:[0,7016,0,5431,202,4163,14754,10126,819,3434,0,35041],
+     m26:[1765,2228,1679],tipo:'Aseguradora'},
+    {name:'MEDPLUS MEDICINA PREPAGADA S.A.',short:'Medplus',
+     v24:41399,v25:56193,v26:7650,c24:299,c25:327,c26:65,
+     m24:[0,603,0,1379,6427,582,182,9793,11005,0,2072,9355],
+     m25:[0,443,15688,360,706,4211,6461,10192,4378,3579,0,10173],
+     m26:[6015,685,950],tipo:'Aseguradora'},
+    {name:'AXA COLPATRIA MEDICINA PREPAGADA S.A.',short:'AXA Colpatria',
+     v24:25664,v25:44370,v26:3309,c24:173,c25:168,c26:32,
+     m24:[0,579,1871,0,4331,349,8612,0,161,8131,1630,0],
+     m25:[0,1581,0,10548,0,1058,349,4732,5211,2704,0,18187],
+     m26:[1521,1586,203],tipo:'Aseguradora'},
+    {name:'AXA COLPATRIA SEGUROS DE VIDA S.A.',short:'AXA Vida',
+     v24:6722,v25:16588,v26:1865,c24:83,c25:162,c26:46,
+     m24:[0,0,0,0,0,0,0,0,2656,4065,0,0],
+     m25:[0,824,0,5401,5896,2179,0,143,0,0,0,2145],
+     m26:[441,685,739],tipo:'Aseguradora'},
+  ],
+  total_m24:[501463,591561,648245,674510,617219,659642,587264,691381,672289,551525,789400,768483],
+  total_m25:[735298,689094,822817,928091,979306,796456,1129078,1175907,722806,1215756,1154971,1287415],
+  total_m26:[1119354,1412147,866049,0,0,0,0,0,0,0,0,0],
+  total_2024:7752981, total_2025:11636995, total_2026:3397550,
+  tipos_lbl:['Derechos Sala','Honorarios Oftalm.','LIOs','Exámenes','Copago','Honor. Anestesiol.','Póliza','Paquete Cirugía'],
+  tipos_val:[9590363,6062043,1579152,1313738,421482,258353,224684,102702],
+  fuente:'Excel facturación tipo-producto. Cubre ~60% de la facturación total EEFF.',
+};
 
 // ════════════════════════════════════════
 //  COMENTARIOS_MENSUALES — Comentarios oficiales asociados a cada cierre EEFF
@@ -2133,6 +2232,7 @@ function updateFilterBarHeight(){
 const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-honorarios','com-lentes','com-trend','com-meta'];
 const MKT_SECS=['mkt-inicio','mkt-lentes','mkt-growth','mkt-cirujanos','mkt-roi'];
 const FAR_SECS=['far-inicio','far-lentes','far-compras'];
+const EPS_SECS=['eps-inicio','eps-mix','eps-tendencia','eps-tipos'];
 function clearTabBuilt(secs){
   secs.forEach(sid=>{
     const el=document.getElementById(sid);
@@ -2145,6 +2245,7 @@ function clearTabBuilt(secs){
 function clearComBuilt(){ clearTabBuilt(COM_SECS); }
 function clearMktBuilt(){ clearTabBuilt(MKT_SECS); }
 function clearFarBuilt(){ clearTabBuilt(FAR_SECS); }
+function clearEpsBuilt(){ clearTabBuilt(EPS_SECS); }
 
 // ════════════════════════════════════════
 //  PERIOD HELPERS — MTD y DAILY
@@ -2254,6 +2355,42 @@ const FF = {
   compareMode: 'auto', // 'auto' | 'ytd' | 'full' — cómo agregar cuando no hay filtro mensual manual
 };
 let _pnlCumM = null; // mes de corte para el comparativo acumulado (null = auto)
+
+// ════════════════════════════════════════
+//  EPS FILTERS — ESTADO & HELPERS (EF)
+// ════════════════════════════════════════
+const EF = {
+  years: new Set([2024,2025,2026]),
+  tipo: 'all', // 'all' | 'particular' | 'aseguradoras' | 'empresas'
+};
+function _efEnts(){
+  if(EF.tipo==='particular')   return EPS.entidades.filter(e=>e.tipo==='Particular');
+  if(EF.tipo==='aseguradoras') return EPS.entidades.filter(e=>e.tipo==='Aseguradora');
+  if(EF.tipo==='empresas')     return EPS.entidades.filter(e=>e.tipo==='Empresa');
+  return EPS.entidades;
+}
+function _efYears(){ return [2024,2025,2026].filter(y=>EF.years.has(y)); }
+function _efVal(e,y){ return y===2024?e.v24:y===2025?e.v25:e.v26; }
+function _efM(e,y){ return y===2024?e.m24:y===2025?e.m25:e.m26; }
+function _efTotal(y){ return _efEnts().reduce((s,e)=>s+_efVal(e,y),0); }
+function toggleEpsYear(y,btn){
+  if(EF.years.has(y)&&EF.years.size>1){EF.years.delete(y);btn.classList.remove('on');}
+  else{EF.years.add(y);btn.classList.add('on');}
+  clearEpsBuilt();navigate(activeSection);
+}
+function setEpsTipo(tipo,btn){
+  EF.tipo=tipo;
+  document.querySelectorAll('#eps-filter-bar [id^="epf-tipo-"]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  clearEpsBuilt();navigate(activeSection);
+}
+function clearEpsFilters(){
+  EF.years=new Set([2024,2025,2026]);EF.tipo='all';
+  document.querySelectorAll('[data-epyear]').forEach(b=>b.classList.add('on'));
+  document.querySelectorAll('#eps-filter-bar [id^="epf-tipo-"]').forEach(b=>b.classList.remove('on'));
+  const a=document.getElementById('epf-tipo-all');if(a)a.classList.add('on');
+  clearEpsBuilt();navigate(activeSection);
+}
 
 function ffVal(d, f){
   if(d.eeffPending) return null;
@@ -2568,6 +2705,12 @@ const NAVS = {
     {id:'far-inicio',    label:'Inicio',           icon:'🏠'},
     {id:'far-lentes',    label:'Lentes & Ojos',    icon:'🔬'},
     {id:'far-compras',   label:'Compras (en proc.)',icon:'📦'},
+  ],
+  eps:[
+    {id:'eps-inicio',    label:'Inicio',           icon:'🏠'},
+    {id:'eps-mix',       label:'Concentración',    icon:'🥧'},
+    {id:'eps-tendencia', label:'Tendencia',        icon:'📈'},
+    {id:'eps-tipos',     label:'Por Servicio',     icon:'🔬'},
   ],
   acc:[
     {id:'acc-inicio',   label:'Inicio',           icon:'🏠'},
@@ -7010,6 +7153,200 @@ function buildFinBalance(){
 // ════════════════════════════════════════
 let activeTab='fin', activeSection='fin-inicio';
 
+// ════════════════════════════════════════
+//  BUILD: PAGADORES — EPS / ASEGURADORAS
+// ════════════════════════════════════════
+const MNS_E=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const _YC_E={2024:'rgba(68,108,179,0.82)',2025:'rgba(45,197,171,0.88)',2026:'rgba(255,193,7,0.88)'};
+const _EPS_COLORES=['#2dc5ab','#446cb3','#ffc107','#ef5350','#ff9800','#26a69a','#7986cb','#66bb6a','#ab47bc','#ec407a'];
+
+function buildEpsInicio(){
+  const el=document.getElementById('eps-inicio'); if(!el)return;
+  const ents=_efEnts(); const years=_efYears();
+  const ly=years[years.length-1]||2025, py=years.length>1?years[years.length-2]:null;
+  const t25=_efTotal(2025), t24=_efTotal(2024);
+  const part=EPS.entidades.find(e=>e.tipo==='Particular');
+  const pPart25=part?(part.v25/EPS.total_2025*100):0;
+  const pAseg25=100-pPart25;
+  const topAseg=EPS.entidades.filter(e=>e.tipo==='Aseguradora').sort((a,b)=>b.v25-a.v25)[0];
+  const pTop25=topAseg?(topAseg.v25/EPS.total_2025*100):0;
+  const varTot=pctVar(t25,t24);
+
+  el.innerHTML=`
+  <div class="sec-title">Pagadores — EPS, Aseguradoras y Particular <span class="st-badge">Fuente: Facturación tipo-producto</span></div>
+  <div class="kpis k4">
+    ${kpiCard('Facturado 2025 (muestra)',fv(EPS.total_2025),fp(pctVar(EPS.total_2025,EPS.total_2024))+' vs 2024')}
+    ${kpiCard('Particular 2025',pPart25.toFixed(1)+'%',fv(part?part.v25:0)+' — mayor pagador','navy')}
+    ${kpiCard('Aseguradoras 2025',pAseg25.toFixed(1)+'%',topAseg?'Top: '+topAseg.short+' '+pTop25.toFixed(1)+'%':'')}
+    ${kpiCard('Entidades activas',''+ents.length,'en período seleccionado')}
+  </div>
+  <div class="g2">
+    ${chartCard('ch-eps-donut','Mix de pagadores 2025 — participación por facturación','',230,'')}
+    ${chartCard('ch-eps-top','Top entidades por facturación 2025','',230,'')}
+  </div>
+  <div class="insight">
+    💡 <strong>Concentración:</strong> Particular + SURA representan el <strong>${(pPart25+(topAseg?pTop25:0)).toFixed(1)}%</strong> de la facturación.
+    Diversificación en aseguradoras es baja — riesgo moderado ante cambios contractuales con SURA.
+    La muestra cubre ~60% del total EEFF (facturación tipo-producto disponible).
+  </div>`;
+
+  // Donut: mix pagadores
+  const donutEnts=EPS.entidades.slice(0,8);
+  const otrosVal=EPS.total_2025-donutEnts.reduce((s,e)=>s+e.v25,0);
+  const donutData=[...donutEnts.map(e=>e.v25), Math.max(otrosVal,0)];
+  const donutLbl=[...donutEnts.map(e=>e.short),'Otras'];
+  const donutClr=[..._EPS_COLORES.slice(0,donutEnts.length),'#9e9e9e'];
+  mkChart('ch-eps-donut',{type:'doughnut',data:{labels:donutLbl,datasets:[{data:donutData,backgroundColor:donutClr,hoverOffset:6}]},
+    options:{plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10},padding:6}},
+      tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fv(ctx.parsed)+' ('+((ctx.parsed/EPS.total_2025)*100).toFixed(1)+'%)'}}}}});
+
+  // Horizontal bar top
+  const topN=ents.slice(0,8);
+  mkChart('ch-eps-top',{type:'bar',data:{
+    labels:topN.map(e=>e.short),
+    datasets:[
+      {label:'2024',data:topN.map(e=>e.v24),backgroundColor:'rgba(68,108,179,0.7)',borderRadius:3},
+      {label:'2025',data:topN.map(e=>e.v25),backgroundColor:'rgba(45,197,171,0.88)',borderRadius:3},
+    ]},
+    options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
+      scales:{x:{ticks:{callback:v=>fv(v),font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+  requestAnimationFrame(()=>{ const cv=document.getElementById('content'); if(cv)window.dispatchEvent(new Event('resize')); });
+}
+
+function buildEpsMix(){
+  const el=document.getElementById('eps-mix'); if(!el)return;
+  const ents=_efEnts(); const years=_efYears();
+  const t25=EPS.total_2025,t24=EPS.total_2024;
+  const topConc=ents.slice(0,3).reduce((s,e)=>s+e.v25,0);
+  const pConc3=t25?((topConc/t25)*100):0;
+  const top1=ents[0]; const pTop1=top1&&t25?((top1.v25/t25)*100):0;
+
+  el.innerHTML=`
+  <div class="sec-title">Concentración de Pagadores <span class="st-badge">Riesgo y diversificación</span></div>
+  <div class="kpis k4">
+    ${kpiCard('Concentración Top-1 2025',pTop1.toFixed(1)+'%',top1?top1.short+': '+fv(top1.v25):'',pTop1>50?'red':'')}
+    ${kpiCard('Concentración Top-3 2025',pConc3.toFixed(1)+'%',ents.slice(0,3).map(e=>e.short).join(' · '))}
+    ${kpiCard('Crecimiento SURA 25/24',fp(pctVar((EPS.entidades.find(e=>e.short==='SURA')||{v25:0,v24:0}).v25,(EPS.entidades.find(e=>e.short==='SURA')||{v25:0,v24:0}).v24)),'vs +'+fp(pctVar(t25,t24))+' total')}
+    ${kpiCard('Entidades <1% participación',''+ents.filter(e=>t25&&(e.v25/t25)<0.01).length,'entidades con bajo volumen')}
+  </div>
+  <div class="gfull">${chartCard('ch-eps-stack','Facturación mensual por tipo de pagador — 2025','Particular vs Aseguradoras vs Otros',200,'')}</div>
+  <div class="gfull">
+    <div class="card">
+      <div class="card-hdr"><h3>Detalle por Entidad</h3><span class="badge">2024 · 2025 · 2026 YTD</span></div>
+      <div class="card-body" style="overflow-x:auto">
+        <table class="tbl" style="min-width:720px" id="eps-detail-tbl">
+          <thead><tr>
+            <th style="text-align:left;min-width:160px;position:sticky;left:0;background:#0c3028">Entidad</th>
+            <th>Tipo</th><th>2024</th><th>2025</th><th>2026 YTD</th>
+            <th>Var 25/24</th><th>% del total 2025</th><th>Fact/transacción 25</th>
+          </tr></thead>
+          <tbody id="eps-detail-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+
+  // Stacked bar mensual Particular vs Aseguradoras
+  const partVals=EPS.entidades.filter(e=>e.tipo==='Particular').reduce((s,e)=>{s.forEach((_,i)=>s[i]+=(e.m25[i]||0));return s;},[...Array(12).fill(0)]);
+  const asegVals=EPS.entidades.filter(e=>e.tipo==='Aseguradora').reduce((s,e)=>{s.forEach((_,i)=>s[i]+=(e.m25[i]||0));return s;},[...Array(12).fill(0)]);
+  const empVals=EPS.entidades.filter(e=>e.tipo==='Empresa').reduce((s,e)=>{s.forEach((_,i)=>s[i]+=(e.m25[i]||0));return s;},[...Array(12).fill(0)]);
+  mkChart('ch-eps-stack',{type:'bar',data:{labels:MNS_E,datasets:[
+    {label:'Particular',data:partVals,backgroundColor:'rgba(45,197,171,0.85)',stack:'s',borderRadius:2},
+    {label:'Aseguradoras',data:asegVals,backgroundColor:'rgba(68,108,179,0.82)',stack:'s',borderRadius:2},
+    {label:'Empresas',data:empVals,backgroundColor:'rgba(255,193,7,0.8)',stack:'s',borderRadius:2},
+  ]},options:{scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:9}}}},
+    plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}}}});
+
+  // Detail table
+  const tbody=document.getElementById('eps-detail-body');
+  if(tbody){
+    let rows='';
+    ents.forEach(e=>{
+      const vr=pctVar(e.v25,e.v24); const pct=t25?(e.v25/t25*100):0;
+      const tkt=e.c25>0?Math.round(e.v25/e.c25):0;
+      const stickyBg='#fafaf9';
+      rows+=`<tr>
+        <td style="font-weight:600;position:sticky;left:0;background:${stickyBg}">${e.short}</td>
+        <td><span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${e.tipo==='Particular'?'#e8f5f2':e.tipo==='Aseguradora'?'#e3f2fd':'#fff3e0'};color:#333">${e.tipo}</span></td>
+        <td>${fv(e.v24)}</td>
+        <td style="font-weight:600">${fv(e.v25)}</td>
+        <td style="color:#9e9e9e">${fv(e.v26)}</td>
+        <td class="${vr>=0?'pos':'neg'}">${fp(vr)}</td>
+        <td>${pct.toFixed(1)}%</td>
+        <td style="font-size:11px;color:#607d76">${fv(tkt)}</td>
+      </tr>`;
+    });
+    tbody.innerHTML=rows;
+  }
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+}
+
+function buildEpsTendencia(){
+  const el=document.getElementById('eps-tendencia'); if(!el)return;
+  const top5=EPS.entidades.slice(0,5);
+
+  el.innerHTML=`
+  <div class="sec-title">Tendencia Mensual por Pagador <span class="st-badge">Evolución mes a mes</span></div>
+  <div class="gfull">${chartCard('ch-eps-trend25','Facturación mensual 2025 — top 5 pagadores','Líneas independientes por entidad',260,'')}</div>
+  <div class="gfull">${chartCard('ch-eps-yoy','Crecimiento YoY por entidad (2024 → 2025)','Verde = creció · Rojo = cayó',200,'')}</div>
+  <div class="insight">
+    💡 <strong>SURA</strong> muestra los meses más variables (picos en Mar, Ago, Oct).
+    <strong>Particular</strong> tiene flujo más estable con crecimiento sostenido.
+    <strong>Black Mammoth</strong> apareció en H2-2025 con alta concentración en Dic.
+  </div>`;
+
+  // Line chart tendencia 2025
+  const trendDs=top5.map((e,i)=>({
+    label:e.short, data:e.m25, borderColor:_EPS_COLORES[i], backgroundColor:'transparent',
+    borderWidth:2, pointRadius:3, tension:0.3, spanGaps:true
+  }));
+  mkChart('ch-eps-trend25',{type:'line',data:{labels:MNS_E,datasets:trendDs},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
+      scales:{y:{ticks:{callback:v=>fv(v),font:{size:9}}}}}});
+
+  // YoY bar
+  const yoyEnts=EPS.entidades.slice(0,8);
+  const yoyVals=yoyEnts.map(e=>pctVar(e.v25,e.v24));
+  mkChart('ch-eps-yoy',{type:'bar',data:{
+    labels:yoyEnts.map(e=>e.short),
+    datasets:[{label:'Var % 2025 vs 2024',data:yoyVals,
+      backgroundColor:yoyVals.map(v=>v>=0?'rgba(45,197,171,0.82)':'rgba(239,83,80,0.75)'),
+      borderRadius:3}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v=>v.toFixed(0)+'%',font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+}
+
+function buildEpsTipos(){
+  const el=document.getElementById('eps-tipos'); if(!el)return;
+  const topTipo=EPS.tipos_lbl[0]; const topTipoVal=EPS.tipos_val[0];
+  const totalTipos=EPS.tipos_val.reduce((s,v)=>s+v,0);
+
+  el.innerHTML=`
+  <div class="sec-title">Facturación por Tipo de Servicio <span class="st-badge">Composición del ingreso</span></div>
+  <div class="kpis k4">
+    ${kpiCard('Tipo #1',topTipo,(topTipoVal/totalTipos*100).toFixed(1)+'% del total — '+fv(topTipoVal))}
+    ${kpiCard('LIOs',(EPS.tipos_val[2]/totalTipos*100).toFixed(1)+'%',fv(EPS.tipos_val[2])+' — mayor margen unitario','navy')}
+    ${kpiCard('Consultas + Exámenes',(((EPS.tipos_val[3]))/totalTipos*100).toFixed(1)+'%',fv(EPS.tipos_val[3])+' en exámenes')}
+    ${kpiCard('Tipos registrados',''+EPS.tipos_lbl.length,'líneas de servicio facturadas')}
+  </div>
+  <div class="gfull">${chartCard('ch-eps-tipos','Facturación acumulada 2024+2025 por tipo de servicio','',200,'')}</div>
+  <div class="insight">
+    💡 <strong>Derechos de Sala</strong> y <strong>Honorarios</strong> representan el
+    ${((EPS.tipos_val[0]+EPS.tipos_val[1])/totalTipos*100).toFixed(0)}% de la facturación.
+    Los <strong>LIOs</strong> (${(EPS.tipos_val[2]/totalTipos*100).toFixed(1)}%) tienen el ticket unitario más alto —
+    clave para el análisis de mezcla de producto.
+  </div>`;
+
+  mkChart('ch-eps-tipos',{type:'bar',data:{
+    labels:EPS.tipos_lbl,
+    datasets:[{label:'Facturación acumulada (miles COP)',data:EPS.tipos_val,
+      backgroundColor:_EPS_COLORES.slice(0,EPS.tipos_lbl.length),borderRadius:3}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v=>fv(v),font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+}
+
 const BUILDERS = {
   'fin-inicio': buildFinInicio,
   'fin-pnl':    buildFinPnl,
@@ -7035,6 +7372,10 @@ const BUILDERS = {
   'far-inicio':    buildFarInicio,
   'far-lentes':    buildFarLentes,
   'far-compras':   buildFarCompras,
+  'eps-inicio':    buildEpsInicio,
+  'eps-mix':       buildEpsMix,
+  'eps-tendencia': buildEpsTendencia,
+  'eps-tipos':     buildEpsTipos,
   'acc-inicio':   buildAccInicio,
   'acc-plan':     buildAccPlan,
   'acc-kpi':      buildAccKpi,
@@ -7120,12 +7461,15 @@ function switchTab(tab){
   if(fb) fb.classList.toggle('visible', tab==='com'||tab==='mkt');
   const ffb=document.getElementById('fin-filter-bar');
   if(ffb) ffb.classList.toggle('visible', tab==='fin');
+  const efb=document.getElementById('eps-filter-bar');
+  if(efb) efb.classList.toggle('visible', tab==='eps');
   const ct=document.getElementById('content');
   if(ct){
     ct.classList.toggle('has-filter-bar',     tab==='com'||tab==='mkt');
     ct.classList.toggle('has-fin-filter-bar', tab==='fin');
+    ct.classList.toggle('has-eps-filter-bar', tab==='eps');
     if(tab==='fin') setTimeout(updateFinBarHeight, 50);
-    else if(tab!=='com') ct.style.paddingTop='';
+    else if(tab!=='com'&&tab!=='eps') ct.style.paddingTop='';
   }
   buildSidebar(tab);
   navigate(activeSection);
