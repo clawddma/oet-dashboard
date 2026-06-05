@@ -1092,68 +1092,128 @@ const SYNC_WEBHOOK_TOKEN = '1cfdb5a5-94b7-4657-921b-9c27afe746e6';
 // ════════════════════════════════════════
 //  EPS — Facturación por pagador / aseguradora
 //  Fuente: Excel "FACTURACION TIPO PRODUCTO 2024 2025 Oficial"
-//  Valores en miles COP. Cubre ~60% de la facturación total (por tipo de producto disponible).
+//  Valores en miles COP. Incluye desglose por cirujano, tipo de cirugía, LIOs, servicio y tendencia mensual 2025.
 // ════════════════════════════════════════
 const EPS = {
   entidades:[
-    {name:'PARTICULAR',short:'Particular',
-     v24:5316215,v25:8101101,v26:2263282,c24:12384,c25:19597,c26:4105,
-     m24:[413102,524670,478676,450247,402689,424449,442133,391636,394177,407113,541507,445818],
-     m25:[661928,563730,473173,645613,682251,662769,816625,650450,565546,829158,800649,749210],
-     m26:[699688,1112773,450821],tipo:'Particular'},
-    {name:'SEGUROS DE VIDA SURAMERICANA S.A.',short:'SURA',
-     v24:1839169,v25:2374230,v26:810071,c24:5982,c25:7276,c26:1889,
-     m24:[68998,21830,124505,186133,141365,204835,94097,247392,189561,101636,208285,250532],
-     m25:[25880,85824,295660,220173,222354,50180,168276,423295,50587,275085,296391,260525],
-     m26:[250357,229645,330069],tipo:'Aseguradora'},
-    {name:'COOMEVA MEDICINA PREPAGADA S.A.',short:'Coomeva',
-     v24:222936,v25:373681,v26:130750,c24:1128,c25:1393,c26:337,
-     m24:[3369,6641,20324,27350,40627,13922,22329,10023,36199,15503,7474,19174],
-     m25:[28271,12488,16568,20671,46542,39759,37402,51198,44360,20647,32772,23004],
-     m26:[34897,48321,47532],tipo:'Aseguradora'},
-    {name:'BLACK MAMMOTH SURGICAL SAS',short:'Black Mammoth',
-     v24:2000,v25:252596,v26:84322,c24:2,c25:314,c26:109,
-     m24:[0,2000,0,0,0,0,0,0,0,0,0,0],
-     m25:[0,0,0,0,0,0,45307,0,5402,14299,22390,165199],
-     m26:[84322,0,0],tipo:'Empresa'},
-    {name:'ALLIANZ SEGUROS DE VIDA S.A.',short:'Allianz',
-     v24:98693,v25:131454,v26:25678,c24:382,c25:486,c26:100,
-     m24:[1165,1014,21190,7014,3140,433,10960,5098,21236,3581,6353,17510],
-     m25:[1590,7461,17270,8149,5671,22848,21760,7140,2041,29384,1355,6785],
-     m26:[15362,7946,2370],tipo:'Aseguradora'},
-    {name:'COLMEDICA MEDICINA PREPAGADA S A',short:'Colmédica',
-     v24:46180,v25:91452,v26:7062,c24:361,c25:446,c26:83,
-     m24:[0,0,0,2225,3914,0,6072,1591,3741,9384,361,18893],
-     m25:[0,0,0,4410,4809,8242,8223,10455,26783,11640,0,16890],
-     m26:[1311,1395,4356],tipo:'Aseguradora'},
-    {name:'COMPAÑIA DE SEGUROS BOLIVAR S A',short:'Bolívar Seg.',
-     v24:65768,v25:80985,v26:5672,c24:211,c25:332,c26:74,
-     m24:[292,25633,112,0,11136,5192,2614,512,5407,931,6738,7202],
-     m25:[0,7016,0,5431,202,4163,14754,10126,819,3434,0,35041],
-     m26:[1765,2228,1679],tipo:'Aseguradora'},
-    {name:'MEDPLUS MEDICINA PREPAGADA S.A.',short:'Medplus',
-     v24:41399,v25:56193,v26:7650,c24:299,c25:327,c26:65,
-     m24:[0,603,0,1379,6427,582,182,9793,11005,0,2072,9355],
-     m25:[0,443,15688,360,706,4211,6461,10192,4378,3579,0,10173],
-     m26:[6015,685,950],tipo:'Aseguradora'},
-    {name:'AXA COLPATRIA MEDICINA PREPAGADA S.A.',short:'AXA Colpatria',
-     v24:25664,v25:44370,v26:3309,c24:173,c25:168,c26:32,
-     m24:[0,579,1871,0,4331,349,8612,0,161,8131,1630,0],
-     m25:[0,1581,0,10548,0,1058,349,4732,5211,2704,0,18187],
-     m26:[1521,1586,203],tipo:'Aseguradora'},
-    {name:'AXA COLPATRIA SEGUROS DE VIDA S.A.',short:'AXA Vida',
-     v24:6722,v25:16588,v26:1865,c24:83,c25:162,c26:46,
-     m24:[0,0,0,0,0,0,0,0,2656,4065,0,0],
-     m25:[0,824,0,5401,5896,2179,0,143,0,0,0,2145],
-     m26:[441,685,739],tipo:'Aseguradora'},
+    {short:'Particular',name:'PARTICULAR',
+     tipo_val:{'DERECHOS SALA':{'2024':2557453,'2025':3685701,'2026':787974},'HONORARIOS OFTALMOLOGO':{'2024':1626952,'2025':2581671,'2026':562036},'LIOS':{'2024':594486,'2025':913112,'2026':507010},'EXAMENES':{'2024':300000,'2025':419577,'2026':81804},'CONSULTAS':{'2024':29855,'2025':0,'2026':131594},'COPAGO':{'2024':84165,'2025':337056,'2026':82701},'HONORARIOS ANESTESIOLOGO':{'2024':0,'2025':0,'2026':0},'PÓLIZA':{'2024':77269,'2025':129653,'2026':18187}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':2160,'2025':2655,'2026':503},'HONORARIOS OFTALMOLOGO':{'2024':574,'2025':761,'2026':169},'LIOS':{'2024':360,'2025':609,'2026':117},'EXAMENES':{'2024':2132,'2025':2503,'2026':487},'CONSULTAS':{'2024':2532,'2025':2562,'2026':576},'COPAGO':{'2024':1929,'2025':7463,'2026':1757},'HONORARIOS ANESTESIOLOGO':{'2024':0,'2025':0,'2026':0},'PÓLIZA':{'2024':786,'2025':921,'2026':109}},
+     cir_cat:{'Refractiva':{'v':3157684,'c':3521},'Catarata':{'v':2692316,'c':813},'Córnea':{'v':272621,'c':328},'Párpados':{'v':346588,'c':228},'Vitreoretina':{'v':324327,'c':162},'Glaucoma':{'v':88904,'c':90},'Lagrimal':{'v':8792,'c':17},'Láser YAG':{'v':43023,'c':84},'Otras':{'v':96872,'c':75}},
+     lio_cat:{'Premium Multifocal':{'v':1599988,'c':527},'Premium Tórico':{'v':308708,'c':370},'Fáquico (ICL)':{'v':1311,'c':22},'Monofocal':{'v':47903,'c':83},'Estándar':{'v':56699,'c':84}},
+     docs:{'M.A. Jaramillo':{'v':960302,'c':591},'Jon Kepa B.':{'v':1622327,'c':1382},'M. Jaramillo M.':{'v':341360,'c':252},'J.E. Jaramillo':{'v':235737,'c':188},'B. Ramírez S.':{'v':1178758,'c':982},'J.A. Jaramillo H.':{'v':214891,'c':98},'J.A. Jaramillo S.':{'v':281716,'c':152},'C. Sardi C.':{'v':43476,'c':37}},
+     m25_sala:[277691,242748,256431,322473,312528,288199,367662,293386,217647,380518,388071,338345],
+     m25_lio:[79848,67608,30214,51718,67072,90258,114937,99512,82852,81283,80319,67490],
+     m25_hon:[236759,175777,113977,191406,223896,212340,247205,174614,190742,278865,262376,273715],
+     m25_total:[657139,559391,468765,642733,677753,659219,813441,648978,564484,828138,799521,747208]},
+    {short:'SURA',name:'SEGUROS DE VIDA SURAMERICANA S.A.',
+     tipo_val:{'DERECHOS SALA':{'2024':1040636,'2025':1261851,'2026':349580},'HONORARIOS OFTALMOLOGO':{'2024':584464,'2025':820074,'2026':231141},'LIOS':{'2024':8255,'2025':0,'2026':53580},'EXAMENES':{'2024':158049,'2025':234582,'2026':57187},'CONSULTAS':{'2024':0,'2025':0,'2026':67198},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':44822,'2025':57723,'2026':34904},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':575,'2025':765,'2026':217},'HONORARIOS OFTALMOLOGO':{'2024':260,'2025':332,'2026':106},'LIOS':{'2024':215,'2025':322,'2026':75},'EXAMENES':{'2024':1121,'2025':1472,'2026':340},'CONSULTAS':{'2024':3654,'2025':4157,'2026':1075},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':55,'2025':71,'2026':35},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     cir_cat:{'Refractiva':{'v':0,'c':0},'Catarata':{'v':1422025,'c':614},'Córnea':{'v':87914,'c':44},'Párpados':{'v':268326,'c':215},'Vitreoretina':{'v':51011,'c':34},'Glaucoma':{'v':134904,'c':101},'Lagrimal':{'v':452886,'c':314},'Láser YAG':{'v':170101,'c':181},'Otras':{'v':64900,'c':54}},
+     lio_cat:{'Premium Multifocal':{'v':0,'c':0},'Premium Tórico':{'v':0,'c':0},'Fáquico (ICL)':{'v':0,'c':0},'Monofocal':{'v':0,'c':0},'Estándar':{'v':61834,'c':612}},
+     docs:{'M.A. Jaramillo':{'v':487514,'c':283},'Jon Kepa B.':{'v':446285,'c':269},'M. Jaramillo M.':{'v':237740,'c':123},'J.E. Jaramillo':{'v':135199,'c':68},'B. Ramírez S.':{'v':0,'c':0},'J.A. Jaramillo H.':{'v':212119,'c':104},'J.A. Jaramillo S.':{'v':50492,'c':32},'C. Sardi C.':{'v':41477,'c':20}},
+     m25_sala:[8898,63758,173541,99270,135041,17551,83295,233642,17360,143024,152424,134046],
+     m25_lio:[0,0,0,0,0,0,0,0,0,0,0,0],
+     m25_hon:[3060,15619,97526,84719,74155,11517,60605,165082,7080,109575,110259,80877],
+     m25_total:[25880,85824,295660,220173,222354,50180,168276,423295,50587,275085,296391,260525]},
+    {short:'Coomeva',name:'COOMEVA MEDICINA PREPAGADA S.A.',
+     tipo_val:{'DERECHOS SALA':{'2024':77198,'2025':145668,'2026':52981},'HONORARIOS OFTALMOLOGO':{'2024':74297,'2025':102029,'2026':35182},'LIOS':{'2024':0,'2025':0,'2026':0},'EXAMENES':{'2024':38108,'2025':52346,'2026':9171},'CONSULTAS':{'2024':884,'2025':0,'2026':6668},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':31930,'2025':70788,'2026':25036},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':68,'2025':143,'2026':58},'HONORARIOS OFTALMOLOGO':{'2024':50,'2025':68,'2026':21},'LIOS':{'2024':0,'2025':2,'2026':0},'EXAMENES':{'2024':261,'2025':333,'2026':55},'CONSULTAS':{'2024':694,'2025':741,'2026':169},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':53,'2025':90,'2026':30},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     cir_cat:{'Refractiva':{'v':0,'c':0},'Catarata':{'v':221994,'c':154},'Córnea':{'v':391,'c':1},'Párpados':{'v':3734,'c':7},'Vitreoretina':{'v':30158,'c':54},'Glaucoma':{'v':8209,'c':19},'Lagrimal':{'v':94,'c':1},'Láser YAG':{'v':6221,'c':17},'Otras':{'v':5046,'c':16}},
+     lio_cat:{'Premium Multifocal':{'v':0,'c':2},'Premium Tórico':{'v':0,'c':0},'Fáquico (ICL)':{'v':0,'c':0},'Monofocal':{'v':0,'c':0},'Estándar':{'v':0,'c':0}},
+     docs:{'M.A. Jaramillo':{'v':56458,'c':54},'Jon Kepa B.':{'v':10143,'c':8},'M. Jaramillo M.':{'v':23101,'c':19},'J.E. Jaramillo':{'v':14879,'c':13},'B. Ramírez S.':{'v':0,'c':0},'J.A. Jaramillo H.':{'v':6811,'c':7},'J.A. Jaramillo S.':{'v':15049,'c':16},'C. Sardi C.':{'v':5015,'c':4}},
+     m25_sala:[7814,4293,5724,10825,14618,14974,13265,21791,17853,9644,15025,9841],
+     m25_lio:[0,0,0,0,0,0,0,0,0,0,0,0],
+     m25_hon:[11229,3488,4013,2395,21198,11393,12920,12974,12938,3838,4742,902],
+     m25_total:[27427,12488,16219,20671,46542,39673,37035,51198,44269,19953,32350,23004]},
+    {short:'Black Mammoth',name:'BLACK MAMMOTH SURGICAL SAS',
+     tipo_val:{'DERECHOS SALA':{'2024':2000,'2025':221509,'2026':74677},'HONORARIOS OFTALMOLOGO':{'2024':0,'2025':0,'2026':0},'LIOS':{'2024':0,'2025':2470,'2026':0},'EXAMENES':{'2024':0,'2025':17118,'2026':5135},'CONSULTAS':{'2024':0,'2025':0,'2026':0},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':0,'2025':0,'2026':0},'PÓLIZA':{'2024':0,'2025':11500,'2026':4510}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':1,'2025':123,'2026':43},'HONORARIOS OFTALMOLOGO':{'2024':0,'2025':0,'2026':0},'LIOS':{'2024':1,'2025':2,'2026':0},'EXAMENES':{'2024':0,'2025':85,'2026':27},'CONSULTAS':{'2024':0,'2025':0,'2026':0},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':0,'2025':0,'2026':0},'PÓLIZA':{'2024':0,'2025':99,'2026':39}},
+     cir_cat:{'Refractiva':{'v':162358,'c':110},'Catarata':{'v':114670,'c':32},'Córnea':{'v':11953,'c':16},'Párpados':{'v':0,'c':0},'Vitreoretina':{'v':2000,'c':1},'Glaucoma':{'v':2180,'c':2},'Lagrimal':{'v':0,'c':0},'Láser YAG':{'v':1780,'c':3},'Otras':{'v':3245,'c':3}},
+     lio_cat:{'Premium Multifocal':{'v':0,'c':0},'Premium Tórico':{'v':0,'c':0},'Fáquico (ICL)':{'v':0,'c':0},'Monofocal':{'v':2470,'c':1},'Estándar':{'v':0,'c':2}},
+     docs:{'M.A. Jaramillo':{'v':0,'c':0},'Jon Kepa B.':{'v':296186,'c':166},'M. Jaramillo M.':{'v':0,'c':0},'J.E. Jaramillo':{'v':0,'c':0},'B. Ramírez S.':{'v':0,'c':0},'J.A. Jaramillo H.':{'v':0,'c':0},'J.A. Jaramillo S.':{'v':2000,'c':1},'C. Sardi C.':{'v':0,'c':0}},
+     m25_sala:[0,0,0,0,0,0,37970,0,4700,12808,20080,145951],
+     m25_lio:[0,0,0,0,0,0,2470,0,0,0,0,0],
+     m25_hon:[0,0,0,0,0,0,0,0,0,0,0,0],
+     m25_total:[0,0,0,0,0,0,45307,0,5402,14299,22390,165199]},
+    {short:'Allianz',name:'ALLIANZ SEGUROS DE VIDA S.A.',
+     tipo_val:{'DERECHOS SALA':{'2024':23061,'2025':30303,'2026':14199},'HONORARIOS OFTALMOLOGO':{'2024':26451,'2025':33686,'2026':3825},'LIOS':{'2024':0,'2025':0,'2026':0},'EXAMENES':{'2024':12529,'2025':20289,'2026':2862},'CONSULTAS':{'2024':0,'2025':0,'2026':4793},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':5925,'2025':8094,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':14,'2025':19,'2026':6},'HONORARIOS OFTALMOLOGO':{'2024':20,'2025':21,'2026':4},'LIOS':{'2024':0,'2025':2,'2026':0},'EXAMENES':{'2024':73,'2025':92,'2026':15},'CONSULTAS':{'2024':257,'2025':330,'2026':75},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':9,'2025':10,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     cir_cat:{'Refractiva':{'v':0,'c':0},'Catarata':{'v':0,'c':0},'Córnea':{'v':3259,'c':3},'Párpados':{'v':6076,'c':6},'Vitreoretina':{'v':46696,'c':18},'Glaucoma':{'v':6854,'c':7},'Lagrimal':{'v':0,'c':0},'Láser YAG':{'v':765,'c':1},'Otras':{'v':3912,'c':4}},
+     lio_cat:{'Premium Multifocal':{'v':0,'c':0},'Premium Tórico':{'v':0,'c':0},'Fáquico (ICL)':{'v':0,'c':0},'Monofocal':{'v':0,'c':0},'Estándar':{'v':0,'c':2}},
+     docs:{'M.A. Jaramillo':{'v':9310,'c':9},'Jon Kepa B.':{'v':0,'c':0},'M. Jaramillo M.':{'v':615,'c':1},'J.E. Jaramillo':{'v':1701,'c':2},'B. Ramírez S.':{'v':0,'c':0},'J.A. Jaramillo H.':{'v':0,'c':0},'J.A. Jaramillo S.':{'v':7304,'c':4},'C. Sardi C.':{'v':35611,'c':14}},
+     m25_sala:[0,4086,1930,4208,3924,3671,3593,3921,0,4971,0,0],
+     m25_lio:[0,0,0,0,0,0,0,0,0,0,0,0],
+     m25_hon:[0,2222,5993,1074,1074,6675,6670,1680,0,8298,0,0],
+     m25_total:[1590,7461,9613,8149,5671,15191,14103,7140,2041,17301,1355,2758]},
+    {short:'Colmédica',name:'COLMEDICA MEDICINA PREPAGADA S A',
+     tipo_val:{'DERECHOS SALA':{'2024':16930,'2025':34222,'2026':1536},'HONORARIOS OFTALMOLOGO':{'2024':12799,'2025':24902,'2026':1958},'LIOS':{'2024':4193,'2025':15066,'2026':0},'EXAMENES':{'2024':7787,'2025':7479,'2026':0},'CONSULTAS':{'2024':0,'2025':0,'2026':3568},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':4471,'2025':9783,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':16,'2025':24,'2026':2},'HONORARIOS OFTALMOLOGO':{'2024':12,'2025':20,'2026':2},'LIOS':{'2024':4,'2025':12,'2026':0},'EXAMENES':{'2024':53,'2025':47,'2026':0},'CONSULTAS':{'2024':269,'2025':330,'2026':79},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':7,'2025':13,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     cir_cat:{'Refractiva':{'v':0,'c':0},'Catarata':{'v':29405,'c':16},'Córnea':{'v':1560,'c':2},'Párpados':{'v':1887,'c':3},'Vitreoretina':{'v':4396,'c':2},'Glaucoma':{'v':4218,'c':4},'Lagrimal':{'v':4740,'c':6},'Láser YAG':{'v':4527,'c':6},'Otras':{'v':1953,'c':3}},
+     lio_cat:{'Premium Multifocal':{'v':19259,'c':5},'Premium Tórico':{'v':0,'c':11},'Fáquico (ICL)':{'v':0,'c':0},'Monofocal':{'v':0,'c':0},'Estándar':{'v':0,'c':0}},
+     docs:{'M.A. Jaramillo':{'v':3465,'c':4},'Jon Kepa B.':{'v':4514,'c':3},'M. Jaramillo M.':{'v':12912,'c':8},'J.E. Jaramillo':{'v':10009,'c':8},'B. Ramírez S.':{'v':0,'c':0},'J.A. Jaramillo H.':{'v':3837,'c':2},'J.A. Jaramillo S.':{'v':648,'c':1},'C. Sardi C.':{'v':0,'c':0}},
+     m25_sala:[0,0,0,1490,1836,4119,3672,3672,8505,3163,0,7765],
+     m25_lio:[0,0,0,0,0,0,0,3340,7533,4193,0,0],
+     m25_hon:[0,0,0,1192,1533,1533,3066,1533,6734,2101,0,7209],
+     m25_total:[0,0,0,4410,4809,8242,8223,10455,26783,11640,0,16890]},
+    {short:'Bolívar',name:'COMPAÑIA DE SEGUROS BOLIVAR S A',
+     tipo_val:{'DERECHOS SALA':{'2024':21864,'2025':30996,'2026':0},'HONORARIOS OFTALMOLOGO':{'2024':17526,'2025':23676,'2026':0},'LIOS':{'2024':0,'2025':659,'2026':0},'EXAMENES':{'2024':5012,'2025':8466,'2026':0},'CONSULTAS':{'2024':0,'2025':0,'2026':5672},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':3643,'2025':4892,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':9,'2025':15,'2026':0},'HONORARIOS OFTALMOLOGO':{'2024':13,'2025':17,'2026':0},'LIOS':{'2024':1,'2025':2,'2026':0},'EXAMENES':{'2024':35,'2025':63,'2026':0},'CONSULTAS':{'2024':140,'2025':225,'2026':74},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':6,'2025':6,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     cir_cat:{'Refractiva':{'v':0,'c':0},'Catarata':{'v':29551,'c':11},'Córnea':{'v':6391,'c':4},'Párpados':{'v':481,'c':1},'Vitreoretina':{'v':10792,'c':2},'Glaucoma':{'v':1663,'c':2},'Lagrimal':{'v':2331,'c':2},'Láser YAG':{'v':0,'c':0},'Otras':{'v':1651,'c':2}},
+     lio_cat:{'Premium Multifocal':{'v':0,'c':1},'Premium Tórico':{'v':0,'c':0},'Fáquico (ICL)':{'v':0,'c':0},'Monofocal':{'v':659,'c':1},'Estándar':{'v':0,'c':1}},
+     docs:{'M.A. Jaramillo':{'v':15866,'c':7},'Jon Kepa B.':{'v':0,'c':0},'M. Jaramillo M.':{'v':11114,'c':5},'J.E. Jaramillo':{'v':1613,'c':2},'B. Ramírez S.':{'v':0,'c':0},'J.A. Jaramillo H.':{'v':0,'c':0},'J.A. Jaramillo S.':{'v':10953,'c':3},'C. Sardi C.':{'v':6589,'c':2}},
+     m25_sala:[0,2862,0,0,0,1400,8807,1363,0,1100,0,15464],
+     m25_lio:[0,659,0,0,0,0,0,0,0,0,0,0],
+     m25_hon:[0,1875,0,1050,0,1700,4114,2457,0,1248,0,11232],
+     m25_total:[0,7016,0,2091,202,4163,14754,5736,819,3434,0,30475]},
+    {short:'Medplus',name:'MEDPLUS MEDICINA PREPAGADA S.A.',
+     tipo_val:{'DERECHOS SALA':{'2024':13185,'2025':19570,'2026':1552},'HONORARIOS OFTALMOLOGO':{'2024':16359,'2025':23734,'2026':2328},'LIOS':{'2024':0,'2025':0,'2026':0},'EXAMENES':{'2024':6917,'2025':7844,'2026':0},'CONSULTAS':{'2024':0,'2025':0,'2026':2643},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':4819,'2025':5046,'2026':711},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':10,'2025':17,'2026':1},'HONORARIOS OFTALMOLOGO':{'2024':10,'2025':16,'2026':1},'LIOS':{'2024':0,'2025':0,'2026':0},'EXAMENES':{'2024':35,'2025':36,'2026':0},'CONSULTAS':{'2024':230,'2025':244,'2026':61},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':7,'2025':7,'2026':1},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     cir_cat:{'Refractiva':{'v':0,'c':0},'Catarata':{'v':22765,'c':15},'Córnea':{'v':1870,'c':2},'Párpados':{'v':0,'c':0},'Vitreoretina':{'v':1351,'c':3},'Glaucoma':{'v':1062,'c':1},'Lagrimal':{'v':2079,'c':2},'Láser YAG':{'v':5179,'c':5},'Otras':{'v':0,'c':0}},
+     lio_cat:{'Premium Multifocal':{'v':0,'c':0},'Premium Tórico':{'v':0,'c':0},'Fáquico (ICL)':{'v':0,'c':0},'Monofocal':{'v':0,'c':0},'Estándar':{'v':0,'c':0}},
+     docs:{'M.A. Jaramillo':{'v':13979,'c':10},'Jon Kepa B.':{'v':0,'c':0},'M. Jaramillo M.':{'v':4665,'c':4},'J.E. Jaramillo':{'v':4036,'c':3},'B. Ramírez S.':{'v':0,'c':0},'J.A. Jaramillo H.':{'v':0,'c':0},'J.A. Jaramillo S.':{'v':579,'c':1},'C. Sardi C.':{'v':772,'c':2}},
+     m25_sala:[0,0,5600,0,0,1136,2640,3489,1552,2465,0,2688],
+     m25_lio:[0,0,0,0,0,0,0,0,0,0,0,0],
+     m25_hon:[0,0,7932,0,0,1235,3038,4338,1893,1114,0,4184],
+     m25_total:[0,443,15688,360,706,4211,6461,10192,4378,3579,0,10173]},
+    {short:'AXA Prep.',name:'AXA COLPATRIA MEDICINA PREPAGADA S.A.',
+     tipo_val:{'DERECHOS SALA':{'2024':13794,'2025':19377,'2026':1332},'HONORARIOS OFTALMOLOGO':{'2024':10034,'2025':15025,'2026':1046},'LIOS':{'2024':0,'2025':1424,'2026':0},'EXAMENES':{'2024':1836,'2025':2126,'2026':0},'CONSULTAS':{'2024':0,'2025':0,'2026':931},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':0,'2025':6417,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':7,'2025':17,'2026':2},'HONORARIOS OFTALMOLOGO':{'2024':7,'2025':17,'2026':2},'LIOS':{'2024':2,'2025':2,'2026':0},'EXAMENES':{'2024':12,'2025':8,'2026':0},'CONSULTAS':{'2024':140,'2025':112,'2026':28},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':0,'2025':7,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     cir_cat:{'Refractiva':{'v':0,'c':0},'Catarata':{'v':20338,'c':9},'Córnea':{'v':0,'c':0},'Párpados':{'v':7639,'c':8},'Vitreoretina':{'v':1590,'c':3},'Glaucoma':{'v':1178,'c':1},'Lagrimal':{'v':626,'c':1},'Láser YAG':{'v':1493,'c':2},'Otras':{'v':1640,'c':2}},
+     lio_cat:{'Premium Multifocal':{'v':1424,'c':1},'Premium Tórico':{'v':0,'c':3},'Fáquico (ICL)':{'v':0,'c':0},'Monofocal':{'v':0,'c':0},'Estándar':{'v':0,'c':0}},
+     docs:{'M.A. Jaramillo':{'v':4980,'c':3},'Jon Kepa B.':{'v':0,'c':0},'M. Jaramillo M.':{'v':0,'c':0},'J.E. Jaramillo':{'v':10242,'c':5},'B. Ramírez S.':{'v':0,'c':0},'J.A. Jaramillo H.':{'v':6608,'c':3},'J.A. Jaramillo S.':{'v':1590,'c':3},'C. Sardi C.':{'v':0,'c':0}},
+     m25_sala:[0,243,0,5346,0,814,0,1859,1946,530,0,8638],
+     m25_lio:[0,0,0,0,0,0,0,0,0,1424,0,0],
+     m25_hon:[0,155,0,4525,0,243,0,1768,1604,750,0,5979],
+     m25_total:[0,1581,0,10548,0,1058,349,4732,5211,2704,0,18187]},
+    {short:'AXA Vida',name:'AXA COLPATRIA SEGUROS DE VIDA S.A.',
+     tipo_val:{'DERECHOS SALA':{'2024':4347,'2025':7565,'2026':0},'HONORARIOS OFTALMOLOGO':{'2024':2374,'2025':4165,'2026':0},'LIOS':{'2024':0,'2025':2847,'2026':0},'EXAMENES':{'2024':0,'2025':2011,'2026':0},'CONSULTAS':{'2024':0,'2025':0,'2026':1865},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':0,'2025':0,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     tipo_cnt:{'DERECHOS SALA':{'2024':3,'2025':5,'2026':0},'HONORARIOS OFTALMOLOGO':{'2024':3,'2025':5,'2026':0},'LIOS':{'2024':1,'2025':2,'2026':0},'EXAMENES':{'2024':0,'2025':9,'2026':0},'CONSULTAS':{'2024':75,'2025':139,'2026':46},'COPAGO':{'2024':0,'2025':0,'2026':0},'HONORARIOS ANESTESIOLOGO':{'2024':0,'2025':0,'2026':0},'PÓLIZA':{'2024':0,'2025':0,'2026':0}},
+     cir_cat:{'Refractiva':{'v':0,'c':0},'Catarata':{'v':7811,'c':3},'Córnea':{'v':1274,'c':1},'Párpados':{'v':802,'c':1},'Vitreoretina':{'v':0,'c':0},'Glaucoma':{'v':869,'c':1},'Lagrimal':{'v':0,'c':0},'Láser YAG':{'v':457,'c':1},'Otras':{'v':699,'c':1}},
+     lio_cat:{'Premium Multifocal':{'v':2847,'c':2},'Premium Tórico':{'v':0,'c':0},'Fáquico (ICL)':{'v':0,'c':1},'Monofocal':{'v':0,'c':0},'Estándar':{'v':0,'c':0}},
+     docs:{'M.A. Jaramillo':{'v':2374,'c':1},'Jon Kepa B.':{'v':0,'c':0},'M. Jaramillo M.':{'v':1670,'c':2},'J.E. Jaramillo':{'v':1274,'c':1},'B. Ramírez S.':{'v':0,'c':0},'J.A. Jaramillo H.':{'v':5437,'c':2},'J.A. Jaramillo S.':{'v':0,'c':0},'C. Sardi C.':{'v':0,'c':0}},
+     m25_sala:[0,0,0,2719,2719,869,0,0,0,0,0,1259],
+     m25_lio:[0,0,0,1424,1424,0,0,0,0,0,0,0],
+     m25_hon:[0,0,0,1259,1259,762,0,0,0,0,0,886],
+     m25_total:[0,824,0,5401,5896,2179,0,143,0,0,0,2145]},
   ],
-  total_m24:[501463,591561,648245,674510,617219,659642,587264,691381,672289,551525,789400,768483],
-  total_m25:[735298,689094,822817,928091,979306,796456,1129078,1175907,722806,1215756,1154971,1287415],
-  total_m26:[1119354,1412147,866049,0,0,0,0,0,0,0,0,0],
-  total_2024:7752981, total_2025:11636995, total_2026:3397550,
-  tipos_lbl:['Derechos Sala','Honorarios Oftalm.','LIOs','Exámenes','Copago','Honor. Anestesiol.','Póliza','Paquete Cirugía'],
-  tipos_val:[9590363,6062043,1579152,1313738,421482,258353,224684,102702],
-  fuente:'Excel facturación tipo-producto. Cubre ~60% de la facturación total EEFF.',
+  tipos_k:['DERECHOS SALA','HONORARIOS OFTALMOLOGO','LIOS','EXAMENES','CONSULTAS','COPAGO','HONORARIOS ANESTESIOLOGO','PÓLIZA'],
+  tipos_l:['D.Sala','Honor.Oftalm.','LIOs','Exámenes','Consultas','Copago','Honor.Anest.','Póliza'],
+  cir_cats:['Refractiva','Catarata','Córnea','Párpados','Vitreoretina','Glaucoma','Lagrimal','Láser YAG','Otras'],
+  lio_cats:['Premium Multifocal','Premium Tórico','Fáquico (ICL)','Monofocal','Estándar'],
+  docs_sh:['M.A. Jaramillo','Jon Kepa B.','M. Jaramillo M.','J.E. Jaramillo','B. Ramírez S.','J.A. Jaramillo H.','J.A. Jaramillo S.','C. Sardi C.'],
+  cir_cat_tot:{'Refractiva':{'v':3320042,'c':3631},'Catarata':{'v':4560876,'c':1667},'Córnea':{'v':387232,'c':401},'Párpados':{'v':635532,'c':469},'Vitreoretina':{'v':472323,'c':279},'Glaucoma':{'v':250042,'c':228},'Lagrimal':{'v':471548,'c':343},'Láser YAG':{'v':233546,'c':300},'Otras':{'v':179918,'c':160}},
+  lio_cat_tot:{'Premium Multifocal':{'v':1623517,'c':538},'Premium Tórico':{'v':308708,'c':384},'Fáquico (ICL)':{'v':1311,'c':23},'Monofocal':{'v':51032,'c':85},'Estándar':{'v':118533,'c':701}},
+  doc_tot:{
+    'M.A. Jaramillo':{'v':1554248,'c':962,'by_eps':{'Particular':{'v':960302,'c':591},'SURA':{'v':487514,'c':283},'Coomeva':{'v':56458,'c':54},'Black Mammoth':{'v':0,'c':0},'Allianz':{'v':9310,'c':9},'Colmédica':{'v':3465,'c':4},'Bolívar':{'v':15866,'c':7},'Medplus':{'v':13979,'c':10},'AXA Prep.':{'v':4980,'c':3},'AXA Vida':{'v':2374,'c':1}}},
+    'Jon Kepa B.':{'v':2379455,'c':1828,'by_eps':{'Particular':{'v':1622327,'c':1382},'SURA':{'v':446285,'c':269},'Coomeva':{'v':10143,'c':8},'Black Mammoth':{'v':296186,'c':166},'Allianz':{'v':0,'c':0},'Colmédica':{'v':4514,'c':3},'Bolívar':{'v':0,'c':0},'Medplus':{'v':0,'c':0},'AXA Prep.':{'v':0,'c':0},'AXA Vida':{'v':0,'c':0}}},
+    'M. Jaramillo M.':{'v':633178,'c':414,'by_eps':{'Particular':{'v':341360,'c':252},'SURA':{'v':237740,'c':123},'Coomeva':{'v':23101,'c':19},'Black Mammoth':{'v':0,'c':0},'Allianz':{'v':615,'c':1},'Colmédica':{'v':12912,'c':8},'Bolívar':{'v':11114,'c':5},'Medplus':{'v':4665,'c':4},'AXA Prep.':{'v':0,'c':0},'AXA Vida':{'v':1670,'c':2}}},
+    'J.E. Jaramillo':{'v':414690,'c':290,'by_eps':{'Particular':{'v':235737,'c':188},'SURA':{'v':135199,'c':68},'Coomeva':{'v':14879,'c':13},'Black Mammoth':{'v':0,'c':0},'Allianz':{'v':1701,'c':2},'Colmédica':{'v':10009,'c':8},'Bolívar':{'v':1613,'c':2},'Medplus':{'v':4036,'c':3},'AXA Prep.':{'v':10242,'c':5},'AXA Vida':{'v':1274,'c':1}}},
+    'B. Ramírez S.':{'v':1178758,'c':982,'by_eps':{'Particular':{'v':1178758,'c':982},'SURA':{'v':0,'c':0},'Coomeva':{'v':0,'c':0},'Black Mammoth':{'v':0,'c':0},'Allianz':{'v':0,'c':0},'Colmédica':{'v':0,'c':0},'Bolívar':{'v':0,'c':0},'Medplus':{'v':0,'c':0},'AXA Prep.':{'v':0,'c':0},'AXA Vida':{'v':0,'c':0}}},
+    'J.A. Jaramillo H.':{'v':449702,'c':216,'by_eps':{'Particular':{'v':214891,'c':98},'SURA':{'v':212119,'c':104},'Coomeva':{'v':6811,'c':7},'Black Mammoth':{'v':0,'c':0},'Allianz':{'v':0,'c':0},'Colmédica':{'v':3837,'c':2},'Bolívar':{'v':0,'c':0},'Medplus':{'v':0,'c':0},'AXA Prep.':{'v':6608,'c':3},'AXA Vida':{'v':5437,'c':2}}},
+    'J.A. Jaramillo S.':{'v':370332,'c':213,'by_eps':{'Particular':{'v':281716,'c':152},'SURA':{'v':50492,'c':32},'Coomeva':{'v':15049,'c':16},'Black Mammoth':{'v':2000,'c':1},'Allianz':{'v':7304,'c':4},'Colmédica':{'v':648,'c':1},'Bolívar':{'v':10953,'c':3},'Medplus':{'v':579,'c':1},'AXA Prep.':{'v':1590,'c':3},'AXA Vida':{'v':0,'c':0}}},
+    'C. Sardi C.':{'v':132939,'c':79,'by_eps':{'Particular':{'v':43476,'c':37},'SURA':{'v':41477,'c':20},'Coomeva':{'v':5015,'c':4},'Black Mammoth':{'v':0,'c':0},'Allianz':{'v':35611,'c':14},'Colmédica':{'v':0,'c':0},'Bolívar':{'v':6589,'c':2},'Medplus':{'v':772,'c':2},'AXA Prep.':{'v':0,'c':0},'AXA Vida':{'v':0,'c':0}}},
+  },
 };
 
 // ════════════════════════════════════════
@@ -2232,7 +2292,7 @@ function updateFilterBarHeight(){
 const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-honorarios','com-lentes','com-trend','com-meta'];
 const MKT_SECS=['mkt-inicio','mkt-lentes','mkt-growth','mkt-cirujanos','mkt-roi'];
 const FAR_SECS=['far-inicio','far-lentes','far-compras'];
-const EPS_SECS=['eps-inicio','eps-mix','eps-tendencia','eps-tipos'];
+const EPS_SECS=['eps-inicio','eps-cirujanos','eps-cirugias','eps-lentes','eps-servicios','eps-tendencia'];
 function clearTabBuilt(secs){
   secs.forEach(sid=>{
     const el=document.getElementById(sid);
@@ -2707,10 +2767,12 @@ const NAVS = {
     {id:'far-compras',   label:'Compras (en proc.)',icon:'📦'},
   ],
   eps:[
-    {id:'eps-inicio',    label:'Inicio',           icon:'🏠'},
-    {id:'eps-mix',       label:'Concentración',    icon:'🥧'},
-    {id:'eps-tendencia', label:'Tendencia',        icon:'📈'},
-    {id:'eps-tipos',     label:'Por Servicio',     icon:'🔬'},
+    {id:'eps-inicio',     label:'Inicio',          icon:'🏠'},
+    {id:'eps-cirujanos',  label:'Cirujanos',        icon:'👨‍⚕️'},
+    {id:'eps-cirugias',   label:'Tipos de Cirugía', icon:'🔬'},
+    {id:'eps-lentes',     label:'LIOs & Lentes',    icon:'👁️'},
+    {id:'eps-servicios',  label:'Por Servicio',     icon:'📋'},
+    {id:'eps-tendencia',  label:'Tendencia',        icon:'📈'},
   ],
   acc:[
     {id:'acc-inicio',   label:'Inicio',           icon:'🏠'},
@@ -7159,122 +7221,373 @@ let activeTab='fin', activeSection='fin-inicio';
 const MNS_E=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const _YC_E={2024:'rgba(68,108,179,0.82)',2025:'rgba(45,197,171,0.88)',2026:'rgba(255,193,7,0.88)'};
 const _EPS_COLORES=['#2dc5ab','#446cb3','#ffc107','#ef5350','#ff9800','#26a69a','#7986cb','#66bb6a','#ab47bc','#ec407a'];
+const _CIR_CAT_COLORES=['#446cb3','#2dc5ab','#ffc107','#ef5350','#ff9800','#26a69a','#7986cb','#66bb6a','#ab47bc'];
+const _LIO_COLORES=['#ffc107','#2dc5ab','#446cb3','#ff9800','#9e9e9e'];
 
 function buildEpsInicio(){
   const el=document.getElementById('eps-inicio'); if(!el)return;
-  const ents=_efEnts(); const years=_efYears();
-  const ly=years[years.length-1]||2025, py=years.length>1?years[years.length-2]:null;
-  const t25=_efTotal(2025), t24=_efTotal(2024);
-  const part=EPS.entidades.find(e=>e.tipo==='Particular');
-  const pPart25=part?(part.v25/EPS.total_2025*100):0;
-  const pAseg25=100-pPart25;
-  const topAseg=EPS.entidades.filter(e=>e.tipo==='Aseguradora').sort((a,b)=>b.v25-a.v25)[0];
-  const pTop25=topAseg?(topAseg.v25/EPS.total_2025*100):0;
-  const varTot=pctVar(t25,t24);
+  const ents=_efEnts();
+  // totales 2025 y 2024 desde tipo_val
+  const _tv25=e=>Object.values(e.tipo_val).reduce((s,y)=>s+(y['2025']||0),0);
+  const _tv24=e=>Object.values(e.tipo_val).reduce((s,y)=>s+(y['2024']||0),0);
+  const tot25=ents.reduce((s,e)=>s+_tv25(e),0);
+  const tot24=ents.reduce((s,e)=>s+_tv24(e),0);
+  // cirugías totales
+  const totCx=Object.values(EPS.cir_cat_tot).reduce((s,v)=>s+v.c,0);
+  const topCat=EPS.cir_cats.reduce((best,c)=>EPS.cir_cat_tot[c].c>(EPS.cir_cat_tot[best]||{c:0}).c?c:best,EPS.cir_cats[0]);
+  // LIOs
+  const totLio=Object.values(EPS.lio_cat_tot).reduce((s,v)=>s+v.c,0);
+  const premLio=(EPS.lio_cat_tot['Premium Multifocal'].c+EPS.lio_cat_tot['Premium Tórico'].c);
+  const pctPrem=totLio?((premLio/totLio)*100):0;
+  // concentración: top 2
+  const sorted=[...ents].sort((a,b)=>_tv25(b)-_tv25(a));
+  const top2pct=tot25?(((_tv25(sorted[0])||0)+(_tv25(sorted[1])||0))/tot25*100):0;
 
   el.innerHTML=`
-  <div class="sec-title">Pagadores — EPS, Aseguradoras y Particular <span class="st-badge">Fuente: Facturación tipo-producto</span></div>
+  <div class="sec-title">Pagadores — EPS, Aseguradoras y Particular <span class="st-badge">Fuente: Facturación tipo-producto 2025</span></div>
   <div class="kpis k4">
-    ${kpiCard('Facturado 2025 (muestra)',fv(EPS.total_2025),fp(pctVar(EPS.total_2025,EPS.total_2024))+' vs 2024')}
-    ${kpiCard('Particular 2025',pPart25.toFixed(1)+'%',fv(part?part.v25:0)+' — mayor pagador','navy')}
-    ${kpiCard('Aseguradoras 2025',pAseg25.toFixed(1)+'%',topAseg?'Top: '+topAseg.short+' '+pTop25.toFixed(1)+'%':'')}
+    ${kpiCard('Facturado 2025',fv(tot25),fp(pctVar(tot25,tot24))+' vs 2024')}
+    ${kpiCard('Total Cirugías',totCx.toLocaleString('es-CO'),'Top: '+topCat+' ('+EPS.cir_cat_tot[topCat].c+' cx)')}
+    ${kpiCard('LIOs Implantados',totLio+' impl.',fp(pctPrem)+' premium (Multifocal+Tórico)','navy')}
     ${kpiCard('Entidades activas',''+ents.length,'en período seleccionado')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-donut','Mix de pagadores 2025 — participación por facturación','',230,'')}
-    ${chartCard('ch-eps-top','Top entidades por facturación 2025','',230,'')}
+    ${chartCard('ch-eps-donut','Mix de pagadores 2025','Participación por facturación',230,'')}
+    ${chartCard('ch-eps-topbar','Top entidades — facturación 2024 vs 2025','',230,'')}
   </div>
   <div class="insight">
-    💡 <strong>Concentración:</strong> Particular + SURA representan el <strong>${(pPart25+(topAseg?pTop25:0)).toFixed(1)}%</strong> de la facturación.
+    💡 <strong>Concentración:</strong> ${sorted[0]?sorted[0].short:''} + ${sorted[1]?sorted[1].short:''} representan el <strong>${top2pct.toFixed(1)}%</strong> de la facturación.
     Diversificación en aseguradoras es baja — riesgo moderado ante cambios contractuales con SURA.
-    La muestra cubre ~60% del total EEFF (facturación tipo-producto disponible).
+    Particular domina el segmento refractivo y LIOs premium.
   </div>`;
 
-  // Donut: mix pagadores
-  const donutEnts=EPS.entidades.slice(0,8);
-  const otrosVal=EPS.total_2025-donutEnts.reduce((s,e)=>s+e.v25,0);
-  const donutData=[...donutEnts.map(e=>e.v25), Math.max(otrosVal,0)];
-  const donutLbl=[...donutEnts.map(e=>e.short),'Otras'];
-  const donutClr=[..._EPS_COLORES.slice(0,donutEnts.length),'#9e9e9e'];
-  mkChart('ch-eps-donut',{type:'doughnut',data:{labels:donutLbl,datasets:[{data:donutData,backgroundColor:donutClr,hoverOffset:6}]},
+  // Donut mix
+  const tot25arr=ents.map(e=>_tv25(e));
+  mkChart('ch-eps-donut',{type:'doughnut',data:{labels:ents.map(e=>e.short),datasets:[{data:tot25arr,backgroundColor:_EPS_COLORES,hoverOffset:6}]},
     options:{plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10},padding:6}},
-      tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fv(ctx.parsed)+' ('+((ctx.parsed/EPS.total_2025)*100).toFixed(1)+'%)'}}}}});
+      tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fv(ctx.parsed)+' ('+((ctx.parsed/tot25)*100).toFixed(1)+'%)'}}}}});
 
-  // Horizontal bar top
-  const topN=ents.slice(0,8);
-  mkChart('ch-eps-top',{type:'bar',data:{
-    labels:topN.map(e=>e.short),
+  // Top bar horizontal 2024 vs 2025
+  const top8=sorted.slice(0,8);
+  mkChart('ch-eps-topbar',{type:'bar',data:{
+    labels:top8.map(e=>e.short),
     datasets:[
-      {label:'2024',data:topN.map(e=>e.v24),backgroundColor:'rgba(68,108,179,0.7)',borderRadius:3},
-      {label:'2025',data:topN.map(e=>e.v25),backgroundColor:'rgba(45,197,171,0.88)',borderRadius:3},
+      {label:'2024',data:top8.map(e=>_tv24(e)),backgroundColor:'rgba(68,108,179,0.7)',borderRadius:3},
+      {label:'2025',data:top8.map(e=>_tv25(e)),backgroundColor:'rgba(45,197,171,0.88)',borderRadius:3},
     ]},
     options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
       scales:{x:{ticks:{callback:v=>fv(v),font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
-  requestAnimationFrame(()=>{ const cv=document.getElementById('content'); if(cv)window.dispatchEvent(new Event('resize')); });
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
 
-function buildEpsMix(){
-  const el=document.getElementById('eps-mix'); if(!el)return;
-  const ents=_efEnts(); const years=_efYears();
-  const t25=EPS.total_2025,t24=EPS.total_2024;
-  const topConc=ents.slice(0,3).reduce((s,e)=>s+e.v25,0);
-  const pConc3=t25?((topConc/t25)*100):0;
-  const top1=ents[0]; const pTop1=top1&&t25?((top1.v25/t25)*100):0;
+function buildEpsCirujanos(){
+  const el=document.getElementById('eps-cirujanos'); if(!el)return;
+  const docs=EPS.docs_sh;
+  const epsNames=EPS.entidades.map(e=>e.short);
+
+  // KPI data from doc_tot
+  const sorted=[...docs].sort((a,b)=>EPS.doc_tot[b].c-EPS.doc_tot[a].c);
+  const topVol=sorted[0];
+  const topVal=[...docs].sort((a,b)=>EPS.doc_tot[b].v-EPS.doc_tot[a].v)[0];
+  // most diverse = most EPS with c>0
+  const diversity=d=>Object.values(EPS.doc_tot[d].by_eps).filter(x=>x.c>0).length;
+  const topDiv=[...docs].sort((a,b)=>diversity(b)-diversity(a))[0];
+  // B. Ramírez S. = 100% Particular
+  const excl='B. Ramírez S.';
 
   el.innerHTML=`
-  <div class="sec-title">Concentración de Pagadores <span class="st-badge">Riesgo y diversificación</span></div>
+  <div class="sec-title">Cirujanos por Pagador <span class="st-badge">Distribución de cirugías y facturación</span></div>
   <div class="kpis k4">
-    ${kpiCard('Concentración Top-1 2025',pTop1.toFixed(1)+'%',top1?top1.short+': '+fv(top1.v25):'',pTop1>50?'red':'')}
-    ${kpiCard('Concentración Top-3 2025',pConc3.toFixed(1)+'%',ents.slice(0,3).map(e=>e.short).join(' · '))}
-    ${kpiCard('Crecimiento SURA 25/24',fp(pctVar((EPS.entidades.find(e=>e.short==='SURA')||{v25:0,v24:0}).v25,(EPS.entidades.find(e=>e.short==='SURA')||{v25:0,v24:0}).v24)),'vs +'+fp(pctVar(t25,t24))+' total')}
-    ${kpiCard('Entidades <1% participación',''+ents.filter(e=>t25&&(e.v25/t25)<0.01).length,'entidades con bajo volumen')}
+    ${kpiCard('Top por volumen',topVol,EPS.doc_tot[topVol].c+' cx — líder absoluto')}
+    ${kpiCard('Top por facturación',topVal,fv(EPS.doc_tot[topVal].v),'navy')}
+    ${kpiCard('Más diverso',topDiv,diversity(topDiv)+' entidades atendidas')}
+    ${kpiCard('Exclusivo Particular',excl,'100% Particular — '+EPS.doc_tot[excl].c+' cx')}
   </div>
-  <div class="gfull">${chartCard('ch-eps-stack','Facturación mensual por tipo de pagador — 2025','Particular vs Aseguradoras vs Otros',200,'')}</div>
+  <div class="g2">
+    ${chartCard('ch-eps-doc-bar','Cirugías por cirujano y pagador','Stacked — cada color = EPS',280,'')}
+    ${chartCard('ch-eps-doc-val','Facturación total por cirujano 2025','',230,'')}
+  </div>
   <div class="gfull">
     <div class="card">
-      <div class="card-hdr"><h3>Detalle por Entidad</h3><span class="badge">2024 · 2025 · 2026 YTD</span></div>
+      <div class="card-hdr"><h3>Detalle: Cirugías por Cirujano × EPS</h3><span class="badge">Conteo de cirugías</span></div>
       <div class="card-body" style="overflow-x:auto">
-        <table class="tbl" style="min-width:720px" id="eps-detail-tbl">
+        <table class="tbl" style="min-width:900px" id="eps-doc-tbl">
           <thead><tr>
-            <th style="text-align:left;min-width:160px;position:sticky;left:0;background:#0c3028">Entidad</th>
-            <th>Tipo</th><th>2024</th><th>2025</th><th>2026 YTD</th>
-            <th>Var 25/24</th><th>% del total 2025</th><th>Fact/transacción 25</th>
+            <th style="text-align:left;min-width:150px;position:sticky;left:0;background:#0c3028">Cirujano</th>
+            ${epsNames.map(s=>`<th>${s}</th>`).join('')}
+            <th>Total</th>
           </tr></thead>
-          <tbody id="eps-detail-body"></tbody>
+          <tbody id="eps-doc-body"></tbody>
         </table>
       </div>
     </div>
   </div>`;
 
-  // Stacked bar mensual Particular vs Aseguradoras
-  const partVals=EPS.entidades.filter(e=>e.tipo==='Particular').reduce((s,e)=>{s.forEach((_,i)=>s[i]+=(e.m25[i]||0));return s;},[...Array(12).fill(0)]);
-  const asegVals=EPS.entidades.filter(e=>e.tipo==='Aseguradora').reduce((s,e)=>{s.forEach((_,i)=>s[i]+=(e.m25[i]||0));return s;},[...Array(12).fill(0)]);
-  const empVals=EPS.entidades.filter(e=>e.tipo==='Empresa').reduce((s,e)=>{s.forEach((_,i)=>s[i]+=(e.m25[i]||0));return s;},[...Array(12).fill(0)]);
-  mkChart('ch-eps-stack',{type:'bar',data:{labels:MNS_E,datasets:[
-    {label:'Particular',data:partVals,backgroundColor:'rgba(45,197,171,0.85)',stack:'s',borderRadius:2},
-    {label:'Aseguradoras',data:asegVals,backgroundColor:'rgba(68,108,179,0.82)',stack:'s',borderRadius:2},
-    {label:'Empresas',data:empVals,backgroundColor:'rgba(255,193,7,0.8)',stack:'s',borderRadius:2},
-  ]},options:{scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:9}}}},
-    plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}}}});
+  // Stacked bar: docs x EPS (count)
+  const docDs=epsNames.map((sh,i)=>({
+    label:sh,
+    data:docs.map(d=>EPS.doc_tot[d].by_eps[sh]?EPS.doc_tot[d].by_eps[sh].c:0),
+    backgroundColor:_EPS_COLORES[i%10],stack:'s',borderRadius:2
+  }));
+  mkChart('ch-eps-doc-bar',{type:'bar',data:{labels:docs,datasets:docDs},
+    options:{indexAxis:'y',scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:10}}}},
+      plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
 
-  // Detail table
-  const tbody=document.getElementById('eps-detail-body');
+  // Horizontal bar: total value per doc
+  const sortedVal=[...docs].sort((a,b)=>EPS.doc_tot[b].v-EPS.doc_tot[a].v);
+  mkChart('ch-eps-doc-val',{type:'bar',data:{
+    labels:sortedVal,
+    datasets:[{label:'Facturación 2025 (miles COP)',data:sortedVal.map(d=>EPS.doc_tot[d].v),
+      backgroundColor:'rgba(45,197,171,0.85)',borderRadius:3}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v=>fv(v),font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+
+  // Table
+  const tbody=document.getElementById('eps-doc-body');
+  if(tbody){
+    let rows='';
+    docs.forEach(d=>{
+      const bg='#fafaf9';
+      const cells=epsNames.map(sh=>{
+        const c=(EPS.doc_tot[d].by_eps[sh]||{c:0}).c;
+        return `<td>${c>0?c:''}</td>`;
+      }).join('');
+      rows+=`<tr><td style="font-weight:600;position:sticky;left:0;background:${bg}">${d}</td>${cells}<td style="font-weight:700">${EPS.doc_tot[d].c}</td></tr>`;
+    });
+    tbody.innerHTML=rows;
+  }
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+}
+
+function buildEpsCirugias(){
+  const el=document.getElementById('eps-cirugias'); if(!el)return;
+  const cats=EPS.cir_cats;
+  const ents=EPS.entidades;
+
+  const refTot=EPS.cir_cat_tot['Refractiva'];
+  const catTot=EPS.cir_cat_tot['Catarata'];
+  const totCx=cats.reduce((s,c)=>s+EPS.cir_cat_tot[c].c,0);
+
+  el.innerHTML=`
+  <div class="sec-title">Tipos de Cirugía por Pagador <span class="st-badge">Composición del mix quirúrgico</span></div>
+  <div class="kpis k4">
+    ${kpiCard('Refractiva (PRK+LASIK)',refTot.c+' cx',fv(refTot.v)+' — '+((refTot.c/totCx)*100).toFixed(1)+'% del total')}
+    ${kpiCard('Catarata',catTot.c+' cx',fv(catTot.v)+' — '+((catTot.c/totCx)*100).toFixed(1)+'% del total','navy')}
+    ${kpiCard('Domina Particular','Refractiva','3.521 cx — 97% de toda la refractiva')}
+    ${kpiCard('Domina SURA','Catarata + Lagrimal','614 cx catarata · 314 lagrimal')}
+  </div>
+  <div class="g2">
+    ${chartCard('ch-eps-cir-cat','Cirugías por categoría — total clínica','Conteo total todas las entidades',230,'')}
+    ${chartCard('ch-eps-cir-eps','Tipos de cirugía — top 5 pagadores','Agrupado por categoría',230,'')}
+  </div>
+  <div class="gfull">
+    <div class="card">
+      <div class="card-hdr"><h3>Detalle: Cirugías por EPS × Categoría</h3><span class="badge">Conteo de cirugías</span></div>
+      <div class="card-body" style="overflow-x:auto">
+        <table class="tbl" style="min-width:900px">
+          <thead><tr>
+            <th style="text-align:left;min-width:150px;position:sticky;left:0;background:#0c3028">Entidad</th>
+            ${cats.map(c=>`<th style="font-size:10px">${c}</th>`).join('')}
+            <th>Total</th>
+          </tr></thead>
+          <tbody id="eps-cir-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="insight">
+    💡 <strong>PARTICULAR</strong> domina la refractiva (97%), <strong>SURA</strong> domina catarata (37% del total).
+    Concentración quirúrgica por EPS = oportunidad de negociación de tarifas diferenciadas.
+  </div>`;
+
+  // Horizontal bar total por categoría
+  mkChart('ch-eps-cir-cat',{type:'bar',data:{
+    labels:cats,
+    datasets:[{label:'Cirugías',data:cats.map(c=>EPS.cir_cat_tot[c].c),
+      backgroundColor:_CIR_CAT_COLORES,borderRadius:3}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+
+  // Grouped bar top 5 EPS x category (first 6 cats)
+  const top5=EPS.entidades.slice(0,5);
+  const main6=cats.slice(0,6);
+  const epsCirDs=top5.map((e,i)=>({
+    label:e.short,
+    data:main6.map(c=>e.cir_cat[c]?e.cir_cat[c].c:0),
+    backgroundColor:_EPS_COLORES[i],borderRadius:3
+  }));
+  mkChart('ch-eps-cir-eps',{type:'bar',data:{labels:main6,datasets:epsCirDs},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}},
+      scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // Table
+  const tbody=document.getElementById('eps-cir-body');
   if(tbody){
     let rows='';
     ents.forEach(e=>{
-      const vr=pctVar(e.v25,e.v24); const pct=t25?(e.v25/t25*100):0;
-      const tkt=e.c25>0?Math.round(e.v25/e.c25):0;
-      const stickyBg='#fafaf9';
-      rows+=`<tr>
-        <td style="font-weight:600;position:sticky;left:0;background:${stickyBg}">${e.short}</td>
-        <td><span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${e.tipo==='Particular'?'#e8f5f2':e.tipo==='Aseguradora'?'#e3f2fd':'#fff3e0'};color:#333">${e.tipo}</span></td>
-        <td>${fv(e.v24)}</td>
-        <td style="font-weight:600">${fv(e.v25)}</td>
-        <td style="color:#9e9e9e">${fv(e.v26)}</td>
-        <td class="${vr>=0?'pos':'neg'}">${fp(vr)}</td>
-        <td>${pct.toFixed(1)}%</td>
-        <td style="font-size:11px;color:#607d76">${fv(tkt)}</td>
-      </tr>`;
+      const tot=cats.reduce((s,c)=>s+(e.cir_cat[c]?e.cir_cat[c].c:0),0);
+      const cells=cats.map(c=>{
+        const v=e.cir_cat[c]?e.cir_cat[c].c:0;
+        return `<td>${v>0?v:''}</td>`;
+      }).join('');
+      rows+=`<tr><td style="font-weight:600;position:sticky;left:0;background:#fafaf9">${e.short}</td>${cells}<td style="font-weight:700">${tot}</td></tr>`;
+    });
+    tbody.innerHTML=rows;
+  }
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+}
+
+function buildEpsLentes(){
+  const el=document.getElementById('eps-lentes'); if(!el)return;
+  const cats=EPS.lio_cats;
+  const ents=EPS.entidades;
+
+  const totLio=cats.reduce((s,c)=>s+EPS.lio_cat_tot[c].c,0);
+  const prem=EPS.lio_cat_tot['Premium Multifocal'].c+EPS.lio_cat_tot['Premium Tórico'].c;
+  const pctPrem=totLio?((prem/totLio)*100):0;
+  const totVal=cats.reduce((s,c)=>s+EPS.lio_cat_tot[c].v,0);
+  const ticketAvg=totLio?Math.round(totVal/totLio):0;
+  const faq=EPS.lio_cat_tot['Fáquico (ICL)'].c;
+
+  el.innerHTML=`
+  <div class="sec-title">LIOs & Lentes Intraoculares <span class="st-badge">Mix de implantes por pagador</span></div>
+  <div class="kpis k4">
+    ${kpiCard('Total LIOs implantados',totLio+' impl.','acumulado todas las entidades')}
+    ${kpiCard('Premium (Multifocal+Tórico)',prem+' ('+pctPrem.toFixed(1)+'%)','mayor margen — exclusivo Particular','navy')}
+    ${kpiCard('Ticket promedio LIO',fv(ticketAvg),'valor / implante')}
+    ${kpiCard('Fáquicos ICL',faq+' impl.','cirugías refractivas con lente fáquico')}
+  </div>
+  <div class="g2">
+    ${chartCard('ch-eps-lio-donut','Mix LIOs — total clínica','Por tipo de lente',220,'')}
+    ${chartCard('ch-eps-lio-eps','LIOs por pagador','Stacked por tipo de lente',250,'')}
+  </div>
+  <div class="gfull">
+    <div class="card">
+      <div class="card-hdr"><h3>Detalle: LIOs por EPS × Categoría</h3><span class="badge">Conteo · Valor (miles COP)</span></div>
+      <div class="card-body" style="overflow-x:auto">
+        <table class="tbl" style="min-width:800px">
+          <thead><tr>
+            <th style="text-align:left;min-width:140px;position:sticky;left:0;background:#0c3028">Entidad</th>
+            ${cats.map(c=>`<th style="font-size:10px">${c}</th>`).join('')}
+            <th>Total cx</th>
+          </tr></thead>
+          <tbody id="eps-lio-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="insight">
+    💡 <strong>Particular</strong> concentra el 99% de las LIOs premium.
+    <strong>SURA</strong> importa solo lentes estándar (612 cx) — oportunidad de upsell si se negocia cobertura multifocal.
+  </div>`;
+
+  // Donut mix LIOs
+  mkChart('ch-eps-lio-donut',{type:'doughnut',data:{labels:cats,
+    datasets:[{data:cats.map(c=>EPS.lio_cat_tot[c].c),backgroundColor:_LIO_COLORES,hoverOffset:6}]},
+    options:{plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10},padding:6}},
+      tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.parsed+' impl. ('+((ctx.parsed/totLio)*100).toFixed(1)+'%)'}}}}});
+
+  // Stacked bar EPS x LIO type
+  const lioCatDs=cats.map((c,i)=>({
+    label:c,
+    data:ents.map(e=>e.lio_cat[c]?e.lio_cat[c].c:0),
+    backgroundColor:_LIO_COLORES[i],stack:'s',borderRadius:2
+  }));
+  mkChart('ch-eps-lio-eps',{type:'bar',data:{labels:ents.map(e=>e.short),datasets:lioCatDs},
+    options:{indexAxis:'y',scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:10}}}},
+      plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
+
+  // Table
+  const tbody=document.getElementById('eps-lio-body');
+  if(tbody){
+    let rows='';
+    ents.forEach(e=>{
+      const tot=cats.reduce((s,c)=>s+(e.lio_cat[c]?e.lio_cat[c].c:0),0);
+      const cells=cats.map(c=>{
+        const lc=e.lio_cat[c]||{c:0,v:0};
+        return `<td>${lc.c>0?lc.c+'<br><span style="font-size:10px;color:#607d76">'+fv(lc.v)+'</span>':''}</td>`;
+      }).join('');
+      rows+=`<tr><td style="font-weight:600;position:sticky;left:0;background:#fafaf9">${e.short}</td>${cells}<td style="font-weight:700">${tot||''}</td></tr>`;
+    });
+    tbody.innerHTML=rows;
+  }
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+}
+
+function buildEpsServicios(){
+  const el=document.getElementById('eps-servicios'); if(!el)return;
+  const ents=EPS.entidades;
+  const tks=EPS.tipos_k;
+  const tls=EPS.tipos_l;
+
+  const _sum25=k=>ents.reduce((s,e)=>s+((e.tipo_val[k]||{})['2025']||0),0);
+  const _sum24=k=>ents.reduce((s,e)=>s+((e.tipo_val[k]||{})['2024']||0),0);
+
+  const sala25=_sum25('DERECHOS SALA');
+  const hon25=_sum25('HONORARIOS OFTALMOLOGO');
+  const lio25=_sum25('LIOS');
+  const exam25=_sum25('EXAMENES');
+  const cons25=_sum25('CONSULTAS');
+
+  el.innerHTML=`
+  <div class="sec-title">Facturación por Tipo de Servicio <span class="st-badge">Composición del ingreso por EPS</span></div>
+  <div class="kpis k4">
+    ${kpiCard('Derechos de Sala 2025',fv(sala25),fp(pctVar(sala25,_sum24('DERECHOS SALA')))+' vs 2024')}
+    ${kpiCard('Honorarios Oftalm. 2025',fv(hon25),fp(pctVar(hon25,_sum24('HONORARIOS OFTALMOLOGO')))+' vs 2024','navy')}
+    ${kpiCard('LIOs 2025',fv(lio25),fp(pctVar(lio25,_sum24('LIOS')))+' vs 2024')}
+    ${kpiCard('Exámenes + Consultas',fv(exam25+cons25),'combinado ambas líneas')}
+  </div>
+  <div class="g2">
+    ${chartCard('ch-eps-svc-stacked','Facturación por EPS y tipo de servicio 2025','Stacked bars',270,'')}
+    ${chartCard('ch-eps-svc-mix','Mix de servicios 2025 — total clínica','',220,'')}
+  </div>
+  <div class="gfull">
+    <div class="card">
+      <div class="card-hdr"><h3>EPS × Tipo de Servicio — 2024 · 2025 · Var%</h3><span class="badge">miles COP</span></div>
+      <div class="card-body" style="overflow-x:auto">
+        <table class="tbl" style="min-width:1000px">
+          <thead><tr>
+            <th style="text-align:left;min-width:140px;position:sticky;left:0;background:#0c3028">Entidad</th>
+            ${tls.map(l=>`<th style="font-size:9px">2024<br>${l}</th><th style="font-size:9px">2025<br>${l}</th><th style="font-size:9px">Var%</th>`).join('')}
+          </tr></thead>
+          <tbody id="eps-svc-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+
+  // Stacked bar EPS x service type
+  const svcColors=['rgba(45,197,171,0.85)','rgba(68,108,179,0.82)','rgba(255,193,7,0.88)','rgba(239,83,80,0.75)','rgba(255,152,0,0.8)'];
+  const main5k=tks.slice(0,5);
+  const svcDs=main5k.map((k,i)=>({
+    label:tls[i],
+    data:ents.map(e=>(e.tipo_val[k]||{})['2025']||0),
+    backgroundColor:svcColors[i],stack:'s',borderRadius:2
+  }));
+  mkChart('ch-eps-svc-stacked',{type:'bar',data:{labels:ents.map(e=>e.short),datasets:svcDs},
+    options:{scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:9}}}},
+      plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
+
+  // Donut service mix
+  const svcTotals=main5k.map(k=>_sum25(k));
+  mkChart('ch-eps-svc-mix',{type:'doughnut',data:{labels:tls.slice(0,5),
+    datasets:[{data:svcTotals,backgroundColor:svcColors,hoverOffset:6}]},
+    options:{plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10},padding:6}},
+      tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fv(ctx.parsed)}}}}});
+
+  // Table
+  const tbody=document.getElementById('eps-svc-body');
+  if(tbody){
+    let rows='';
+    ents.forEach(e=>{
+      let cells='';
+      tks.forEach(k=>{
+        const v24=(e.tipo_val[k]||{})['2024']||0;
+        const v25=(e.tipo_val[k]||{})['2025']||0;
+        const vr=pctVar(v25,v24);
+        cells+=`<td style="font-size:10px">${fv(v24)}</td><td style="font-weight:600;font-size:10px">${fv(v25)}</td><td class="${vr>=0?'pos':'neg'}" style="font-size:10px">${fp(vr)}</td>`;
+      });
+      rows+=`<tr><td style="font-weight:600;position:sticky;left:0;background:#fafaf9">${e.short}</td>${cells}</tr>`;
     });
     tbody.innerHTML=rows;
   }
@@ -7285,65 +7598,46 @@ function buildEpsTendencia(){
   const el=document.getElementById('eps-tendencia'); if(!el)return;
   const top5=EPS.entidades.slice(0,5);
 
+  // Best and worst month 2025 (total across all entities)
+  const totByMonth=Array(12).fill(0);
+  EPS.entidades.forEach(e=>e.m25_total.forEach((v,i)=>totByMonth[i]+=v));
+  const maxM=totByMonth.indexOf(Math.max(...totByMonth));
+  const minMFiltered=totByMonth.map((v,i)=>v>0?v:Infinity);
+  const minM=minMFiltered.indexOf(Math.min(...minMFiltered));
+
   el.innerHTML=`
-  <div class="sec-title">Tendencia Mensual por Pagador <span class="st-badge">Evolución mes a mes</span></div>
-  <div class="gfull">${chartCard('ch-eps-trend25','Facturación mensual 2025 — top 5 pagadores','Líneas independientes por entidad',260,'')}</div>
-  <div class="gfull">${chartCard('ch-eps-yoy','Crecimiento YoY por entidad (2024 → 2025)','Verde = creció · Rojo = cayó',200,'')}</div>
+  <div class="sec-title">Tendencia Mensual 2025 — Top 5 Pagadores <span class="st-badge">Evolución mes a mes</span></div>
+  <div class="kpis k4">
+    ${kpiCard('Mejor mes 2025',MNS_E[maxM],fv(totByMonth[maxM])+' — total clínica')}
+    ${kpiCard('Mes más bajo 2025',MNS_E[minM<12?minM:0],fv(totByMonth[minM<12?minM:0])+' — total clínica')}
+    ${kpiCard('Pagador #1 todo el año','Particular',fv(EPS.entidades[0].m25_total.reduce((s,v)=>s+v,0)))}
+    ${kpiCard('Mayor crecimiento 2025','Black Mammoth','Apareció en H2-2025 · +100%')}
+  </div>
+  <div class="gfull">${chartCard('ch-eps-trend-total','Facturación total mensual 2025 — top 5 pagadores','Líneas por entidad',270,'')}</div>
+  <div class="gfull">${chartCard('ch-eps-trend-sala','Derechos de Sala mensual 2025 — top 5 pagadores','Barras apiladas',230,'')}</div>
   <div class="insight">
-    💡 <strong>SURA</strong> muestra los meses más variables (picos en Mar, Ago, Oct).
-    <strong>Particular</strong> tiene flujo más estable con crecimiento sostenido.
-    <strong>Black Mammoth</strong> apareció en H2-2025 con alta concentración en Dic.
+    💡 <strong>Octubre</strong> fue el mes de mayor actividad total. <strong>Particular</strong> lidera todos los meses.
+    <strong>Black Mammoth</strong> concentró el 65% de su volumen 2025 en Diciembre.
+    <strong>SURA</strong> muestra los meses más variables (picos en Mar, Ago, Oct).
   </div>`;
 
-  // Line chart tendencia 2025
-  const trendDs=top5.map((e,i)=>({
-    label:e.short, data:e.m25, borderColor:_EPS_COLORES[i], backgroundColor:'transparent',
+  // Line chart total
+  const lineDs=top5.map((e,i)=>({
+    label:e.short, data:e.m25_total, borderColor:_EPS_COLORES[i], backgroundColor:'transparent',
     borderWidth:2, pointRadius:3, tension:0.3, spanGaps:true
   }));
-  mkChart('ch-eps-trend25',{type:'line',data:{labels:MNS_E,datasets:trendDs},
+  mkChart('ch-eps-trend-total',{type:'line',data:{labels:MNS_E,datasets:lineDs},
     options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
       scales:{y:{ticks:{callback:v=>fv(v),font:{size:9}}}}}});
 
-  // YoY bar
-  const yoyEnts=EPS.entidades.slice(0,8);
-  const yoyVals=yoyEnts.map(e=>pctVar(e.v25,e.v24));
-  mkChart('ch-eps-yoy',{type:'bar',data:{
-    labels:yoyEnts.map(e=>e.short),
-    datasets:[{label:'Var % 2025 vs 2024',data:yoyVals,
-      backgroundColor:yoyVals.map(v=>v>=0?'rgba(45,197,171,0.82)':'rgba(239,83,80,0.75)'),
-      borderRadius:3}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},
-      scales:{x:{ticks:{callback:v=>v.toFixed(0)+'%',font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
-  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
-}
-
-function buildEpsTipos(){
-  const el=document.getElementById('eps-tipos'); if(!el)return;
-  const topTipo=EPS.tipos_lbl[0]; const topTipoVal=EPS.tipos_val[0];
-  const totalTipos=EPS.tipos_val.reduce((s,v)=>s+v,0);
-
-  el.innerHTML=`
-  <div class="sec-title">Facturación por Tipo de Servicio <span class="st-badge">Composición del ingreso</span></div>
-  <div class="kpis k4">
-    ${kpiCard('Tipo #1',topTipo,(topTipoVal/totalTipos*100).toFixed(1)+'% del total — '+fv(topTipoVal))}
-    ${kpiCard('LIOs',(EPS.tipos_val[2]/totalTipos*100).toFixed(1)+'%',fv(EPS.tipos_val[2])+' — mayor margen unitario','navy')}
-    ${kpiCard('Consultas + Exámenes',(((EPS.tipos_val[3]))/totalTipos*100).toFixed(1)+'%',fv(EPS.tipos_val[3])+' en exámenes')}
-    ${kpiCard('Tipos registrados',''+EPS.tipos_lbl.length,'líneas de servicio facturadas')}
-  </div>
-  <div class="gfull">${chartCard('ch-eps-tipos','Facturación acumulada 2024+2025 por tipo de servicio','',200,'')}</div>
-  <div class="insight">
-    💡 <strong>Derechos de Sala</strong> y <strong>Honorarios</strong> representan el
-    ${((EPS.tipos_val[0]+EPS.tipos_val[1])/totalTipos*100).toFixed(0)}% de la facturación.
-    Los <strong>LIOs</strong> (${(EPS.tipos_val[2]/totalTipos*100).toFixed(1)}%) tienen el ticket unitario más alto —
-    clave para el análisis de mezcla de producto.
-  </div>`;
-
-  mkChart('ch-eps-tipos',{type:'bar',data:{
-    labels:EPS.tipos_lbl,
-    datasets:[{label:'Facturación acumulada (miles COP)',data:EPS.tipos_val,
-      backgroundColor:_EPS_COLORES.slice(0,EPS.tipos_lbl.length),borderRadius:3}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},
-      scales:{x:{ticks:{callback:v=>fv(v),font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+  // Stacked bar sala
+  const salaDs=top5.map((e,i)=>({
+    label:e.short, data:e.m25_sala,
+    backgroundColor:_EPS_COLORES[i],stack:'s',borderRadius:2
+  }));
+  mkChart('ch-eps-trend-sala',{type:'bar',data:{labels:MNS_E,datasets:salaDs},
+    options:{scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:9}}}},
+      plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
   requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
 
@@ -7373,9 +7667,11 @@ const BUILDERS = {
   'far-lentes':    buildFarLentes,
   'far-compras':   buildFarCompras,
   'eps-inicio':    buildEpsInicio,
-  'eps-mix':       buildEpsMix,
+  'eps-cirujanos': buildEpsCirujanos,
+  'eps-cirugias':  buildEpsCirugias,
+  'eps-lentes':    buildEpsLentes,
+  'eps-servicios': buildEpsServicios,
   'eps-tendencia': buildEpsTendencia,
-  'eps-tipos':     buildEpsTipos,
   'acc-inicio':   buildAccInicio,
   'acc-plan':     buildAccPlan,
   'acc-kpi':      buildAccKpi,
