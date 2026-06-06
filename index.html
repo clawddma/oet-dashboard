@@ -7227,56 +7227,57 @@ const _LIO_COLORES=['#ffc107','#2dc5ab','#446cb3','#ff9800','#9e9e9e'];
 function buildEpsInicio(){
   const el=document.getElementById('eps-inicio'); if(!el)return;
   const ents=_efEnts();
-  // totales 2025 y 2024 desde tipo_val
-  const _tv25=e=>Object.values(e.tipo_val).reduce((s,y)=>s+(y['2025']||0),0);
-  const _tv24=e=>Object.values(e.tipo_val).reduce((s,y)=>s+(y['2024']||0),0);
-  const tot25=ents.reduce((s,e)=>s+_tv25(e),0);
-  const tot24=ents.reduce((s,e)=>s+_tv24(e),0);
-  // cirugías totales
+  const yrs=_efYears();
+  const _tvY=(e,y)=>Object.values(e.tipo_val).reduce((s,yr)=>s+(yr[String(y)]||0),0);
+  const _tvFilt=e=>yrs.reduce((s,y)=>s+_tvY(e,y),0);
+  const totFilt=ents.reduce((s,e)=>s+_tvFilt(e),0);
+  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
+  const refY=yrs.length>1?(yrs.includes(2024)?2024:yrs[0]):null;
+  const totCur=ents.reduce((s,e)=>s+_tvY(e,curY),0);
+  const totRef=refY?ents.reduce((s,e)=>s+_tvY(e,refY),0):0;
   const totCx=Object.values(EPS.cir_cat_tot).reduce((s,v)=>s+v.c,0);
   const topCat=EPS.cir_cats.reduce((best,c)=>EPS.cir_cat_tot[c].c>(EPS.cir_cat_tot[best]||{c:0}).c?c:best,EPS.cir_cats[0]);
-  // LIOs
   const totLio=Object.values(EPS.lio_cat_tot).reduce((s,v)=>s+v.c,0);
-  const premLio=(EPS.lio_cat_tot['Premium Multifocal'].c+EPS.lio_cat_tot['Premium Tórico'].c);
+  const premLio=EPS.lio_cat_tot['Premium Multifocal'].c+EPS.lio_cat_tot['Premium Tórico'].c;
   const pctPrem=totLio?((premLio/totLio)*100):0;
-  // concentración: top 2
-  const sorted=[...ents].sort((a,b)=>_tv25(b)-_tv25(a));
-  const top2pct=tot25?(((_tv25(sorted[0])||0)+(_tv25(sorted[1])||0))/tot25*100):0;
+  const sorted=[...ents].sort((a,b)=>_tvY(b,curY)-_tvY(a,curY));
+  const top2tot=(_tvFilt(sorted[0]||{})||0)+(_tvFilt(sorted[1]||{})||0);
+  const top2pct=totFilt>0?(top2tot/totFilt*100):0;
+  const yrLabel=yrs.map(y=>y===2026?'2026 YTD':y).join(' + ');
 
   el.innerHTML=`
-  <div class="sec-title">Pagadores — EPS, Aseguradoras y Particular <span class="st-badge">Fuente: Facturación tipo-producto 2025</span></div>
+  <div class="sec-title">Pagadores — EPS, Aseguradoras y Particular <span class="st-badge">${yrLabel}</span></div>
   <div class="kpis k4">
-    ${kpiCard('Facturado 2025',fv(tot25),fp(pctVar(tot25,tot24))+' vs 2024')}
-    ${kpiCard('Total Cirugías',totCx.toLocaleString('es-CO'),'Top: '+topCat+' ('+EPS.cir_cat_tot[topCat].c+' cx)')}
-    ${kpiCard('LIOs Implantados',totLio+' impl.',fp(pctPrem)+' premium (Multifocal+Tórico)','navy')}
+    ${kpiCard('Facturado '+yrLabel,fv(totFilt),refY?fp(pctVar(totCur,totRef))+' ('+curY+' vs '+refY+')':'acumulado')}
+    ${kpiCard('Total Cirugías',totCx.toLocaleString('es-CO'),'Top: '+topCat+' · '+EPS.cir_cat_tot[topCat].c+' cx')}
+    ${kpiCard('LIOs Implantados',totLio+' impl.',fp(pctPrem)+' premium','navy')}
     ${kpiCard('Entidades activas',''+ents.length,'en período seleccionado')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-donut','Mix de pagadores 2025','Participación por facturación',230,'')}
-    ${chartCard('ch-eps-topbar','Top entidades — facturación 2024 vs 2025','',230,'')}
+    ${chartCard('ch-eps-donut','Mix de pagadores — '+yrLabel,'Participación por facturación',230,'')}
+    ${chartCard('ch-eps-topbar','Facturación por entidad','Barras por año seleccionado',250,'')}
   </div>
   <div class="insight">
-    💡 <strong>Concentración:</strong> ${sorted[0]?sorted[0].short:''} + ${sorted[1]?sorted[1].short:''} representan el <strong>${top2pct.toFixed(1)}%</strong> de la facturación.
-    Diversificación en aseguradoras es baja — riesgo moderado ante cambios contractuales con SURA.
-    Particular domina el segmento refractivo y LIOs premium.
+    💡 <strong>Concentración:</strong> ${sorted[0]?sorted[0].short:''} + ${sorted[1]?sorted[1].short:''}
+    representan el <strong>${top2pct.toFixed(1)}%</strong> de la facturación.
+    Diversificación baja — riesgo ante cambios contractuales con SURA.
+    Particular domina refractiva y LIOs premium.
   </div>`;
 
-  // Donut mix
-  const tot25arr=ents.map(e=>_tv25(e));
-  mkChart('ch-eps-donut',{type:'doughnut',data:{labels:ents.map(e=>e.short),datasets:[{data:tot25arr,backgroundColor:_EPS_COLORES,hoverOffset:6}]},
+  // Donut: año más reciente seleccionado
+  const donutVals=ents.map(e=>_tvY(e,curY));
+  const donutTot=donutVals.reduce((s,v)=>s+v,0)||1;
+  mkChart('ch-eps-donut',{type:'doughnut',data:{labels:ents.map(e=>e.short),datasets:[{data:donutVals,backgroundColor:_EPS_COLORES,hoverOffset:6}]},
     options:{plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10},padding:6}},
-      tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fv(ctx.parsed)+' ('+((ctx.parsed/tot25)*100).toFixed(1)+'%)'}}}}});
+      tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fv(ctx.parsed)+' ('+((ctx.parsed/donutTot)*100).toFixed(1)+'%)'}}}}});
 
-  // Top bar horizontal 2024 vs 2025
+  // Bar vertical — un dataset por año seleccionado
+  const _YC={2024:'rgba(68,108,179,0.75)',2025:'rgba(45,197,171,0.88)',2026:'rgba(255,193,7,0.85)'};
   const top8=sorted.slice(0,8);
-  mkChart('ch-eps-topbar',{type:'bar',data:{
-    labels:top8.map(e=>e.short),
-    datasets:[
-      {label:'2024',data:top8.map(e=>_tv24(e)),backgroundColor:'rgba(68,108,179,0.7)',borderRadius:3},
-      {label:'2025',data:top8.map(e=>_tv25(e)),backgroundColor:'rgba(45,197,171,0.88)',borderRadius:3},
-    ]},
-    options:{indexAxis:'y',plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
-      scales:{x:{ticks:{callback:v=>fv(v),font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+  const yrDs=yrs.map(y=>({label:String(y)+(y===2026?' YTD':''),data:top8.map(e=>_tvY(e,y)),backgroundColor:_YC[y]||'#aaa',borderRadius:3}));
+  mkChart('ch-eps-topbar',{type:'bar',data:{labels:top8.map(e=>e.short),datasets:yrDs},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
+      scales:{x:{ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{ticks:{callback:v=>fv(v),font:{size:9}}}}}});
   requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
 
@@ -7330,17 +7331,18 @@ function buildEpsCirujanos(){
     backgroundColor:_EPS_COLORES[i%10],stack:'s',borderRadius:2
   }));
   mkChart('ch-eps-doc-bar',{type:'bar',data:{labels:docs,datasets:docDs},
-    options:{indexAxis:'y',scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:10}}}},
+    options:{scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{stacked:true,ticks:{font:{size:9}}}},
       plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
 
-  // Horizontal bar: total value per doc
+  // Bar vertical: total facturación por cirujano
   const sortedVal=[...docs].sort((a,b)=>EPS.doc_tot[b].v-EPS.doc_tot[a].v);
+  const docClr=sortedVal.map((_,i)=>_EPS_COLORES[i%10]);
   mkChart('ch-eps-doc-val',{type:'bar',data:{
     labels:sortedVal,
-    datasets:[{label:'Facturación 2025 (miles COP)',data:sortedVal.map(d=>EPS.doc_tot[d].v),
-      backgroundColor:'rgba(45,197,171,0.85)',borderRadius:3}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},
-      scales:{x:{ticks:{callback:v=>fv(v),font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+    datasets:[{label:'Facturación acumulada (miles COP)',data:sortedVal.map(d=>EPS.doc_tot[d].v),
+      backgroundColor:docClr,borderRadius:3}]},
+    options:{plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{ticks:{callback:v=>fv(v),font:{size:9}}}}}});
 
   // Table
   const tbody=document.getElementById('eps-doc-body');
@@ -7400,13 +7402,13 @@ function buildEpsCirugias(){
     Concentración quirúrgica por EPS = oportunidad de negociación de tarifas diferenciadas.
   </div>`;
 
-  // Horizontal bar total por categoría
+  // Bar vertical total por categoría
   mkChart('ch-eps-cir-cat',{type:'bar',data:{
     labels:cats,
     datasets:[{label:'Cirugías',data:cats.map(c=>EPS.cir_cat_tot[c].c),
       backgroundColor:_CIR_CAT_COLORES,borderRadius:3}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},
-      scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+    options:{plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{ticks:{font:{size:9}}}}}});
 
   // Grouped bar top 5 EPS x category (first 6 cats)
   const top5=EPS.entidades.slice(0,5);
@@ -7494,7 +7496,7 @@ function buildEpsLentes(){
     backgroundColor:_LIO_COLORES[i],stack:'s',borderRadius:2
   }));
   mkChart('ch-eps-lio-eps',{type:'bar',data:{labels:ents.map(e=>e.short),datasets:lioCatDs},
-    options:{indexAxis:'y',scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:10}}}},
+    options:{scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:30,minRotation:15}},y:{stacked:true,ticks:{callback:v=>v+'',font:{size:9}}}},
       plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
 
   // Table
@@ -7516,39 +7518,47 @@ function buildEpsLentes(){
 
 function buildEpsServicios(){
   const el=document.getElementById('eps-servicios'); if(!el)return;
-  const ents=EPS.entidades;
+  const ents=_efEnts();
   const tks=EPS.tipos_k;
   const tls=EPS.tipos_l;
+  const yrs=_efYears();
+  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
+  const refY=yrs.length>1?(yrs.includes(2024)?2024:yrs[0]):null;
+  const yrLabel=yrs.map(y=>y===2026?'2026 YTD':y).join(' + ');
 
-  const _sum25=k=>ents.reduce((s,e)=>s+((e.tipo_val[k]||{})['2025']||0),0);
-  const _sum24=k=>ents.reduce((s,e)=>s+((e.tipo_val[k]||{})['2024']||0),0);
+  const _sumY=(k,y)=>ents.reduce((s,e)=>s+((e.tipo_val[k]||{})[String(y)]||0),0);
+  const _sumFilt=k=>yrs.reduce((s,y)=>s+_sumY(k,y),0);
 
-  const sala25=_sum25('DERECHOS SALA');
-  const hon25=_sum25('HONORARIOS OFTALMOLOGO');
-  const lio25=_sum25('LIOS');
-  const exam25=_sum25('EXAMENES');
-  const cons25=_sum25('CONSULTAS');
+  const sala=_sumFilt('DERECHOS SALA');
+  const hon=_sumFilt('HONORARIOS OFTALMOLOGO');
+  const lio=_sumFilt('LIOS');
+  const exam=_sumFilt('EXAMENES');
+  const cons=_sumFilt('CONSULTAS');
+
+  const varSala=refY?fp(pctVar(_sumY('DERECHOS SALA',curY),_sumY('DERECHOS SALA',refY)))+' vs '+refY:'acumulado';
+  const varHon=refY?fp(pctVar(_sumY('HONORARIOS OFTALMOLOGO',curY),_sumY('HONORARIOS OFTALMOLOGO',refY)))+' vs '+refY:'acumulado';
+  const varLio=refY?fp(pctVar(_sumY('LIOS',curY),_sumY('LIOS',refY)))+' vs '+refY:'acumulado';
 
   el.innerHTML=`
-  <div class="sec-title">Facturación por Tipo de Servicio <span class="st-badge">Composición del ingreso por EPS</span></div>
+  <div class="sec-title">Facturación por Tipo de Servicio <span class="st-badge">${yrLabel}</span></div>
   <div class="kpis k4">
-    ${kpiCard('Derechos de Sala 2025',fv(sala25),fp(pctVar(sala25,_sum24('DERECHOS SALA')))+' vs 2024')}
-    ${kpiCard('Honorarios Oftalm. 2025',fv(hon25),fp(pctVar(hon25,_sum24('HONORARIOS OFTALMOLOGO')))+' vs 2024','navy')}
-    ${kpiCard('LIOs 2025',fv(lio25),fp(pctVar(lio25,_sum24('LIOS')))+' vs 2024')}
-    ${kpiCard('Exámenes + Consultas',fv(exam25+cons25),'combinado ambas líneas')}
+    ${kpiCard('Derechos de Sala',fv(sala),varSala)}
+    ${kpiCard('Honorarios Oftalm.',fv(hon),varHon,'navy')}
+    ${kpiCard('LIOs',fv(lio),varLio)}
+    ${kpiCard('Exámenes + Consultas',fv(exam+cons),'combinado')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-svc-stacked','Facturación por EPS y tipo de servicio 2025','Stacked bars',270,'')}
-    ${chartCard('ch-eps-svc-mix','Mix de servicios 2025 — total clínica','',220,'')}
+    ${chartCard('ch-eps-svc-stacked','Facturación por EPS y tipo de servicio — '+yrLabel,'Barras apiladas',270,'')}
+    ${chartCard('ch-eps-svc-mix','Mix de servicios — total clínica','',220,'')}
   </div>
   <div class="gfull">
     <div class="card">
-      <div class="card-hdr"><h3>EPS × Tipo de Servicio — 2024 · 2025 · Var%</h3><span class="badge">miles COP</span></div>
+      <div class="card-hdr"><h3>EPS × Tipo de Servicio — ${yrLabel}${refY?' · Var% vs '+refY:''}</h3><span class="badge">miles COP</span></div>
       <div class="card-body" style="overflow-x:auto">
-        <table class="tbl" style="min-width:1000px">
+        <table class="tbl" style="min-width:900px">
           <thead><tr>
             <th style="text-align:left;min-width:140px;position:sticky;left:0;background:#0c3028">Entidad</th>
-            ${tls.map(l=>`<th style="font-size:9px">2024<br>${l}</th><th style="font-size:9px">2025<br>${l}</th><th style="font-size:9px">Var%</th>`).join('')}
+            ${tls.map(l=>`<th style="font-size:9px">${l}</th>${refY?'<th style="font-size:9px">Var%</th>':''}`).join('')}
           </tr></thead>
           <tbody id="eps-svc-body"></tbody>
         </table>
@@ -7556,36 +7566,36 @@ function buildEpsServicios(){
     </div>
   </div>`;
 
-  // Stacked bar EPS x service type
+  // Stacked bar EPS x service type (años filtrados sumados)
   const svcColors=['rgba(45,197,171,0.85)','rgba(68,108,179,0.82)','rgba(255,193,7,0.88)','rgba(239,83,80,0.75)','rgba(255,152,0,0.8)'];
   const main5k=tks.slice(0,5);
   const svcDs=main5k.map((k,i)=>({
     label:tls[i],
-    data:ents.map(e=>(e.tipo_val[k]||{})['2025']||0),
+    data:ents.map(e=>yrs.reduce((s,y)=>s+((e.tipo_val[k]||{})[String(y)]||0),0)),
     backgroundColor:svcColors[i],stack:'s',borderRadius:2
   }));
   mkChart('ch-eps-svc-stacked',{type:'bar',data:{labels:ents.map(e=>e.short),datasets:svcDs},
-    options:{scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:9}}}},
+    options:{scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:30,minRotation:15}},y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:9}}}},
       plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
 
   // Donut service mix
-  const svcTotals=main5k.map(k=>_sum25(k));
+  const svcTotals=main5k.map(k=>_sumFilt(k));
   mkChart('ch-eps-svc-mix',{type:'doughnut',data:{labels:tls.slice(0,5),
     datasets:[{data:svcTotals,backgroundColor:svcColors,hoverOffset:6}]},
     options:{plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10},padding:6}},
       tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fv(ctx.parsed)}}}}});
 
-  // Table
+  // Table (usa años filtrados)
   const tbody=document.getElementById('eps-svc-body');
   if(tbody){
     let rows='';
     ents.forEach(e=>{
       let cells='';
       tks.forEach(k=>{
-        const v24=(e.tipo_val[k]||{})['2024']||0;
-        const v25=(e.tipo_val[k]||{})['2025']||0;
-        const vr=pctVar(v25,v24);
-        cells+=`<td style="font-size:10px">${fv(v24)}</td><td style="font-weight:600;font-size:10px">${fv(v25)}</td><td class="${vr>=0?'pos':'neg'}" style="font-size:10px">${fp(vr)}</td>`;
+        const vCur=yrs.reduce((s,y)=>s+((e.tipo_val[k]||{})[String(y)]||0),0);
+        const vRef=refY?((e.tipo_val[k]||{})[String(refY)]||0):0;
+        const vr=(refY&&vRef)?pctVar(vCur,vRef):null;
+        cells+=`<td style="font-weight:600;font-size:10px">${fv(vCur)}</td>${refY?`<td class="${vr!==null&&vr>=0?'pos':'neg'}" style="font-size:10px">${vr!==null?fp(vr):'—'}</td>`:''}`;
       });
       rows+=`<tr><td style="font-weight:600;position:sticky;left:0;background:#fafaf9">${e.short}</td>${cells}</tr>`;
     });
