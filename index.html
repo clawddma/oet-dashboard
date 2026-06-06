@@ -148,6 +148,28 @@ a{text-decoration:none;color:inherit;}
 .insight.warn{border-left-color:var(--warn);background:#fff8e1;}
 .insight.neg{border-left-color:var(--neg);background:#fdecea;}
 
+/* ═══ CHART HINT ═══ */
+.chart-hint-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;
+  background:rgba(45,197,171,0.15);color:var(--oet-teal);
+  font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;
+  border:1px solid rgba(45,197,171,0.3);
+  position:relative;transition:background .15s;
+  margin-left:4px;
+}
+.chart-hint-btn:hover{background:rgba(45,197,171,0.3);}
+.chart-hint-popup{
+  display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:500;
+  background:#1a3a2a;color:#d4ede8;font-size:11px;line-height:1.5;
+  padding:10px 12px;border-radius:8px;width:220px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.35);
+  border:1px solid rgba(45,197,171,0.25);
+  pointer-events:none;
+}
+.chart-hint-btn:hover .chart-hint-popup{display:block;}
+@media(max-width:767px){.chart-hint-popup{right:-60px;width:200px;}}
+
 /* ═══ ACTION CARDS ═══ */
 .action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px;}
 .action-card{background:var(--white);border-radius:var(--radius);padding:16px;
@@ -2839,14 +2861,20 @@ function kpiCard(label, val, sub, cls=''){
   </div>`;
 }
 
-function chartCard(id, title, badge, height=240, extraBody='', showZeroLine=false){
+function chartCard(id, title, badge, height=240, extraBody='', showZeroLine=false, hint=''){
   const _et = title.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const _eh = hint.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+  const hintBtn = hint ? `<div class="chart-hint-btn">?<div class="chart-hint-popup">${_eh}</div></div>` : '';
   return `<div class="card">
-    <div class="card-hdr">
-      <h3>${title}</h3>${badge?`<span class="badge teal">${badge}</span>`:''}
+    <div class="card-hdr" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+      <h3 style="flex:1;min-width:0">${title}</h3>
+      ${badge?`<span class="badge teal">${badge}</span>`:''}
+      <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+        ${hintBtn}
+        <button class="card-expand-btn" onclick="expandChart('${id}','${_et}')"
+                title="Expandir a pantalla completa" aria-label="Expandir gráfica">⤢</button>
+      </div>
     </div>
-    <button class="card-expand-btn" onclick="expandChart('${id}','${_et}')"
-            title="Expandir a pantalla completa" aria-label="Expandir gráfica">⤢</button>
     <div class="card-body">
       <div class="chart-wrap" style="height:${height}px"><canvas id="${id}"></canvas></div>
       ${showZeroLine?'<div class="zero-legend">Línea $0 — límite ganancia/pérdida</div>':''}
@@ -2879,15 +2907,15 @@ function buildFinInicio(){
     ${kpiCard('Último EEFF ('+lastEEFF.p+')', fv(lastEEFF.ing), 'EBITDA: '+fv(lastEEFF.ebitda||0))}
   </div>
   <div class="g6040">
-    ${chartCard('ch-ini-main','Ingresos Mensuales y Ganancia Neta','26 meses',250,'')}
-    ${chartCard('ch-ini-ebitda','EBITDA Mensual — ¿Se gana o se pierde?','',240,'')}
+    ${chartCard('ch-ini-main','Ingresos Mensuales y Ganancia Neta','26 meses',250,'',false,'Muestra cuánto facturó la clínica mes a mes y cuánto ganó en neto. Si la barra azul (costos) se acerca a la línea verde (ingresos), el margen se comprime.')}
+    ${chartCard('ch-ini-ebitda','EBITDA Mensual — ¿Se gana o se pierde?','',240,'',false,'La caja operativa real antes de deudas e impuestos. Verde = la operación genera dinero ese mes. Rojo = los costos superaron los ingresos.')}
   </div>
   <div class="g2">
     <div class="card">
       <div class="card-hdr"><h3>Resumen Ejecutivo Anual</h3><span class="badge">Cifras en miles de COP</span></div>
       <div class="card-body" id="ini-resumen-body"></div>
     </div>
-    ${chartCard('ch-ini-mg','Márgenes Clave por Mes (%)','',200,'')}
+    ${chartCard('ch-ini-mg','Márgenes Clave por Mes (%)','',200,'',false,'Los tres márgenes clave: bruto (qué queda después de costos directos), operativo (después de administración) y neto (lo que finalmente es utilidad). Deben crecer año a año.')}
   </div>`;
 
   // ── Setup dual-mode ──────────────────────────────────────────────────────
@@ -2939,9 +2967,9 @@ function buildFinInicio(){
     if(FF.years.has(2024)) _iniDs.push({label:'Ingresos 2024',data:_ya(2024,'ing'),backgroundColor:_YC[2024],borderRadius:2,order:2});
     if(FF.years.has(2025)) _iniDs.push({label:'Ingresos 2025',data:_ya(2025,'ing'),backgroundColor:_YC[2025],borderRadius:2,order:2});
     if(FF.years.has(2026)) _iniDs.push({label:'Ingresos 2026 EEFF',data:_ya(2026,'ing'),backgroundColor:_YC[2026],borderRadius:2,order:2});
-    if(FF.years.has(2024)) _iniDs.push({type:'line',label:'GN 2024',data:_ya(2024,'un'),borderColor:_YL[2024],backgroundColor:'transparent',pointRadius:2,borderWidth:1.5,borderDash:[4,2],order:1,spanGaps:false});
-    if(FF.years.has(2025)) _iniDs.push({type:'line',label:'GN 2025',data:_ya(2025,'un'),borderColor:'#1a3028',backgroundColor:'transparent',pointRadius:2,borderWidth:2,order:1,spanGaps:false});
-    if(FF.years.has(2026)) _iniDs.push({type:'line',label:'GN 2026 EEFF',data:_ya(2026,'un'),borderColor:_YL[2026],backgroundColor:'transparent',pointRadius:3,borderWidth:2,order:1,spanGaps:false});
+    if(FF.years.has(2024)) _iniDs.push({type:'line',label:'GN 2024',data:_ya(2024,'un'),borderColor:_YL[2024],backgroundColor:'transparent',pointRadius:2,borderWidth:1.5,borderDash:[4,2],tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2025)) _iniDs.push({type:'line',label:'GN 2025',data:_ya(2025,'un'),borderColor:'#1a3028',backgroundColor:'transparent',pointRadius:2,borderWidth:2,tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2026)) _iniDs.push({type:'line',label:'GN 2026 EEFF',data:_ya(2026,'un'),borderColor:_YL[2026],backgroundColor:'transparent',pointRadius:3,borderWidth:2,tension:0.35,order:1,spanGaps:false});
     mkChart('ch-ini-main',{type:'bar',data:{labels:_mLbl,datasets:_iniDs},options:{
       plugins:{legend:{position:'top',labels:{boxWidth:11,font:{size:10},padding:8}}},
       scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
@@ -2967,11 +2995,11 @@ function buildFinInicio(){
       const netClr=y===2024?'rgba(68,108,179,0.85)':y===2025?'#1a3028':'rgba(160,110,0,0.9)';
       _mgSimDs.push({type:'line',label:'Mg Neto% '+(y===2026?'26E':y),data:_ya(y,'mnp'),
         borderColor:netClr,borderWidth:y===2025?1.8:1.2,borderDash:[3,2],
-        pointRadius:1.5,backgroundColor:'transparent',isPct:true,spanGaps:false,order:1});
+        pointRadius:1.5,backgroundColor:'transparent',isPct:true,tension:0.35,spanGaps:false,order:1});
     });
     // Línea de referencia 0% — visualmente separa rentabilidad de pérdida
     _mgSimDs.push({type:'line',label:'Neutro (0%)',data:_mArr.map(()=>0),
-      borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false});
+      borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false,tension:0.35});
     mkChart('ch-ini-mg',{type:'bar',data:{labels:_mLbl,datasets:_mgSimDs},options:{
       plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:5,filter:i=>i.text!=='Neutro (0%)'}},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+(c.parsed.y?.toFixed(1)??'—')+'%'}}},
@@ -3127,10 +3155,10 @@ function buildFinPnl(){
   <div class="sec-title">P&L Mensual — Detalle por Mes <span class="st-badge">Todos los períodos</span></div>
   <div class="gfull">${chartCard('ch-pnl-main','Costo Médico + Gasto Adm. vs Ingresos — ¿dónde va cada peso?','Barras apiladas = costos separados · Línea verde = ingresos del mes',260,`
     <div class="insight">💡 <strong>Cómo leer:</strong> Las barras apiladas muestran qué parte de los costos es <span style="color:#ef5350;font-weight:600">Costo Médico/Directo</span> (cirugías, LIOs, insumos) y qué parte es <span style="color:#ff9800;font-weight:600">Gasto Administrativo</span> (personal, arriendo, servicios). La línea verde es el ingreso. Si la suma de barras supera la línea, ese mes fue a pérdida en el nivel operativo.</div>
-  `)}</div>
+  `,false,'Desglosa cada peso de los costos: la parte azul es el costo médico directo (cirugías, lentes), la naranja es administración. La línea verde son los ingresos del mes.')}</div>
   <div class="g2">
-    ${chartCard('ch-pnl-gastos','Gastos Administrativos + Operacionales vs Ingresos','Ingresos = línea de referencia',220,'')}
-    ${chartCard('ch-pnl-un','Ganancia Operativa y Neta por Mes','Línea naranja = $0',220,'')}
+    ${chartCard('ch-pnl-gastos','Gastos Administrativos + Operacionales vs Ingresos','Ingresos = línea de referencia',220,'',false,'Compara cuánto gastamos en administración versus cuánto facturamos. Si la barra supera la línea, el gasto administrativo es desproporcionado.')}
+    ${chartCard('ch-pnl-un','Ganancia Operativa y Neta por Mes','Línea naranja = $0',220,'',false,'La utilidad operativa es lo que queda después de todos los gastos del negocio. La línea de ganancia neta ya incluye impuestos y ajustes contables.')}
   </div>
   <div class="gfull">
     <div class="card">
@@ -3174,7 +3202,7 @@ function buildFinPnl(){
     _AY_p.forEach(y=>{
       _pm.push({label:'Costo Médico '+(y===2026?'2026E':y),data:[aggP(y,'cost')],backgroundColor:y===2024?'rgba(68,108,179,0.65)':y===2025?'rgba(239,83,80,0.72)':'rgba(239,83,80,0.45)',stack:'s'+y,borderRadius:2,order:2});
       _pm.push({label:'G.Adm. '+(y===2026?'2026E':y),data:[aggP(y,'ga')],backgroundColor:y===2024?'rgba(68,108,179,0.35)':y===2025?'rgba(255,152,0,0.65)':'rgba(255,193,7,0.50)',stack:'s'+y,order:2});
-      _pm.push({type:'line',label:'Ing. '+(y===2026?'2026E':y),data:[aggP(y,'ing')],borderColor:y===2024?'rgba(68,108,179,0.95)':y===2025?'#2dc5ab':'rgba(200,148,0,0.95)',borderWidth:2.5,pointRadius:7,pointStyle:'star',backgroundColor:'transparent',order:1,spanGaps:false});
+      _pm.push({type:'line',label:'Ing. '+(y===2026?'2026E':y),data:[aggP(y,'ing')],borderColor:y===2024?'rgba(68,108,179,0.95)':y===2025?'#2dc5ab':'rgba(200,148,0,0.95)',borderWidth:2.5,pointRadius:7,pointStyle:'star',backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
     });
     mkChart('ch-pnl-main',{type:'bar',data:{labels:[_pLbl_p],datasets:_pm},options:_pTitleO('Costos vs Ingresos')});
     // ch-pnl-gastos: X=años, G.Adm acumulados
@@ -3182,7 +3210,7 @@ function buildFinPnl(){
     const _pgIng=_AY_p.map(y=>aggP(y,'ing'));
     mkChart('ch-pnl-gastos',{type:'bar',data:{labels:_XY_p,
       datasets:[..._AY_p.map(y=>({label:'G.Adm. '+(y===2026?'2026E':y),data:_AY_p.map(yr=>yr===y?aggP(y,'ga'):null),backgroundColor:_YC_p[y],borderRadius:3,order:2})),
-               {type:'line',label:'▶ Ingresos',data:_pgIng,borderColor:'rgba(0,0,0,0.35)',borderWidth:2,borderDash:[5,3],pointRadius:5,pointStyle:'triangle',backgroundColor:'transparent',order:1}]},
+               {type:'line',label:'▶ Ingresos',data:_pgIng,borderColor:'rgba(0,0,0,0.35)',borderWidth:2,borderDash:[5,3],pointRadius:5,pointStyle:'triangle',backgroundColor:'transparent',tension:0.35,order:1}]},
       options:_pTitleO('Gastos Adm. vs Ingresos')});
     // ch-pnl-un: X=["G.Operativa","G.Neta"], barras por año
     const _punMets=[{f:'uo',lbl:'G.Operativa'},{f:'un',lbl:'G.Neta'}];
@@ -3198,23 +3226,23 @@ function buildFinPnl(){
     if(FF.years.has(2024)){_pnlMainDs.push({label:'Costo 2024',data:_yp(2024,'cost'),backgroundColor:'rgba(68,108,179,0.65)',stack:'s24',borderRadius:2,order:2});_pnlMainDs.push({label:'GA 2024',data:_yp(2024,'ga'),backgroundColor:'rgba(68,108,179,0.35)',stack:'s24',order:2});}
     if(FF.years.has(2025)){_pnlMainDs.push({label:'Costo 2025',data:_yp(2025,'cost'),backgroundColor:'rgba(239,83,80,0.72)',stack:'s25',borderRadius:2,order:2});_pnlMainDs.push({label:'GA 2025',data:_yp(2025,'ga'),backgroundColor:'rgba(255,152,0,0.65)',stack:'s25',order:2});}
     if(FF.years.has(2026)){_pnlMainDs.push({label:'Costo 2026 EEFF',data:_yp(2026,'cost'),backgroundColor:'rgba(239,83,80,0.45)',stack:'s26',borderRadius:2,order:2});_pnlMainDs.push({label:'GA 2026 EEFF',data:_yp(2026,'ga'),backgroundColor:'rgba(255,193,7,0.5)',stack:'s26',order:2});}
-    if(FF.years.has(2024)) _pnlMainDs.push({type:'line',label:'▶ Ing 2024',data:_yp(2024,'ing'),borderColor:'rgba(68,108,179,0.95)',borderWidth:1.5,borderDash:[5,3],pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
-    if(FF.years.has(2025)) _pnlMainDs.push({type:'line',label:'▶ Ing 2025',data:_yp(2025,'ing'),borderColor:'#2dc5ab',borderWidth:2.5,pointRadius:3,backgroundColor:'transparent',order:1,spanGaps:false});
-    if(FF.years.has(2026)) _pnlMainDs.push({type:'line',label:'▶ Ing 2026',data:_yp(2026,'ing'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',order:1,spanGaps:false});
+    if(FF.years.has(2024)) _pnlMainDs.push({type:'line',label:'▶ Ing 2024',data:_yp(2024,'ing'),borderColor:'rgba(68,108,179,0.95)',borderWidth:1.5,borderDash:[5,3],pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2025)) _pnlMainDs.push({type:'line',label:'▶ Ing 2025',data:_yp(2025,'ing'),borderColor:'#2dc5ab',borderWidth:2.5,pointRadius:3,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2026)) _pnlMainDs.push({type:'line',label:'▶ Ing 2026',data:_yp(2026,'ing'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
     mkChart('ch-pnl-main',{type:'bar',data:{labels:_mLbl_p,datasets:_pnlMainDs},options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
     const _pnlGasDs=[];
     if(FF.years.has(2024)) _pnlGasDs.push({label:'G.Adm. 2024',data:_yp(2024,'ga'),backgroundColor:'rgba(68,108,179,0.65)',borderRadius:2,order:2});
     if(FF.years.has(2025)) _pnlGasDs.push({label:'G.Adm. 2025',data:_yp(2025,'ga'),backgroundColor:'rgba(45,197,171,0.72)',borderRadius:2,order:2});
     if(FF.years.has(2026)) _pnlGasDs.push({label:'G.Adm. 2026 EEFF',data:_yp(2026,'ga'),backgroundColor:'rgba(255,193,7,0.82)',borderRadius:2,order:2});
-    if(FF.years.has(2024)) _pnlGasDs.push({type:'line',label:'▶ Ing 2024',data:_yp(2024,'ing'),borderColor:'rgba(68,108,179,0.85)',borderWidth:1.5,borderDash:[5,3],pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
-    if(FF.years.has(2025)) _pnlGasDs.push({type:'line',label:'▶ Ing 2025',data:_yp(2025,'ing'),borderColor:'#ff9800',borderWidth:2,borderDash:[5,3],pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
-    if(FF.years.has(2026)) _pnlGasDs.push({type:'line',label:'▶ Ing 2026',data:_yp(2026,'ing'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,borderDash:[5,3],pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
+    if(FF.years.has(2024)) _pnlGasDs.push({type:'line',label:'▶ Ing 2024',data:_yp(2024,'ing'),borderColor:'rgba(68,108,179,0.85)',borderWidth:1.5,borderDash:[5,3],pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2025)) _pnlGasDs.push({type:'line',label:'▶ Ing 2025',data:_yp(2025,'ing'),borderColor:'#ff9800',borderWidth:2,borderDash:[5,3],pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2026)) _pnlGasDs.push({type:'line',label:'▶ Ing 2026',data:_yp(2026,'ing'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,borderDash:[5,3],pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
     mkChart('ch-pnl-gastos',{type:'bar',data:{labels:_mLbl_p,datasets:_pnlGasDs},options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
     const _pnlUnDs=[];
     [2024,2025,2026].filter(y=>FF.years.has(y)).forEach(y=>{const d=_yp(y,'uo');_pnlUnDs.push({label:'G.Op. '+(y===2026?'2026 EEFF':y),data:d,backgroundColor:d.map(v=>v==null?'transparent':v>=0?_YC_p[y]:'rgba(239,83,80,0.8)'),borderRadius:2,order:2});});
-    if(FF.years.has(2024)) _pnlUnDs.push({type:'line',label:'GN 2024',data:_yp(2024,'un'),borderColor:'rgba(68,108,179,0.9)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
-    if(FF.years.has(2025)) _pnlUnDs.push({type:'line',label:'GN 2025',data:_yp(2025,'un'),borderColor:'#1a3028',borderWidth:2,pointRadius:3,backgroundColor:'transparent',order:1,spanGaps:false});
-    if(FF.years.has(2026)) _pnlUnDs.push({type:'line',label:'GN 2026 EEFF',data:_yp(2026,'un'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',order:1,spanGaps:false});
+    if(FF.years.has(2024)) _pnlUnDs.push({type:'line',label:'GN 2024',data:_yp(2024,'un'),borderColor:'rgba(68,108,179,0.9)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2025)) _pnlUnDs.push({type:'line',label:'GN 2025',data:_yp(2025,'un'),borderColor:'#1a3028',borderWidth:2,pointRadius:3,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2026)) _pnlUnDs.push({type:'line',label:'GN 2026 EEFF',data:_yp(2026,'un'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
     mkChart('ch-pnl-un',{type:'bar',data:{labels:_mLbl_p,datasets:_pnlUnDs},options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
   }
 
@@ -3303,10 +3331,10 @@ function buildFinEbitda(){
     ${kpiCard('Mejor mes', 'Ago-25', fv(478516.17))}
     ${kpiCard('Peor mes', 'Sep-25', fv(-447648.26), 'red')}
   </div>
-  <div class="gfull">${chartCard('ch-ebitda-full','EBITDA Mensual — Verde = gana · Rojo = pierde','La barra llega hasta $0 cuando el mes es neutro',270,'')}</div>
+  <div class="gfull">${chartCard('ch-ebitda-full','EBITDA Mensual — Verde = gana · Rojo = pierde','La barra llega hasta $0 cuando el mes es neutro',270,'',false,'El EBITDA mide si la operación genera o destruye caja en cada mes. Es el indicador más limpio de salud operacional. Meta: todos los meses en verde.')}</div>
   <div class="g2">
-    ${chartCard('ch-ebitda-vs','EBITDA vs Ganancia Neta — brecha = amortizaciones y ajustes','',220,'')}
-    ${chartCard('ch-ebitda-cum','EBITDA Acumulado: ¿cuánto se ha generado?','2024 vs 2025',220,'')}
+    ${chartCard('ch-ebitda-vs','EBITDA vs Ganancia Neta — brecha = amortizaciones y ajustes','',220,'',false,'Compara el EBITDA con la ganancia neta. La diferencia entre ambos son las amortizaciones y ajustes contables. Si se alejan mucho, hay gastos no operacionales importantes.')}
+    ${chartCard('ch-ebitda-cum','EBITDA Acumulado: ¿cuánto se ha generado?','2024 vs 2025',220,'',false,'Suma acumulada del EBITDA en el año. Muestra si el año está siendo rentable en términos operativos. Una línea que siempre sube es señal de un negocio sano.')}
   </div>
   <div class="insight warn">
     ⚠️ <strong>Sep 2025:</strong> EBITDA de ${fv(-447648.26)} — el costo total superó el ingreso en $86M.
@@ -3340,7 +3368,7 @@ function buildFinEbitda(){
       {label:'EBITDA '+_pLbl_e,data:_efVals,
         backgroundColor:_efVals.map((v,i)=>v!=null&&v<0?'rgba(239,83,80,0.85)':_YC_e[_AY_e[i]]),borderRadius:4,order:2},
       {type:'line',label:'Mg EBITDA%',data:_emVals,
-        borderColor:'#1a3028',borderWidth:2,pointRadius:6,backgroundColor:'transparent',yAxisID:'y2',isPct:true,order:1}
+        borderColor:'#1a3028',borderWidth:2,pointRadius:6,backgroundColor:'transparent',yAxisID:'y2',isPct:true,tension:0.35,order:1}
     ]},options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}},
       title:{display:true,text:'EBITDA acumulado — '+_pLbl_e,font:{size:11},color:'#2dc5ab',padding:{bottom:4}}},
       scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}},
@@ -3360,9 +3388,9 @@ function buildFinEbitda(){
       _ebtFullDs.push({label:'EBITDA '+(y===2026?'2026 EEFF':y),data:d,
         backgroundColor:d.map(v=>v==null?'transparent':v>=0?_YC_e[y]:'rgba(239,83,80,0.82)'),borderWidth:1,borderRadius:2,order:2});
     });
-    if(FF.years.has(2024)) _ebtFullDs.push({type:'line',label:'Mg EBITDA% 2024',data:_ye(2024,'mep'),borderColor:'rgba(68,108,179,0.8)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',yAxisID:'y2',isPct:true,spanGaps:false,order:1});
-    if(FF.years.has(2025)) _ebtFullDs.push({type:'line',label:'Mg EBITDA% 2025',data:_ye(2025,'mep'),borderColor:'#1a3028',borderWidth:2,pointRadius:3,backgroundColor:'transparent',yAxisID:'y2',isPct:true,spanGaps:false,order:1});
-    if(FF.years.has(2026)) _ebtFullDs.push({type:'line',label:'Mg EBITDA% 2026',data:_ye(2026,'mep'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',yAxisID:'y2',isPct:true,spanGaps:false,order:1});
+    if(FF.years.has(2024)) _ebtFullDs.push({type:'line',label:'Mg EBITDA% 2024',data:_ye(2024,'mep'),borderColor:'rgba(68,108,179,0.8)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',yAxisID:'y2',isPct:true,tension:0.35,spanGaps:false,order:1});
+    if(FF.years.has(2025)) _ebtFullDs.push({type:'line',label:'Mg EBITDA% 2025',data:_ye(2025,'mep'),borderColor:'#1a3028',borderWidth:2,pointRadius:3,backgroundColor:'transparent',yAxisID:'y2',isPct:true,tension:0.35,spanGaps:false,order:1});
+    if(FF.years.has(2026)) _ebtFullDs.push({type:'line',label:'Mg EBITDA% 2026',data:_ye(2026,'mep'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',yAxisID:'y2',isPct:true,tension:0.35,spanGaps:false,order:1});
     mkChart('ch-ebitda-full',{type:'bar',data:{labels:_mLbl_e,datasets:_ebtFullDs},options:{
       plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
       scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}},y2:{position:'right',ticks:{callback:v=>v+'%',font:{size:10}},grid:{display:false}}}}});
@@ -3376,10 +3404,10 @@ function buildFinEbitda(){
       const gnClr=y===2024?'rgba(68,108,179,0.85)':y===2025?'#1a3028':'rgba(160,110,0,0.9)';
       _ebtVsDs.push({type:'line',label:'G.Neta '+(y===2026?'2026E':y),data:_ye(y,'un'),
         borderColor:gnClr,borderWidth:y===2025?1.8:1.2,borderDash:[3,2],
-        pointRadius:1.5,backgroundColor:'transparent',spanGaps:false,order:1});
+        pointRadius:1.5,backgroundColor:'transparent',tension:0.35,spanGaps:false,order:1});
     });
     _ebtVsDs.push({type:'line',label:'Neutro ($0)',data:_mArr_e.map(()=>0),
-      borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false});
+      borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false,tension:0.35});
     mkChart('ch-ebitda-vs',{type:'bar',data:{labels:_mLbl_e,datasets:_ebtVsDs},options:{
       plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:5,filter:i=>i.text!=='Neutro ($0)'}},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fv(c.parsed.y)}}},
@@ -3417,10 +3445,10 @@ function buildFinMargen(){
       kpiCard('Mg Neto 2025',     a25.mnp.toFixed(1)+'%','vs 2024: '+a24.mnp.toFixed(1)+'%',a25.mnp>=0?'':'red')
     ].join('');})()}
   </div>
-  <div class="gfull">${chartCard('ch-mg-all','Mg EBITDA% y Mg Neto% — Histórico mensual (encima de 0% = rentable)','',270,'')}</div>
+  <div class="gfull">${chartCard('ch-mg-all','Mg EBITDA% y Mg Neto% — Histórico mensual (encima de 0% = rentable)','',270,'',false,'Los cuatro márgenes en una vista: bruto, operativo, EBITDA y neto. Un negocio saludable tiene márgenes estables o crecientes. Caídas sostenidas son señal de alerta.')}</div>
   <div class="g2">
-    ${chartCard('ch-mg-cmp24','Margen Bruto %: 2024 · 2025 · 2026 YTD (EEFF)','',220,'')}
-    ${chartCard('ch-mg-cmp25','Margen EBITDA % · Mg Neto %: 2024 · 2025 · 2026 YTD (EEFF)','',220,'')}
+    ${chartCard('ch-mg-cmp24','Margen Bruto %: 2024 · 2025 · 2026 YTD (EEFF)','',220,'',false,'Compara los márgenes entre años para ver si la rentabilidad mejora. El objetivo es que cada año los márgenes sean iguales o superiores al anterior.')}
+    ${chartCard('ch-mg-cmp25','Margen EBITDA % · Mg Neto %: 2024 · 2025 · 2026 YTD (EEFF)','',220,'',false,'Margen EBITDA versus Margen Neto. La brecha entre ambos refleja los costos financieros y tributarios. Una brecha amplia indica alta carga de deuda o impuestos.')}
   </div>`;
 
   // ── Setup dual-mode ──────────────────────────────────────────────────────
@@ -3457,10 +3485,10 @@ function buildFinMargen(){
       const netClr=y===2024?'rgba(68,108,179,0.85)':y===2025?'#1a3028':'rgba(160,110,0,0.9)';
       _mgSimDs2.push({type:'line',label:'Mg Neto% '+(y===2026?'26E':y),data:_ym(y,'mnp'),
         borderColor:netClr,borderWidth:y===2025?1.8:1.2,borderDash:[3,2],
-        pointRadius:1.5,backgroundColor:'transparent',isPct:true,spanGaps:false,order:1});
+        pointRadius:1.5,backgroundColor:'transparent',isPct:true,tension:0.35,spanGaps:false,order:1});
     });
     _mgSimDs2.push({type:'line',label:'Neutro (0%)',data:_mArr_m.map(()=>0),
-      borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false});
+      borderColor:'rgba(0,0,0,0.18)',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false,tension:0.35});
     mkChart('ch-mg-all',{type:'bar',data:{labels:_mLbl_m,datasets:_mgSimDs2},options:{
       plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:5,filter:i=>i.text!=='Neutro (0%)'}},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+(c.parsed.y?.toFixed(1)??'—')+'%'}}},
@@ -3495,13 +3523,13 @@ function buildFinCostos(){
   <div class="gfull">${chartCard('ch-cos-main','Costo Total vs Ingresos — cuando la barra roja supera la línea verde se pierde','Línea naranja = $0',260,`
     <div class="insight">💡 <strong>Cómo leer este gráfico:</strong> La línea verde muestra los ingresos de cada mes.
     Cuando la barra roja (costos) la supera, ese mes fue a pérdida. La diferencia entre la línea y la barra es la ganancia bruta.</div>
-  `)}</div>
+  `,false,'Seguimiento del costo total versus los ingresos. La línea de ingresos debe siempre estar por encima de las barras de costos para que el negocio sea viable.')}</div>
   <div class="g2">
     ${chartCard('ch-cos-pct','% Costo Total / Ingresos — ideal: por debajo del 70%','',220,`
-    `)}
-    ${chartCard('ch-cos-ga','% Gastos Administrativos / Ingresos — ideal: por debajo del 30%','',220,'')}
+    `,false,'El porcentaje que representan los costos médicos sobre los ingresos. Si supera el 70-75%, el margen se vuelve insostenible. La línea roja marca el umbral crítico.')}
+    ${chartCard('ch-cos-ga','% Gastos Administrativos / Ingresos — ideal: por debajo del 30%','',220,'',false,'Gasto administrativo como porcentaje de los ingresos. Debe mantenerse controlado. Picos indican meses de gasto extraordinario o caída de facturación.')}
   </div>
-  <div class="gfull">${chartCard('ch-cos-stack','Composición mensual: Costo Total + Gastos Adm. vs Ingresos','',240,'')}</div>`;
+  <div class="gfull">${chartCard('ch-cos-stack','Composición mensual: Costo Total + Gastos Adm. vs Ingresos','',240,'',false,'Composición completa de costos: qué parte es médica y qué parte es administrativa. Ayuda a identificar cuál de los dos rubros presiona más el margen.')}</div>`;
 
   // ── Setup dual-mode ──────────────────────────────────────────────────────
   const _MNS_c=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -3532,7 +3560,7 @@ function buildFinCostos(){
     mkChart('ch-cos-pct',{type:'bar',data:{labels:_XY_c,datasets:[
       {label:'%Costo/Ing '+_pLbl_c,data:_cpVals,
         backgroundColor:_cpVals.map((v,i)=>v!=null&&v>100?'rgba(239,83,80,0.85)':_YC_c[_AY_c[i]]),borderRadius:4},
-      {type:'line',label:'Ref. 100%',data:_AY_c.map(()=>100),borderColor:'rgba(239,83,80,0.5)',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}
+      {type:'line',label:'Ref. 100%',data:_AY_c.map(()=>100),borderColor:'rgba(239,83,80,0.5)',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0.35}
     ]},options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}},title:{display:true,text:'%Costo/Ingresos — '+_pLbl_c,font:{size:11},color:'#2dc5ab'}},scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}});
     // ch-cos-ga: X=años, % GA/Ingresos
     const _cgVals=_AY_c.map(y=>{const i=aggP(y,'ing'),g=aggP(y,'ga');return i?+(g/i*100).toFixed(1):null;});
@@ -3542,7 +3570,7 @@ function buildFinCostos(){
     // ch-cos-stack: X=años, stacked Costo+GA + dot Ingresos
     const _csDs=_AY_c.map(y=>({label:'Costo '+(y===2026?'2026E':y),data:[aggP(y,'cost')],backgroundColor:y===2024?'rgba(68,108,179,0.65)':y===2025?'rgba(239,83,80,0.72)':'rgba(239,83,80,0.45)',stack:'s'+y,borderRadius:2,order:2}));
     _AY_c.forEach(y=>_csDs.push({label:'GA '+(y===2026?'2026E':y),data:[aggP(y,'ga')],backgroundColor:y===2024?'rgba(68,108,179,0.35)':y===2025?'rgba(255,152,0,0.65)':'rgba(255,193,7,0.50)',stack:'s'+y,order:2}));
-    _AY_c.forEach(y=>_csDs.push({type:'line',label:'Ing.'+(y===2026?'2026E':y),data:[aggP(y,'ing')],borderColor:y===2024?'rgba(68,108,179,0.95)':y===2025?'#2dc5ab':'rgba(200,148,0,0.95)',borderWidth:2.5,pointRadius:8,pointStyle:'triangle',backgroundColor:'transparent',order:1,spanGaps:false}));
+    _AY_c.forEach(y=>_csDs.push({type:'line',label:'Ing.'+(y===2026?'2026E':y),data:[aggP(y,'ing')],borderColor:y===2024?'rgba(68,108,179,0.95)':y===2025?'#2dc5ab':'rgba(200,148,0,0.95)',borderWidth:2.5,pointRadius:8,pointStyle:'triangle',backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false}));
     mkChart('ch-cos-stack',{type:'bar',data:{labels:[_pLbl_c],datasets:_csDs},options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:5}},title:{display:true,text:'Composición costos — '+_pLbl_c,font:{size:11},color:'#2dc5ab'}},scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
   } else {
   // ── MODO ANUAL ────────────────────────────────────────────────────────
@@ -3555,9 +3583,9 @@ function buildFinCostos(){
       backgroundColor:cosD.map((v,i)=>v!=null&&ingD[i]!=null&&v>ingD[i]?'rgba(239,83,80,0.88)':_cosBarC[y]),
       borderRadius:2,order:2});
   });
-  if(FF.years.has(2024)) _cosMainDs.push({type:'line',label:'▶ Ing 2024',data:_yc(2024,'ing'),borderColor:'rgba(68,108,179,0.9)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
-  if(FF.years.has(2025)) _cosMainDs.push({type:'line',label:'▶ Ing 2025',data:_yc(2025,'ing'),borderColor:'#2dc5ab',borderWidth:2.5,pointRadius:3,backgroundColor:'transparent',order:1,spanGaps:false});
-  if(FF.years.has(2026)) _cosMainDs.push({type:'line',label:'▶ Ing 2026',data:_yc(2026,'ing'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',order:1,spanGaps:false});
+  if(FF.years.has(2024)) _cosMainDs.push({type:'line',label:'▶ Ing 2024',data:_yc(2024,'ing'),borderColor:'rgba(68,108,179,0.9)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+  if(FF.years.has(2025)) _cosMainDs.push({type:'line',label:'▶ Ing 2025',data:_yc(2025,'ing'),borderColor:'#2dc5ab',borderWidth:2.5,pointRadius:3,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+  if(FF.years.has(2026)) _cosMainDs.push({type:'line',label:'▶ Ing 2026',data:_yc(2026,'ing'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
   mkChart('ch-cos-main',{type:'bar',data:{labels:_mLbl_c,datasets:_cosMainDs},options:{
     plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
     scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
@@ -3606,9 +3634,9 @@ function buildFinCostos(){
     _cosStackDs.push({label:'Costo 2026 EEFF',data:_yc(2026,'cost'),backgroundColor:'rgba(239,83,80,0.38)',stack:'s26',borderRadius:2,order:2});
     _cosStackDs.push({label:'GA 2026 EEFF',   data:_yc(2026,'ga'),  backgroundColor:'rgba(255,193,7,0.45)',stack:'s26',order:2});
   }
-  if(FF.years.has(2024)) _cosStackDs.push({type:'line',label:'▶ Ing 2024',data:_yc(2024,'ing'),borderColor:'rgba(68,108,179,0.9)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
-  if(FF.years.has(2025)) _cosStackDs.push({type:'line',label:'▶ Ing 2025',data:_yc(2025,'ing'),borderColor:'#1a3028',borderWidth:2.5,pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
-  if(FF.years.has(2026)) _cosStackDs.push({type:'line',label:'▶ Ing 2026',data:_yc(2026,'ing'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
+  if(FF.years.has(2024)) _cosStackDs.push({type:'line',label:'▶ Ing 2024',data:_yc(2024,'ing'),borderColor:'rgba(68,108,179,0.9)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+  if(FF.years.has(2025)) _cosStackDs.push({type:'line',label:'▶ Ing 2025',data:_yc(2025,'ing'),borderColor:'#1a3028',borderWidth:2.5,pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+  if(FF.years.has(2026)) _cosStackDs.push({type:'line',label:'▶ Ing 2026',data:_yc(2026,'ing'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
   mkChart('ch-cos-stack',{type:'bar',data:{labels:_mLbl_c,datasets:_cosStackDs},options:{
     plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
     scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
@@ -3639,13 +3667,13 @@ function buildFinFlujo(){
     ${kpiCard('FCO YTD 2026 (EEFF)', fv(sum(ffYtd26(),'ebitda')), ffYtd26Label()+' · cierre oficial', sum(ffYtd26(),'ebitda')>=0?'':'red')}
   </div>
   <div class="g6040">
-    ${chartCard('ch-fcf-main','EBITDA mensual vs Ganancia Neta (diferencia = D&A y otros)','',260,'')}
+    ${chartCard('ch-fcf-main','EBITDA mensual vs Ganancia Neta (diferencia = D&A y otros)','',260,'',false,'La caja disponible estimada mes a mes, considerando cobranzas, pagos y obligaciones financieras. Meses negativos indican necesidad de financiamiento temporal.')}
     <div class="card">
       <div class="card-hdr"><h3>Tabla Flujo Simplificado</h3><span class="badge">2024 vs 2025</span></div>
       <div class="card-body" id="flujo-tabla"></div>
     </div>
   </div>
-  <div class="gfull">${chartCard('ch-fcf-acum','EBITDA Acumulado Total '+META.first.p+' → '+META.last.p,'¿Cuánto ha generado la clínica en total?',200,'')}</div>
+  <div class="gfull">${chartCard('ch-fcf-acum','EBITDA Acumulado Total '+META.first.p+' → '+META.last.p,'¿Cuánto ha generado la clínica en total?',200,'',false,'Caja acumulada en el año. Muestra si la clínica termina el año con más o menos liquidez que como empezó. Una línea ascendente es el objetivo.')}</div>
   ${(()=>{
     const _b=BSS.last, _r=(_b.actCorr/_b.pasCorr).toFixed(2);
     const _isCrit=_b.cash<0||_b.actCorr<_b.pasCorr;
@@ -3697,9 +3725,9 @@ function buildFinFlujo(){
       _fcfMainDs.push({label:'EBITDA '+(y===2026?'2026 EEFF':y),data:d,
         backgroundColor:d.map(v=>v==null?'transparent':v>=0?_YC_f[y]:'rgba(239,83,80,0.82)'),borderRadius:2,order:2});
     });
-    if(FF.years.has(2024)) _fcfMainDs.push({type:'line',label:'GN 2024',data:_yf(2024,'un'),borderColor:'rgba(68,108,179,0.9)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',order:1,spanGaps:false});
-    if(FF.years.has(2025)) _fcfMainDs.push({type:'line',label:'GN 2025',data:_yf(2025,'un'),borderColor:'#1a3028',borderWidth:2,pointRadius:3,backgroundColor:'transparent',order:1,spanGaps:false});
-    if(FF.years.has(2026)) _fcfMainDs.push({type:'line',label:'GN 2026 EEFF',data:_yf(2026,'un'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',order:1,spanGaps:false});
+    if(FF.years.has(2024)) _fcfMainDs.push({type:'line',label:'GN 2024',data:_yf(2024,'un'),borderColor:'rgba(68,108,179,0.9)',borderWidth:1.5,borderDash:[4,2],pointRadius:2,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2025)) _fcfMainDs.push({type:'line',label:'GN 2025',data:_yf(2025,'un'),borderColor:'#1a3028',borderWidth:2,pointRadius:3,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
+    if(FF.years.has(2026)) _fcfMainDs.push({type:'line',label:'GN 2026 EEFF',data:_yf(2026,'un'),borderColor:'rgba(200,148,0,0.95)',borderWidth:2,pointRadius:3,backgroundColor:'transparent',tension:0.35,order:1,spanGaps:false});
     mkChart('ch-fcf-main',{type:'bar',data:{labels:_mLbl_f,datasets:_fcfMainDs},options:{
       plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
       scales:{y:{ticks:{callback:v=>fv(v),font:{size:10}}}}}});
@@ -3820,8 +3848,8 @@ function buildFinAnual(){
     </div>
   </div>
   <div class="g2">
-    ${chartCard('ch-ann-bar','Facturación Anual vs Costos','',220,'')}
-    ${chartCard('ch-ann-mg','Márgenes Comparativos por Año','',220,'')}
+    ${chartCard('ch-ann-bar','Facturación Anual vs Costos','',220,'',false,'Resumen anual de ingresos, costos y EBITDA para comparar años completos. Permite ver de un vistazo si el negocio crece y si los costos se controlan.')}
+    ${chartCard('ch-ann-mg','Márgenes Comparativos por Año','',220,'',false,'Los márgenes anuales consolidados. Es la foto definitiva de rentabilidad de cada año. Un margen neto positivo significa que el negocio generó valor.')}
   </div>`;
 
   // Datos 2026 EEFF (solo meses confirmados)
@@ -4510,8 +4538,8 @@ function buildComInicio(){
     </div>
     <!-- Gráfica comparativa MTD: este mes vs mismo período año anterior -->
     <div class="g2">
-      ${chartCard('ch-mtd-ing','Facturación MTD vs mismo período año anterior','Barras = acumulado hasta el día '+mtd.d,220,'')}
-      ${chartCard('ch-mtd-cir','Cirugías MTD vs mismo período año anterior','Ritmo diario de Derechos de Sala',220,'')}
+      ${chartCard('ch-mtd-ing','Facturación MTD vs mismo período año anterior','Barras = acumulado hasta el día '+mtd.d,220,'',false,'Comparativo de facturación del mes actual versus el mismo mes del año anterior. Muestra si el ritmo de ventas está por delante o detrás de la meta histórica.')}
+      ${chartCard('ch-mtd-cir','Cirugías MTD vs mismo período año anterior','Ritmo diario de Derechos de Sala',220,'',false,'Volumen de cirugías acumuladas hasta hoy versus el mismo corte del año anterior. Indica si el mes va a un ritmo mayor o menor de actividad quirúrgica.')}
     </div>
     <div class="insight" style="margin-top:8px;padding:10px 14px;font-size:11px">
       ℹ️ <strong>MTD = Mes a la Fecha.</strong> La comparación vs año anterior se ajusta proporcionalmente a los mismos días corridos (día ${mtd.d} de cada mes), no al mes completo — para que la comparación sea justa.
@@ -4784,13 +4812,13 @@ function buildComInicio(){
 
   <!-- ═══ SECCIÓN: Ticket Promedio + Índice de Estacionalidad ═══ -->
   <div class="g2" style="margin-top:4px">
-    ${chartCard('ch-com-ticket','Ticket Promedio por Cirugía — Evolución Mensual','Facturación del mes ÷ cirugías del mes · Refleja mix de procedimientos y tendencia de precios',240,'')}
-    ${chartCard('ch-com-season','¿Cuándo factura más el negocio?','Promedio histórico 2024–2025 por mes · Verde = meses fuertes · Rojo = meses débiles · El tooltip muestra si estás sobre o bajo el promedio',240,'')}
+    ${chartCard('ch-com-ticket','Ticket Promedio por Cirugía — Evolución Mensual','Facturación del mes ÷ cirugías del mes · Refleja mix de procedimientos y tendencia de precios',240,'',false,'Ingreso promedio por cirugía cada mes. Si sube, mejora el mix de procedimientos (más LIOs premium, más refractiva). Si baja, hay más volumen pero de menor valor.')}
+    ${chartCard('ch-com-season','¿Cuándo factura más el negocio?','Promedio histórico 2024–2025 por mes · Verde = meses fuertes · Rojo = meses débiles · El tooltip muestra si estás sobre o bajo el promedio',240,'',false,'Estacionalidad histórica del negocio. Identifica los meses naturalmente fuertes y débiles para planear recursos y campañas. Comparar el año actual contra el patrón histórico.')}
   </div>
 
   <!-- ═══ SECCIÓN: Ingresos por Tipo de Procedimiento ═══ -->
   <div class="gfull" style="margin-top:4px">
-    ${chartCard('ch-com-tipos','Ingresos por Tipo de Procedimiento — '+(hasFilters?_badge:'2025 YTD vs 2026 YTD'),(_ytdBadgeCi&&!hasFilters?_ytdBadgeCi+' · ':'')+'Facturación por tipo · De mayor a menor (2025) · Tooltip muestra nombre completo y variación',300,'')}
+    ${chartCard('ch-com-tipos','Ingresos por Tipo de Procedimiento — '+(hasFilters?_badge:'2025 YTD vs 2026 YTD'),(_ytdBadgeCi&&!hasFilters?_ytdBadgeCi+' · ':'')+'Facturación por tipo · De mayor a menor (2025) · Tooltip muestra nombre completo y variación',300,'',false,'Facturación desglosada por tipo de procedimiento. Identifica qué cirugías generan más ingresos y cómo cambia el mix año a año. Los procedimientos que crecen marcan la dirección del negocio.')}
   </div>
 
   <!-- ═══ SECCIÓN: KPIs Estratégicos ═══ -->
@@ -5259,10 +5287,10 @@ function buildComLineas(){
       ${CF.years.has(2025)&&ing25m?kpiCard('Ingresos 2025 · '+mLbl,fv(ing25m),ing24m?fp(pctVar(ing25m,ing24m))+' vs 2024':'Facturación del mes'):''}
       ${CF.years.has(2026)&&ing26m?kpiCard('Ingresos 2026 · '+mLbl,fv(ing26m),ing25m?fp(pctVar(ing26m,ing25m))+' vs 2025':'Facturación del mes'):''}
     </div>
-    <div class="gfull">${chartCard('ch-lnl-month-bar','Facturación por Servicio — '+mLbl,'Comparativo interanual por línea',280,'')}</div>
+    <div class="gfull">${chartCard('ch-lnl-month-bar','Facturación por Servicio — '+mLbl,'Comparativo interanual por línea',280,'',false,'Facturación por línea de servicio comparando años. Permite identificar qué servicios generan más ingresos y cuáles crecen o decrecen frente al año anterior.')}</div>
     <div class="g2">
-      ${chartCard('ch-lnl-month-mix','Mix de Servicios — '+mLbl,'% participación por línea',240,'')}
-      ${chartCard('ch-lnl-month-all','Ingresos mensuales — contexto anual','Mes seleccionado resaltado',240,'')}
+      ${chartCard('ch-lnl-month-mix','Mix de Servicios — '+mLbl,'% participación por línea',240,'',false,'Participación de cada servicio en el total facturado del mes. Las cirugías (D.Sala) y LIOs suelen concentrar la mayor parte del ingreso.')}
+      ${chartCard('ch-lnl-month-all','Ingresos mensuales — contexto anual','Mes seleccionado resaltado',240,'',false,'Facturación mensual del año en contexto. El mes seleccionado aparece resaltado para dimensionar su peso relativo dentro del año.')}
     </div>
     <div class="insight">
       📅 <strong>Período: ${mLbl}.</strong>
@@ -5279,7 +5307,7 @@ function buildComLineas(){
       ${CF.years.has(2025)&&cir25m?kpiCard('Cirugías 2025 · '+mLbl,cir25m.toLocaleString(),cir24m?fp(pctVar(cir25m,cir24m))+' vs 2024':'Total clínica'):''}
       ${CF.years.has(2026)&&cir26m?kpiCard('Cirugías 2026 · '+mLbl,cir26m.toLocaleString(),cir25m?fp(pctVar(cir26m,cir25m))+' vs 2025':'Total clínica'):''}
     </div>
-    <div class="gfull">${chartCard('ch-lnl-proc','Cirugías por Mes — Comparativa Interanual','Evolución mensual del volumen de cirugías · mes '+mLbl+' resaltado',240,'')}</div>
+    <div class="gfull">${chartCard('ch-lnl-proc','Cirugías por Mes — Comparativa Interanual','Evolución mensual del volumen de cirugías · mes '+mLbl+' resaltado',240,'',false,'Volumen de cirugías por mes comparando años. Permite ver estacionalidad y si el crecimiento en facturación viene de más cirugías o de mayor valor por cirugía.')}</div>
     </div>`;
 
     // ── Facturación por servicio — comparativo interanual para el mes ────────
@@ -5387,8 +5415,8 @@ function buildComLineas(){
     el.innerHTML=`
     <div class="sec-title">Detalle por Línea de Negocio <span class="st-badge">${_yrBadgeLn}</span> ${_ytdNote}</div>
     <div class="g2">
-      ${chartCard('ch-lnl-abs','Facturación por Servicio — '+_yrBadgeLn,'miles COP · mismo corte de año',270,'')}
-      ${chartCard('ch-lnl-pct','% Crecimiento por Servicio','Azul=24→25 YTD · Dorado=26 vs 25 YTD',270,'')}
+      ${chartCard('ch-lnl-abs','Facturación por Servicio — '+_yrBadgeLn,'miles COP · mismo corte de año',270,'',false,'Facturación acumulada por línea de servicio para el mismo corte de año. Permite una comparación justa entre períodos equivalentes.')}
+      ${chartCard('ch-lnl-pct','% Crecimiento por Servicio','Azul=24→25 YTD · Dorado=26 vs 25 YTD',270,'',false,'Crecimiento de cada línea de servicio año a año. Verde = creció, rojo = cayó. Identifica qué servicios impulsan o frenan el crecimiento.')}
     </div>
     <div class="insight">
       ⭐ <strong>LIOs Premium YTD:</strong> ${fv(li25[2])} en 2025 YTD (+${fp(growth2526[2]).replace('+','')} vs 2024 YTD) · 2026 YTD: ${fv(li26[2])}.
@@ -5497,10 +5525,10 @@ function buildComTrend(){
     ${kpiCard('Mejor mes 2026',bestMes26?bestMes26.p:'—',bestMes26?fv(bestMes26.ing):'')}
     ${kpiCard('Promedio mensual 2026',fv(ytd26t/last26),'vs '+fv(ytd25t/last26)+' prom. 2025 (mismo tramo)')}
   </div>
-  <div class="gfull">${chartCard('ch-trn-cum','Facturación Acumulada: 2024 · 2025 · 2026 + Meta','En miles de COP — 2026 muestra hasta '+mns[last26-1],310,'')}</div>
+  <div class="gfull">${chartCard('ch-trn-cum','Facturación Acumulada: 2024 · 2025 · 2026 + Meta','En miles de COP — 2026 muestra hasta '+mns[last26-1],310,'',false,'Tendencia de facturación acumulada año a año. Muestra si el negocio está adelante o atrás versus años anteriores y la meta anual. Una línea por encima de 2025 es señal positiva.')}</div>
   <div class="g2">
-    ${chartCard('ch-trn-main','Facturación Mensual por Año','En miles de COP',240,'')}
-    ${chartCard('ch-trn-cmp','Crecimiento Mensual YoY (%)','2025 vs 2024 · 2026 vs 2025',240,'')}
+    ${chartCard('ch-trn-main','Facturación Mensual por Año','En miles de COP',240,'',false,'Facturación mensual comparada por año. Identifica estacionalidades, picos y valles en la actividad de la clínica.')}
+    ${chartCard('ch-trn-cmp','Crecimiento Mensual YoY (%)','2025 vs 2024 · 2026 vs 2025',240,'',false,'Crecimiento porcentual mes a mes versus el mismo mes del año anterior. Barras positivas indican que ese mes superó el año pasado; barras negativas, que quedó por debajo.')}
   </div>`;
 
   // ── Gráfica acumulada — área con relleno, estilo analítico ────────────
@@ -5653,7 +5681,7 @@ function buildComMeta(){
       </div>
     </div>
   </div>
-  <div class="gfull">${chartCard('ch-meta-trend','Ritmo mensual necesario vs ritmo actual','',240,'')}</div>
+  <div class="gfull">${chartCard('ch-meta-trend','Ritmo mensual necesario vs ritmo actual','',240,'',false,'Compara cuánto debe facturarse cada mes para alcanzar la meta anual versus el ritmo actual. Si la barra real está por debajo de la línea de ritmo requerido, la meta está en riesgo.')}</div>
   ${(()=>{
     // Mes más facturado de la historia, derivado dinámicamente de D[]
     const _bestMes = [...D].sort((a,b)=>(b.ing||0)-(a.ing||0))[0];
@@ -5921,7 +5949,7 @@ function buildComCirujanos(){
   el.innerHTML=`
   <div class="sec-title">Cirujanos <span class="st-badge">${mLbl?mLbl+' · ':''+(tiIdx.length<CIR.tipos.length?'Tipo filtrado · ':'')}${_yrBadge}</span> ${_ytdNoteCir}</div>
   <div class="gfull" style="margin-bottom:12px">
-${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por cirujano','Barras apiladas por médico',240,`<div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:#607d76">Ver:</span><button id="evol-btn-total" class="itog-btn${(!window._evolMode||window._evolMode==='total')?' active':''}" onclick="window._evolMode='total';applyComFilter()">💰 Facturación total</button><button id="evol-btn-dsala" class="itog-btn${window._evolMode==='dsala'?' active':''}" onclick="window._evolMode='dsala';applyComFilter()">🏥 Solo D. Sala</button></div>`)}
+${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por cirujano','Barras apiladas por médico',240,`<div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:#607d76">Ver:</span><button id="evol-btn-total" class="itog-btn${(!window._evolMode||window._evolMode==='total')?' active':''}" onclick="window._evolMode='total';applyComFilter()">💰 Facturación total</button><button id="evol-btn-dsala" class="itog-btn${window._evolMode==='dsala'?' active':''}" onclick="window._evolMode='dsala';applyComFilter()">🏥 Solo D. Sala</button></div>`,false,'Facturación mensual apilada por cirujano. Identifica quiénes son los médicos más activos en cada período y cómo cambia la composición del equipo mes a mes.')}
   </div>
   ${mLbl?`
   <div class="kpis k3" style="margin-bottom:12px">
@@ -5947,21 +5975,21 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
     <button class="itog-btn" onclick="setCirView('hon',this)">⚖️ Neto vs Honorarios</button>
   </div>
   <div id="cir-view-bill">
-  <div class="gfull">${chartCard('ch-cir-bill','📊 Derechos de Sala por cirujano','Facturación generada por las cirugías de cada médico'+(mLbl?' — '+mLbl:'')+' · ordenado por 2025',280,'<div style="margin-top:8px;font-size:11px;color:#607d76;background:#f5f8f7;padding:8px 12px;border-radius:8px">Esta vista muestra <strong>todos los médicos</strong> sin sesgo de honorarios. Compara el valor que cada cirujano genera en facturación.</div>')}</div>
+  <div class="gfull">${chartCard('ch-cir-bill','📊 Derechos de Sala por cirujano','Facturación generada por las cirugías de cada médico'+(mLbl?' — '+mLbl:'')+' · ordenado por 2025',280,'<div style="margin-top:8px;font-size:11px;color:#607d76;background:#f5f8f7;padding:8px 12px;border-radius:8px">Esta vista muestra <strong>todos los médicos</strong> sin sesgo de honorarios. Compara el valor que cada cirujano genera en facturación.</div>',false,'Derechos de sala generados por cada cirujano. Mide el valor económico real aportado por cada médico, sin distorsiones de honorarios. El médico con mayor facturación no siempre tiene el mayor volumen.')}</div>
   </div>
   <div id="cir-view-honpaid" style="display:none">
-  <div class="gfull">${chartCard('ch-cir-honpaid','💵 Honorarios pagados por OET — Evolución mensual','Cuenta 62101001 · Total mensual honorarios oftalmología',260,'')}</div>
+  <div class="gfull">${chartCard('ch-cir-honpaid','💵 Honorarios pagados por OET — Evolución mensual','Cuenta 62101001 · Total mensual honorarios oftalmología',260,'',false,'Honorarios pagados a los cirujanos mes a mes. Permite monitorear si el gasto en honorarios crece proporcionalmente con los ingresos.')}</div>
   </div>
   <div id="cir-view-cir" style="display:none">
-  <div class="gfull">${chartCard('ch-cir-vol','🔢 ¿Quién hace más cirugías?','Volumen'+(mLbl?' — '+mLbl:''),280,'')}</div>
+  <div class="gfull">${chartCard('ch-cir-vol','🔢 ¿Quién hace más cirugías?','Volumen'+(mLbl?' — '+mLbl:''),280,'',false,'Volumen de cirugías por médico. Un cirujano con alto volumen pero baja facturación tiene un ticket promedio bajo, lo que puede reflejar el tipo de procedimientos que realiza.')}</div>
   </div>
   <div id="cir-view-hon" style="display:none">
-<div class="gfull">${chartCard('ch-cir-hon-bar','⚖️ Derechos de Sala · Honorarios Cirujano · Honorarios Pagados OET','Por médico · período filtrado',280,'')}</div>
+<div class="gfull">${chartCard('ch-cir-hon-bar','⚖️ Derechos de Sala · Honorarios Cirujano · Honorarios Pagados OET','Por médico · período filtrado',280,'',false,'Los cirujanos con mayores honorarios acumulados. El costo de honorarios como porcentaje del ingreso es un indicador clave de eficiencia.')}</div>
   </div>
   <div class="gfull" style="margin-top:8px">
-  ${chartCard('ch-cir-tipos','🏥 ¿Qué procedimientos generan más?','Por tipo'+(mLbl?' — '+mLbl:''),240,'')}
+  ${chartCard('ch-cir-tipos','🏥 ¿Qué procedimientos generan más?','Por tipo'+(mLbl?' — '+mLbl:''),240,'',false,'Distribución de cirugías por tipo de procedimiento. Identifica las especialidades que concentran mayor actividad y cómo evoluciona el mix de procedimientos.')}
   </div>
-  ${(mLbl||CF.doctors.size>0)?`<div class="gfull">${chartCard('ch-cir-mes','Cirugías mensuales'+(CF.doctors.size>0?' — por médico':(mLbl?' — '+mLbl:'')),'Evolución mensual'+(mLbl?' · resalta '+mLbl:''),200,'')}</div>`:''}
+  ${(mLbl||CF.doctors.size>0)?`<div class="gfull">${chartCard('ch-cir-mes','Cirugías mensuales'+(CF.doctors.size>0?' — por médico':(mLbl?' — '+mLbl:'')),'Evolución mensual'+(mLbl?' · resalta '+mLbl:''),200,'',false,'Evolución mensual del número de cirugías. Permite ver estacionalidades y el ritmo de actividad quirúrgica a lo largo del año.')}</div>`:''}
   <div class="tbl-wrap" style="margin-top:16px"><table class="tbl">
     <thead><tr>
       <th style="text-align:left">Cirujano</th>
@@ -6913,11 +6941,11 @@ function buildFinBalance(){
 
   <!-- GRÁFICAS BALANCE -->
   <div class="g2">
-    ${chartCard('ch-bss-struct','Estructura: Activos vs Pasivos vs Patrimonio','miles COP',270,'')}
-    ${chartCard('ch-bss-liq','Activo Corriente vs Pasivo Corriente (Brecha de Liquidez)','miles COP',270,'')}
+    ${chartCard('ch-bss-struct','Estructura: Activos vs Pasivos vs Patrimonio','miles COP',270,'',false,'Estructura financiera del negocio: cuánto tiene la clínica (activos), cuánto debe (pasivos) y el valor neto del negocio (patrimonio). La diferencia entre activos y pasivos es el patrimonio.')}
+    ${chartCard('ch-bss-liq','Activo Corriente vs Pasivo Corriente (Brecha de Liquidez)','miles COP',270,'',false,'Capacidad de pago a corto plazo. Si el activo corriente supera al pasivo corriente, la clínica puede cubrir sus obligaciones inmediatas. Brecha negativa = riesgo de liquidez.')}
   </div>
   <div class="g2">
-    ${chartCard('ch-bss-cxc','Evolución CxC vs Efectivo','Problema de cartera: ¿quién debe pagar?',240,'')}
+    ${chartCard('ch-bss-cxc','Evolución CxC vs Efectivo','Problema de cartera: ¿quién debe pagar?',240,'',false,'Cuentas por cobrar versus efectivo disponible. Si la cartera (CxC) crece más que el efectivo, hay dinero ganado que aún no ha entrado a caja. Es el principal riesgo de liquidez de la clínica.')}
     <div class="card">
       <div class="card-hdr"><h3>Composición del Pasivo Corriente</h3><span class="badge">${LP}</span></div>
       <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-bss-pasdist"></canvas></div></div>
@@ -7287,8 +7315,8 @@ function buildEpsInicio(){
     ${kpiCard('Entidades activas',''+ents.length,'en filtro seleccionado')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-donut','Mix de pagadores — '+curY,'Participación por facturación',230,'')}
-    ${chartCard('ch-eps-topbar','Facturación por entidad y año','Barras por año seleccionado',250,'')}
+    ${chartCard('ch-eps-donut','Mix de pagadores — '+curY,'Participación por facturación',230,'',false,'Participación de cada pagador en el total facturado. Particular y SURA concentran la mayoría. Una alta concentración implica riesgo si uno de ellos cambia condiciones.')}
+    ${chartCard('ch-eps-topbar','Facturación por entidad y año','Barras por año seleccionado',250,'',false,'Facturación por entidad comparando años. Permite ver cuáles pagadores crecen y cuáles se contraen en términos de negocio enviado a la clínica.')}
   </div>
   <div class="insight">
     💡 <strong>Concentración:</strong> ${sorted[0]?.short||''} + ${sorted[1]?.short||''}
@@ -7344,11 +7372,11 @@ function buildEpsCirujanos(){
     ${kpiCard('Más diverso',topDiv||'—',diversity(topDiv||docs[0])+' entidades filtradas')}
   </div>
   <div class="gfull">
-    ${chartCard('ch-eps-doc-monthly','Evolución mensual por cirujano — '+curY,'Top 4 cirujanos · entidades filtradas',260,'')}
+    ${chartCard('ch-eps-doc-monthly','Evolución mensual por cirujano — '+curY,'Top 4 cirujanos · entidades filtradas',260,'',false,'Evolución mensual de cirugías por cada médico en las entidades seleccionadas. Identifica tendencias y estacionalidades por cirujano.')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-doc-bar','Cirugías por cirujano × entidad — '+curY,'Agrupado — cada color = EPS',280,'')}
-    ${chartCard('ch-eps-doc-val','Total cirugías por cirujano — '+curY,'',230,'')}
+    ${chartCard('ch-eps-doc-bar','Cirugías por cirujano × entidad — '+curY,'Agrupado — cada color = EPS',280,'',false,'Distribución de cirugías por médico y por pagador. Revela si algunos cirujanos trabajan exclusivamente con ciertas entidades.')}
+    ${chartCard('ch-eps-doc-val','Total cirugías por cirujano — '+curY,'',230,'',false,'Facturación total acumulada por cada cirujano. El médico con mayor facturación no siempre tiene el mayor volumen — el ticket promedio por cirugía importa.')}
   </div>
   <div class="gfull">
     <div class="card">
@@ -7371,7 +7399,7 @@ function buildEpsCirujanos(){
   const lineDs=top4.map((d,i)=>{
     const raw=Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efDS(d,e.short,curY)[m]||0),0));
     return{label:d,data:raw.map(v=>v>0?v:null),borderColor:_EPS_COLORES[i],backgroundColor:'transparent',
-      borderWidth:2,pointRadius:3,tension:0.3,spanGaps:false};
+      borderWidth:2,pointRadius:3,tension:0.35,spanGaps:false};
   });
   mkChart('ch-eps-doc-monthly',{type:'line',data:{labels:MNS_E,datasets:lineDs},
     options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
@@ -7447,8 +7475,8 @@ function buildEpsCirugias(){
     ${kpiCard('Entidades filtradas',''+filtEnts.length,filtEnts.map(e=>e.short).join(' · '))}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-cir-cat','Cirugías por categoría — '+curY,'Conteo entidades filtradas',230,'')}
-    ${chartCard('ch-eps-cir-monthly','Evolución mensual top 3 categorías — '+curY,'Tendencia mensual',240,'')}
+    ${chartCard('ch-eps-cir-cat','Cirugías por categoría — '+curY,'Conteo entidades filtradas',230,'',false,'Total de cirugías por tipo en el período seleccionado. La refractiva (LASIK/PRK) y la catarata son las categorías de mayor volumen en esta clínica.')}
+    ${chartCard('ch-eps-cir-monthly','Evolución mensual top 3 categorías — '+curY,'Tendencia mensual',240,'',false,'Evolución mensual de los tres tipos de cirugía más frecuentes. Permite ver estacionalidad y tendencias por especialidad.')}
   </div>
   <div class="gfull">
     <div class="card">
@@ -7484,7 +7512,7 @@ function buildEpsCirugias(){
   const catLineDs=top3cats.map((cat,i)=>{
     const raw=Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efCS(cat,e.short,curY)[m]||0),0));
     return{label:cat,data:raw.map(v=>v>0?v:null),borderColor:_CIR_CAT_COLORES[i],backgroundColor:'transparent',
-      borderWidth:2,pointRadius:3,tension:0.3,spanGaps:false};
+      borderWidth:2,pointRadius:3,tension:0.35,spanGaps:false};
   });
   mkChart('ch-eps-cir-monthly',{type:'line',data:{labels:MNS_E,datasets:catLineDs},
     options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
@@ -7532,11 +7560,11 @@ function buildEpsLentes(){
     ${kpiCard('Ticket promedio LIO',fv(ticketAvg),'valor / implante')}
   </div>
   <div class="gfull">
-    ${chartCard('ch-eps-lio-monthly','Evolución mensual LIOs — '+curY,'Por entidad filtrada',240,'')}
+    ${chartCard('ch-eps-lio-monthly','Evolución mensual LIOs — '+curY,'Por entidad filtrada',240,'',false,'Implantes de lentes intraoculares por mes y por entidad. Los LIOs son el producto de mayor margen — su evolución impacta directamente la rentabilidad.')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-lio-cat','LIOs por tipo y entidad','Stacked por categoría de lente',250,'')}
-    ${chartCard('ch-eps-lio-yoy','LIOs por año — comparativa','Por entidad filtrada',230,'')}
+    ${chartCard('ch-eps-lio-cat','LIOs por tipo y entidad','Stacked por categoría de lente',250,'',false,'Tipos de lentes implantados: premium multifocal (mayor margen), tórico, fáquico y estándar. El mix define el ticket promedio por cirugía.')}
+    ${chartCard('ch-eps-lio-yoy','LIOs por año — comparativa','Por entidad filtrada',230,'',false,'Comparativo de LIOs implantados año a año por entidad. Particular concentra casi todos los lentes premium; SURA solo usa lentes estándar.')}
   </div>
   <div class="gfull">
     <div class="card">
@@ -7562,7 +7590,7 @@ function buildEpsLentes(){
   const lioLineDs=filtEnts.map((e,i)=>{
     const raw=_efMS(e.short,curY,'lc');
     return{label:e.short,data:raw.map(v=>v>0?v:null),borderColor:_EPS_COLORES[i],backgroundColor:'transparent',
-      borderWidth:2,pointRadius:3,tension:0.3,spanGaps:false};
+      borderWidth:2,pointRadius:3,tension:0.35,spanGaps:false};
   });
   mkChart('ch-eps-lio-monthly',{type:'line',data:{labels:MNS_E,datasets:lioLineDs},
     options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
@@ -7638,8 +7666,8 @@ function buildEpsServicios(){
     ${kpiCard('Exámenes + Consultas',fv(exam+cons),'combinado')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-svc-stacked','Facturación por EPS y tipo de servicio — '+yrLabel,'Barras apiladas',270,'')}
-    ${chartCard('ch-eps-svc-mix','Mix de servicios — total clínica','',220,'')}
+    ${chartCard('ch-eps-svc-stacked','Facturación por EPS y tipo de servicio — '+yrLabel,'Barras apiladas',270,'',false,'Composición de la facturación por tipo de servicio en cada entidad: sala quirúrgica, honorarios, lentes, exámenes. Revela el perfil de cada pagador.')}
+    ${chartCard('ch-eps-svc-mix','Mix de servicios — total clínica','',220,'',false,'La mezcla global de servicios facturados. Derechos de sala y honorarios concentran el 80% del ingreso total de la clínica.')}
   </div>
   <div class="gfull">
     <div class="card">
@@ -7722,10 +7750,10 @@ function buildEpsMensual(){
     ${kpiCard('Total cirugías período',totCxPer.toLocaleString('es-CO'),'en meses/entidades filtradas')}
     ${kpiCard('Total LIOs período',totLioPer+' impl.','en meses/entidades filtradas','navy')}
   </div>
-  <div class="gfull">${chartCard('ch-eps-trend-tv','Facturación total mensual — top 3 entidades por año','Líneas · '+yrLabel,270,'')}</div>
+  <div class="gfull">${chartCard('ch-eps-trend-tv','Facturación total mensual — top 3 entidades por año','Líneas · '+yrLabel,270,'',false,'Facturación mensual de los principales pagadores durante el año seleccionado. Permite comparar el comportamiento de Particular versus las aseguradoras.')}</div>
   <div class="g2">
-    ${chartCard('ch-eps-trend-cx','Cirugías mensuales — '+curY,'Barras apiladas por entidad',230,'')}
-    ${chartCard('ch-eps-trend-lio','LIOs mensuales — '+curY,'Barras apiladas por entidad',230,'')}
+    ${chartCard('ch-eps-trend-cx','Cirugías mensuales — '+curY,'Barras apiladas por entidad',230,'',false,'Cirugías realizadas cada mes agrupadas por entidad pagadora. Volumen de actividad quirúrgica por período.')}
+    ${chartCard('ch-eps-trend-lio','LIOs mensuales — '+curY,'Barras apiladas por entidad',230,'',false,'Implantes de LIOs por mes y entidad. Muestra el ritmo de cirugías de catarata y refractiva con implante de lente.')}
   </div>
   <div class="insight">
     💡 <strong>${maxM>=0?MNS_E[maxM]:'—'}</strong> fue el mes pico (${fv(maxVal)}).
@@ -7745,7 +7773,7 @@ function buildEpsMensual(){
         data,
         borderColor:_EPS_COLORES[ei*3+(yrs.indexOf(y))]||_EPS_COLORES[ei],
         backgroundColor:'transparent',
-        borderWidth:2,pointRadius:2,tension:0.3,spanGaps:false
+        borderWidth:2,pointRadius:2,tension:0.35,spanGaps:false
       });
     });
   });
@@ -7756,7 +7784,7 @@ function buildEpsMensual(){
   // Stacked bar: cirugías por mes × filtEnts (curY)
   const cxDs=filtEnts.map((e,i)=>({
     label:e.short,
-    data:_efMS(e.short,curY,'sc'),
+    data:_efMS(e.short,curY,'sc').map(v=>v||null),
     backgroundColor:_EPS_COLORES[i%10],stack:'s',borderRadius:2
   }));
   mkChart('ch-eps-trend-cx',{type:'bar',data:{labels:MNS_E,datasets:cxDs},
@@ -7766,7 +7794,7 @@ function buildEpsMensual(){
   // Stacked bar: LIOs por mes × filtEnts (curY)
   const lioDs=filtEnts.map((e,i)=>({
     label:e.short,
-    data:_efMS(e.short,curY,'lc'),
+    data:_efMS(e.short,curY,'lc').map(v=>v||null),
     backgroundColor:_EPS_COLORES[i%10],stack:'s',borderRadius:2
   }));
   mkChart('ch-eps-trend-lio',{type:'bar',data:{labels:MNS_E,datasets:lioDs},
@@ -8039,8 +8067,8 @@ function buildComLentes(){
   </div>
 
   ${_hasLioData?`<div class="g2" style="margin-bottom:18px">
-    ${chartCard('ch-lnl-uni-mes','📊 Evolución mensual — Cirugías vs Lentes','Comparativo mensual por año'+(mLbl?' — '+mLbl:''),240,'')}
-    ${chartCard('ch-lnl-uni-dr','👨‍⚕️ Por médico — Cirugías y Lentes implantados','Totales anuales por cirujano',240,'')}
+    ${chartCard('ch-lnl-uni-mes','📊 Evolución mensual — Cirugías vs Lentes','Comparativo mensual por año'+(mLbl?' — '+mLbl:''),240,'',false,'Evolución mensual del número de cirugías versus lentes implantados. La relación entre ambas cifras refleja qué porcentaje de cirugías incluye implante de LIO.')}
+    ${chartCard('ch-lnl-uni-dr','👨‍⚕️ Por médico — Cirugías y Lentes implantados','Totales anuales por cirujano',240,'',false,'Cirugías y lentes por médico. Permite identificar qué cirujanos implantan más LIOs, lo cual impacta directamente el margen de sus procedimientos.')}
   </div>
   <div class="insight" style="margin-bottom:22px;background:#f5f0fa;border-left-color:#9575cd">
     💡 <strong>Ratio Lentes/Cirugía:</strong> indica el % de pacientes con cirugía bilateral (ambos ojos). Ratio 1.0 = todos unilaterales · 2.0 = todos bilaterales. El típico en oftalmología es 1.2–1.5.
@@ -8056,11 +8084,11 @@ function buildComLentes(){
   </div>
 
   <div class="g2">
-    ${chartCard('ch-lnl-lio-mes','📈 Evolución mensual — facturación','Facturación mensual por procedimientos seleccionados'+(mLbl?' — '+mLbl:''),240,'')}
-    ${chartCard('ch-lnl-lio-tipo','🔬 Por tipo de procedimiento','Comparativo interanual — tipos seleccionados'+(mLbl?' — '+mLbl:''),240,'')}
+    ${chartCard('ch-lnl-lio-mes','📈 Evolución mensual — facturación','Facturación mensual por procedimientos seleccionados'+(mLbl?' — '+mLbl:''),240,'',false,'Facturación mensual de los procedimientos seleccionados. Permite ver el ritmo de generación de ingresos de cada tipo de lente o procedimiento.')}
+    ${chartCard('ch-lnl-lio-tipo','🔬 Por tipo de procedimiento','Comparativo interanual — tipos seleccionados'+(mLbl?' — '+mLbl:''),240,'',false,'Comparativo interanual por tipo de procedimiento. Identifica cuáles procedimientos crecen o caen en volumen y facturación entre períodos.')}
   </div>
   <div class="gfull" style="margin-top:12px">
-    ${chartCard('ch-lnl-lio-dr','👨‍⚕️ Facturación por cirujano — estimado','Proporcional al billing de cada médico'+(mLbl?' — '+mLbl:''),260,'')}
+    ${chartCard('ch-lnl-lio-dr','👨‍⚕️ Facturación por cirujano — estimado','Proporcional al billing de cada médico'+(mLbl?' — '+mLbl:''),260,'',false,'Facturación estimada de LIOs por cirujano. El médico con más implantes de lentes premium genera el mayor impacto en el margen de la clínica.')}
   </div>
 
   <div style="border-top:2px solid #dce9e5;margin:22px 0 14px;padding-top:16px">
@@ -8074,8 +8102,8 @@ function buildComLentes(){
   </div>
 
   <div class="g2">
-    ${chartCard('ch-lnl-cir-mes','📊 Evolución mensual — nº de cirugías','Procedimientos por mes · 1 fila Derechos de Sala = 1 cirugía'+(mLbl?' — '+mLbl:''),240,'')}
-    ${chartCard('ch-lnl-cir-dr','👨‍⚕️ Cirugías por médico','Nº de procedimientos por cirujano'+(mLbl?' — '+mLbl:''),240,'')}
+    ${chartCard('ch-lnl-cir-mes','📊 Evolución mensual — nº de cirugías','Procedimientos por mes · 1 fila Derechos de Sala = 1 cirugía'+(mLbl?' — '+mLbl:''),240,'',false,'Evolución mensual del número de cirugías. Permite ver estacionalidad y si el negocio crece en volumen de procedimientos.')}
+    ${chartCard('ch-lnl-cir-dr','👨‍⚕️ Cirugías por médico','Nº de procedimientos por cirujano'+(mLbl?' — '+mLbl:''),240,'',false,'Número de cirugías por médico en el período seleccionado. Refleja la carga quirúrgica de cada cirujano y su contribución al volumen total.')}
   </div>
   <div class="insight">
     💡 Filtra por "LIOs Premium" + "LIO Fáquico" para ver el negocio de lentes como unidad independiente. El volumen de cirugías es el proxy más preciso del número de lentes implantados disponible en los datos actuales.
