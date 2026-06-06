@@ -7262,7 +7262,7 @@ function buildEpsInicio(){
   const el=document.getElementById('eps-inicio'); if(!el)return;
   const ents=_efEnts();
   const yrs=_efYears();
-  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
+  const curY=yrs.includes(2026)?2026:yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
   const refY=yrs.length>1?(yrs.includes(2024)?2024:yrs[0]):null;
 
   // Totals using monthly data
@@ -7318,7 +7318,7 @@ function buildEpsCirujanos(){
   const el=document.getElementById('eps-cirujanos'); if(!el)return;
   const filtEnts=_efEnts();
   const yrs=_efYears();
-  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
+  const curY=yrs.includes(2026)?2026:yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
   const docs=EPS.docs_sh;
 
   // Compute doc totals across filtered entities and months
@@ -7368,12 +7368,11 @@ function buildEpsCirujanos(){
 
   // Line chart: monthly evolution top 4 docs
   const top4=sortedDocs.slice(0,4);
-  const lineDs=top4.map((d,i)=>({
-    label:d,
-    data:Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efDS(d,e.short,curY)[m]||0),0)),
-    borderColor:_EPS_COLORES[i],backgroundColor:'transparent',
-    borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true
-  }));
+  const lineDs=top4.map((d,i)=>{
+    const raw=Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efDS(d,e.short,curY)[m]||0),0));
+    return{label:d,data:raw.map(v=>v>0?v:null),borderColor:_EPS_COLORES[i],backgroundColor:'transparent',
+      borderWidth:2,pointRadius:3,tension:0.3,spanGaps:false};
+  });
   mkChart('ch-eps-doc-monthly',{type:'line',data:{labels:MNS_E,datasets:lineDs},
     options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
       scales:{y:{ticks:{font:{size:9}}}}}});
@@ -7420,7 +7419,7 @@ function buildEpsCirugias(){
   const cats=EPS.cir_cats;
   const filtEnts=_efEnts();
   const yrs=_efYears();
-  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
+  const curY=yrs.includes(2026)?2026:yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
 
   // Cat totals across filtered entities and months
   const catTotals={};
@@ -7482,12 +7481,11 @@ function buildEpsCirugias(){
 
   // Line chart: top 3 cats monthly
   const top3cats=sortedCats.slice(0,3);
-  const catLineDs=top3cats.map((cat,i)=>({
-    label:cat,
-    data:Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efCS(cat,e.short,curY)[m]||0),0)),
-    borderColor:_CIR_CAT_COLORES[i],backgroundColor:'transparent',
-    borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true
-  }));
+  const catLineDs=top3cats.map((cat,i)=>{
+    const raw=Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efCS(cat,e.short,curY)[m]||0),0));
+    return{label:cat,data:raw.map(v=>v>0?v:null),borderColor:_CIR_CAT_COLORES[i],backgroundColor:'transparent',
+      borderWidth:2,pointRadius:3,tension:0.3,spanGaps:false};
+  });
   mkChart('ch-eps-cir-monthly',{type:'line',data:{labels:MNS_E,datasets:catLineDs},
     options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
       scales:{y:{ticks:{font:{size:9}}}}}});
@@ -7514,7 +7512,7 @@ function buildEpsLentes(){
   const cats=EPS.lio_cats;
   const filtEnts=_efEnts();
   const yrs=_efYears();
-  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
+  const curY=yrs.includes(2026)?2026:yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
 
   // Monthly-aware totals
   const totLioFilt=filtEnts.reduce((s,e)=>s+_efMonthSum(_efMS(e.short,curY,'lc')),0);
@@ -7561,12 +7559,11 @@ function buildEpsLentes(){
   </div>`;
 
   // Line: monthly LIO evolution per filtEnt
-  const lioLineDs=filtEnts.map((e,i)=>({
-    label:e.short,
-    data:_efMS(e.short,curY,'lc'),
-    borderColor:_EPS_COLORES[i],backgroundColor:'transparent',
-    borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true
-  }));
+  const lioLineDs=filtEnts.map((e,i)=>{
+    const raw=_efMS(e.short,curY,'lc');
+    return{label:e.short,data:raw.map(v=>v>0?v:null),borderColor:_EPS_COLORES[i],backgroundColor:'transparent',
+      borderWidth:2,pointRadius:3,tension:0.3,spanGaps:false};
+  });
   mkChart('ch-eps-lio-monthly',{type:'line',data:{labels:MNS_E,datasets:lioLineDs},
     options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
       scales:{y:{ticks:{font:{size:9}}}}}});
@@ -7615,7 +7612,7 @@ function buildEpsServicios(){
   const tks=EPS.tipos_k;
   const tls=EPS.tipos_l;
   const yrs=_efYears();
-  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
+  const curY=yrs.includes(2026)?2026:yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
   const refY=yrs.length>1?(yrs.includes(2024)?2024:yrs[0]):null;
   const yrLabel=yrs.map(y=>y===2026?'2026 YTD':y).join(' + ');
 
@@ -7701,7 +7698,7 @@ function buildEpsMensual(){
   const el=document.getElementById('eps-mensual'); if(!el)return;
   const filtEnts=_efEnts();
   const yrs=_efYears();
-  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
+  const curY=yrs.includes(2026)?2026:yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
 
   // Monthly totals across filtEnts for curY
   const totByMonth=Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efMS(e.short,curY,'tv')[m]||0),0));
@@ -7741,12 +7738,14 @@ function buildEpsMensual(){
   const trendDs=[];
   top3ents.forEach((e,ei)=>{
     yrs.forEach(y=>{
+      const raw=_efMS(e.short,y,'tv');
+      const data=raw.map(v=>v>0?v:null);
       trendDs.push({
         label:e.short+' '+y,
-        data:_efMS(e.short,y,'tv'),
+        data,
         borderColor:_EPS_COLORES[ei*3+(yrs.indexOf(y))]||_EPS_COLORES[ei],
         backgroundColor:'transparent',
-        borderWidth:2,pointRadius:2,tension:0.3,spanGaps:true
+        borderWidth:2,pointRadius:2,tension:0.3,spanGaps:false
       });
     });
   });
