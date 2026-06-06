@@ -148,27 +148,45 @@ a{text-decoration:none;color:inherit;}
 .insight.warn{border-left-color:var(--warn);background:#fff8e1;}
 .insight.neg{border-left-color:var(--neg);background:#fdecea;}
 
-/* ═══ CHART HINT ═══ */
-.chart-hint-btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:18px;height:18px;border-radius:50%;
-  background:rgba(45,197,171,0.15);color:var(--oet-teal);
-  font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;
-  border:1px solid rgba(45,197,171,0.3);
-  position:relative;transition:background .15s;
-  margin-left:4px;
+/* ═══ CHART TOOLS (? + ⤢) — sistema unificado ═══ */
+.chart-tools{
+  position:absolute; top:7px; right:8px; z-index:6;
+  display:flex; align-items:center; gap:5px;
 }
-.chart-hint-btn:hover{background:rgba(45,197,171,0.3);}
-.chart-hint-popup{
-  display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:500;
-  background:#1a3a2a;color:#d4ede8;font-size:11px;line-height:1.5;
-  padding:10px 12px;border-radius:8px;width:220px;
-  box-shadow:0 4px 16px rgba(0,0,0,0.35);
-  border:1px solid rgba(45,197,171,0.25);
-  pointer-events:none;
+.ct-btn{
+  width:27px; height:27px; border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-weight:700; line-height:1;
+  background:rgba(255,255,255,0.13);
+  border:1px solid rgba(255,255,255,0.26);
+  color:#fff; transition:background .14s, transform .12s, color .14s;
+  user-select:none; -webkit-tap-highlight-color:transparent;
 }
-.chart-hint-btn:hover .chart-hint-popup{display:block;}
-@media(max-width:767px){.chart-hint-popup{right:-60px;width:200px;}}
+.ct-btn:hover{ background:var(--oet-teal); color:#0c3028; transform:translateY(-1px); }
+.ct-btn:active{ transform:scale(0.94); }
+.ct-hint{ position:relative; font-size:14px; font-family:Georgia,'Times New Roman',serif; font-style:italic; }
+.ct-expand{ font-size:15px; }
+.ct-popup{
+  display:none; position:absolute; top:calc(100% + 9px); right:-2px; z-index:700;
+  width:248px; background:#0c3028; color:#dcefe8;
+  font-size:11.5px; line-height:1.55; font-weight:400; font-style:normal;
+  font-family:inherit; text-align:left; letter-spacing:.1px;
+  padding:11px 13px; border-radius:9px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.42);
+  border:1px solid rgba(45,197,171,0.32);
+}
+.ct-popup::before{
+  content:''; position:absolute; top:-5px; right:11px;
+  width:9px; height:9px; background:#0c3028;
+  border-left:1px solid rgba(45,197,171,0.32);
+  border-top:1px solid rgba(45,197,171,0.32);
+  transform:rotate(45deg);
+}
+.ct-hint:hover .ct-popup, .ct-hint:focus .ct-popup, .ct-hint:focus-within .ct-popup{ display:block; }
+@media(max-width:767px){
+  .ct-btn{ width:30px; height:30px; }
+  .ct-popup{ width:min(74vw,248px); right:-4px; }
+}
 
 /* ═══ ACTION CARDS ═══ */
 .action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px;}
@@ -596,7 +614,7 @@ a{text-decoration:none;color:inherit;}
    Estilo Power BI · Tableau · Zoho
 ═══════════════════════════════════════ */
 .card{ position:relative; }
-.card-hdr{ padding-right:44px !important; }   /* room for expand btn */
+.card-hdr{ padding-right:78px !important; }   /* room for ? + ⤢ tools */
 .card-expand-btn{
   position:absolute; top:7px; right:7px;
   width:30px; height:30px;
@@ -663,13 +681,27 @@ a{text-decoration:none;color:inherit;}
 
 /* Modal body & canvas */
 .cmo-body{
-  flex:1; overflow:auto; padding:20px 22px; min-height:0;
+  flex:1; overflow:auto; padding:18px 20px; min-height:0;
   background:#fafdfb;
+  display:flex; flex-direction:column;
 }
 .cmo-canvas-wrap{
-  width:100%;
-  height:calc(93vh - 120px);
-  min-height:340px; max-height:720px;
+  width:100%; flex:1;
+  height:calc(92vh - 128px);
+  min-height:320px; max-height:760px;
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+/* Tortas/donas: cuadrado fijo centrado, no estirado */
+.cmo-canvas-wrap.is-round{
+  height:auto; max-height:none;
+}
+.cmo-round-box{ margin:0 auto; position:relative; }
+/* Nota explicativa opcional bajo el gráfico expandido */
+.cmo-note{
+  flex-shrink:0; margin-top:12px; padding:11px 14px;
+  background:#eef8f5; border-left:3px solid var(--oet-teal);
+  border-radius:0 8px 8px 0; font-size:12.5px; line-height:1.55; color:#1a3830;
 }
 
 /* ═══════════════════════════════════════
@@ -680,10 +712,14 @@ a{text-decoration:none;color:inherit;}
 
 /* Slightly larger chart heights for vertical bars */
 @media(max-width:767px){
-  .cmo-canvas-wrap{ height:calc(90vh - 100px); min-height:260px; max-height:none; }
-  .cmo-close{ font-size:15px; padding:4px 9px; }
+  .cmo{ padding:0; }
+  .cmo-box{ width:100vw; max-height:100vh; height:100vh; border-radius:0; }
+  .cmo-canvas-wrap{ height:calc(100vh - 116px); min-height:240px; max-height:none; }
+  .cmo-canvas-wrap.is-round canvas{ max-width:88vw !important; max-height:88vw !important; }
+  .cmo-close{ font-size:16px; min-width:38px; min-height:38px; }
   .cmo-hdr h3{ font-size:12.5px; }
   .cmo-body{ padding:12px 12px; }
+  .cmo-note{ font-size:12px; margin-top:10px; }
   .card-expand-btn{ width:26px; height:26px; font-size:12px; top:6px; right:6px; }
 }
 </style>
@@ -702,6 +738,7 @@ a{text-decoration:none;color:inherit;}
       <div class="cmo-canvas-wrap" id="cmoWrap">
         <canvas id="cmoCanvas"></canvas>
       </div>
+      <div class="cmo-note" id="cmoNote" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -1763,53 +1800,100 @@ function mkChart(id, cfg, _targetEl){
     });
   }
   // Merge options
+  const _type = cfg.type||'bar';
+  const _circular = (_type==='doughnut'||_type==='pie'||_type==='polarArea');
   const opts = JSON.parse(JSON.stringify(BASE_OPTS));
+  if(_circular) delete opts.scales;   // tortas/donas no llevan ejes cartesianos
   if(cfg.options){
-    if(cfg.options.scales)  Object.assign(opts.scales, cfg.options.scales);
+    if(cfg.options.scales && !_circular){ opts.scales=opts.scales||{}; Object.assign(opts.scales, cfg.options.scales); }
     if(cfg.options.plugins) Object.assign(opts.plugins, cfg.options.plugins);
     Object.keys(cfg.options).forEach(k=>{
       if(k!=='scales'&&k!=='plugins') opts[k]=cfg.options[k];
     });
   }
-  return new Chart(el,{type:cfg.type||'bar',data:cfg.data,options:opts});
+  return new Chart(el,{type:_type,data:cfg.data,options:opts});
 }
 
 // ── Expand / fullscreen modal ─────────────────────────────────────────────────
 let _cmoInst = null;
 
-function expandChart(id, title){
-  const cfg = _chartReg[id];
+function expandChart(id, title, hint){
+  let cfg = _chartReg[id];
+  // Fallback: charts creados con new Chart() directo (no registrados) → leer instancia viva
+  if(!cfg){
+    const live = (typeof Chart!=='undefined' && Chart.getChart) ? Chart.getChart(id) : null;
+    if(live && live.config){
+      cfg = {type: live.config.type, data: live.config.data, options: live.config.options || {}};
+    }
+  }
   if(!cfg){ console.warn('expandChart: no registry entry for', id); return; }
   document.getElementById('cmoTitle').textContent = title;
   document.getElementById('cmo').classList.add('open');
   document.body.style.overflow = 'hidden';
-  // Reset canvas
-  document.getElementById('cmoWrap').innerHTML = '<canvas id="cmoCanvas"></canvas>';
+
+  const type = cfg.type || 'bar';
+  const isRound = (type==='doughnut' || type==='pie' || type==='polarArea');
+
+  // Reset canvas + ajustar contenedor según tipo (tortas = cuadrado centrado)
+  const wrap = document.getElementById('cmoWrap');
+  wrap.classList.toggle('is-round', isRound);
+  if(isRound){
+    const side = Math.round(Math.min(window.innerHeight*0.62, window.innerWidth*0.82, 540));
+    wrap.innerHTML = `<div class="cmo-round-box" style="width:${side}px;height:${side}px;max-width:100%"><canvas id="cmoCanvas"></canvas></div>`;
+  } else {
+    wrap.innerHTML = '<canvas id="cmoCanvas"></canvas>';
+  }
   if(_cmoInst){ try{ _cmoInst.destroy(); }catch(e){} _cmoInst=null; }
-  // Re-create chart in modal — larger fonts for readability
+
+  // Nota explicativa bajo el gráfico (reusa el mismo texto del botón ?)
+  const note = document.getElementById('cmoNote');
+  if(hint && hint.trim()){ note.textContent = hint; note.style.display='block'; }
+  else { note.textContent=''; note.style.display='none'; }
+
+  // Clon profundo sin funciones (se restauran abajo)
   const mc = JSON.parse(JSON.stringify(cfg,(_k,v)=>typeof v==='function'?undefined:v));
-  // Restore function callbacks that were stripped
+  // Restaurar callbacks que el clon eliminó
   if(cfg.options){
     if(cfg.options.scales){
       ['x','y','y2'].forEach(ax=>{
-        if(cfg.options.scales[ax]?.ticks?.callback && mc.options.scales[ax])
+        if(cfg.options.scales[ax]?.ticks?.callback && mc.options.scales?.[ax])
           mc.options.scales[ax].ticks.callback = cfg.options.scales[ax].ticks.callback;
       });
     }
     if(cfg.options.plugins?.tooltip?.callbacks?.label && mc.options.plugins?.tooltip?.callbacks)
       mc.options.plugins.tooltip.callbacks.label = cfg.options.plugins.tooltip.callbacks.label;
   }
-  // Upsize fonts
   if(!mc.options) mc.options={};
   if(!mc.options.plugins) mc.options.plugins={};
-  mc.options.plugins.legend = Object.assign({position:'top',labels:{boxWidth:14,font:{size:14},padding:14}},
-    mc.options.plugins.legend||{});
-  if(!mc.options.scales) mc.options.scales={};
-  ['x','y'].forEach(ax=>{
-    if(!mc.options.scales[ax]) mc.options.scales[ax]={};
-    if(!mc.options.scales[ax].ticks) mc.options.scales[ax].ticks={};
-    mc.options.scales[ax].ticks.font = Object.assign({size:13}, mc.options.scales[ax].ticks.font||{});
-  });
+
+  if(isRound){
+    // Torta: llena el cuadrado fijo, SIN ejes, leyenda abajo
+    mc.options.maintainAspectRatio = false;
+    mc.options.scales = {};   // doughnut/pie no llevan ejes
+    mc.options.plugins.legend = {position:'bottom', labels:{boxWidth:16,font:{size:13},padding:16}, display:true};
+    // título interno redundante con el header del modal
+    if(mc.options.plugins.title) mc.options.plugins.title.display=false;
+  } else {
+    // Barras/líneas: llenar el contenedor, fuentes grandes
+    mc.options.maintainAspectRatio = false;
+    mc.options.plugins.legend = Object.assign(
+      {position:'top', labels:{boxWidth:16,font:{size:14},padding:16}},
+      mc.options.plugins.legend||{});
+    if(!mc.options.scales) mc.options.scales={};
+    ['x','y','y2'].forEach(ax=>{
+      if(!mc.options.scales[ax]) return;
+      if(!mc.options.scales[ax].ticks) mc.options.scales[ax].ticks={};
+      mc.options.scales[ax].ticks.font = Object.assign({size:13}, mc.options.scales[ax].ticks.font||{});
+    });
+    // garantizar ejes legibles aunque el original no los definiera
+    ['x','y'].forEach(ax=>{
+      if(!mc.options.scales[ax]) mc.options.scales[ax]={ticks:{font:{size:13}}};
+    });
+  }
+  // Tooltips más grandes en modal
+  mc.options.plugins.tooltip = Object.assign(
+    {titleFont:{size:14},bodyFont:{size:13},padding:12}, mc.options.plugins.tooltip||{});
+
   _cmoInst = mkChart('__cmo__'+id, mc, document.getElementById('cmoCanvas'));
 }
 
@@ -1817,7 +1901,10 @@ function closeChartModal(){
   document.getElementById('cmo').classList.remove('open');
   document.body.style.overflow='';
   if(_cmoInst){ try{ _cmoInst.destroy(); }catch(e){} _cmoInst=null; }
-  document.getElementById('cmoWrap').innerHTML='<canvas id="cmoCanvas"></canvas>';
+  const wrap=document.getElementById('cmoWrap');
+  wrap.classList.remove('is-round');
+  wrap.innerHTML='<canvas id="cmoCanvas"></canvas>';
+  const note=document.getElementById('cmoNote'); if(note){ note.style.display='none'; note.textContent=''; }
 }
 
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeChartModal(); });
@@ -2861,19 +2948,23 @@ function kpiCard(label, val, sub, cls=''){
   </div>`;
 }
 
+// Genera el par de botones (? + ⤢) absoluto, consistente en TODO gráfico.
+// Llamar dentro de cada <div class="card"> que contenga un canvas.
+function chartTools(id, title, hint){
+  const _et = (title||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const _eh = (hint||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const hintBtn = hint
+    ? `<div class="ct-btn ct-hint" tabindex="0" role="button" aria-label="Qué muestra este gráfico">?<div class="ct-popup">${_eh}</div></div>`
+    : '';
+  return `<div class="chart-tools">${hintBtn}<button class="ct-btn ct-expand" onclick="expandChart('${id}','${_et}','${_eh}')" title="Pantalla completa" aria-label="Expandir gráfico">⤢</button></div>`;
+}
+
 function chartCard(id, title, badge, height=240, extraBody='', showZeroLine=false, hint=''){
-  const _et = title.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  const _eh = hint.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
-  const hintBtn = hint ? `<div class="chart-hint-btn">?<div class="chart-hint-popup">${_eh}</div></div>` : '';
   return `<div class="card">
-    <div class="card-hdr" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+    ${chartTools(id, title, hint)}
+    <div class="card-hdr" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       <h3 style="flex:1;min-width:0">${title}</h3>
       ${badge?`<span class="badge teal">${badge}</span>`:''}
-      <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
-        ${hintBtn}
-        <button class="card-expand-btn" onclick="expandChart('${id}','${_et}')"
-                title="Expandir a pantalla completa" aria-label="Expandir gráfica">⤢</button>
-      </div>
     </div>
     <div class="card-body">
       <div class="chart-wrap" style="height:${height}px"><canvas id="${id}"></canvas></div>
@@ -4766,6 +4857,7 @@ function buildComInicio(){
   <!-- Gráficas por línea de negocio (datos filtrados — YTD comparable) -->
   <div class="g6040">
     <div class="card">
+      ${chartTools('ch-com-bar','Facturación por Línea de Negocio','Facturación por línea de servicio. Permite ver qué servicios generan más ingresos y cuáles crecen o decrecen frente al año anterior.')}
       <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
         <h3 id="ch-com-bar-title">${hasFilters?'Facturación · '+_badge:'Facturación por Línea · '+_yrBadge}</h3>
         <div style="display:flex;gap:4px;align-items:center">
@@ -4773,12 +4865,12 @@ function buildComInicio(){
           <button id="btn-lnl-cir" class="cfb-ms-item" style="padding:3px 9px;font-size:10px;line-height:1.4" onclick="toggleLnlMode('cir')"># Cirugías</button>
         </div>
       </div>
-      <button class="card-expand-btn" onclick="expandChart('ch-com-bar','Facturación por Línea de Negocio')" title="Expandir" aria-label="Expandir">⤢</button>
       <div class="card-body">
         <div class="chart-wrap" style="height:280px"><canvas id="ch-com-bar"></canvas></div>
       </div>
     </div>
     <div class="card">
+      ${chartTools('ch-com-pie','Mix de Ingresos','Participación de cada servicio en el total facturado. Las cirugías y los lentes (LIOs) suelen concentrar la mayor parte del ingreso.')}
       <div class="card-hdr"><h3>Mix de Ingresos${hasFilters?' — '+_badge:' — '+_yrBadge}</h3><span class="badge teal">% participación</span></div>
       <div class="card-body">
         <div class="chart-wrap" style="height:180px"><canvas id="ch-com-pie"></canvas></div>
@@ -4796,6 +4888,7 @@ function buildComInicio(){
   <!-- ═══ SECCIÓN ESTRELLA: Evolución Mensual Comparativa YoY ═══ -->
   <div class="gfull" style="margin-top:4px">
     <div class="card">
+      ${chartTools('ch-com-yoy','Ingresos por Mes — Comparativa Interanual','Cada grupo de barras muestra el mismo mes en distintos años. Permite ver estacionalidad y si el año actual va por encima o por debajo del ritmo histórico.')}
       <div class="card-hdr">
         <h3>Ingresos por Mes — Comparativa Interanual</h3>
         <span class="badge teal">Barras agrupadas · mismo mes en 3 años</span>
@@ -5844,6 +5937,7 @@ function buildLasikPrkCard(el){
   const wrap=document.createElement('div');
   wrap.className='gfull'; wrap.style.marginTop='16px';
   wrap.innerHTML=`<div class="card">
+    ${chartTools('ch-lasik-prk','Cirugía Refractiva — LASIK y PRK','Volumen de cirugías refractivas (LASIK y PRK), el procedimiento de mayor rotación. Su tendencia anticipa la carga quirúrgica del negocio.')}
     <div class="card-hdr">
       <h3>🔬 LASIK vs PRK — Comparativo</h3>
       <div class="itog-grp">
@@ -6693,6 +6787,7 @@ function buildComHonorarios(){
   <!-- Gráfica 1: Honorarios mensuales por año (respeta CF) -->
   <div class="gfull" style="margin-top:14px">
     <div class="card">
+      ${chartTools('ch-hon-mensual','Honorarios médicos mes a mes','Honorarios pagados a los cirujanos cada mes. Permite verificar que el gasto en honorarios crezca de forma proporcional a los ingresos.')}
       <div class="card-hdr"><h3>📅 ¿Cómo evolucionan los honorarios mes a mes?</h3><span class="badge">Mensual · Años seleccionados</span></div>
       <div class="card-body">
         <div class="chart-wrap" style="height:300px"><canvas id="ch-hon-mensual"></canvas></div>
@@ -6706,6 +6801,7 @@ function buildComHonorarios(){
   <!-- Detalle por proveedor: siempre visible (datos Q1-26, único cierre con notas del contador) -->
   <div class="gfull" style="margin-top:14px">
     <div class="card">
+      ${chartTools('ch-hon-top','Top prestadores por honorarios','Los cirujanos con mayores honorarios acumulados. El peso de los honorarios sobre el ingreso es un indicador clave de eficiencia de costos.')}
       <div class="card-hdr"><h3>💵 Top prestadores · Q1-25 vs Q1-26</h3><span class="badge teal">Ene+Feb+Mar · Único cierre con notas EEFF</span></div>
       <div class="card-body">
         ${CF.months.size>0 && !isQ1 ? `<div style="margin-bottom:12px;padding:10px 14px;font-size:11px;background:rgba(255,152,0,0.07);border-left:3px solid #ff9800;border-radius:6px;color:#2d3f38">
@@ -6947,6 +7043,7 @@ function buildFinBalance(){
   <div class="g2">
     ${chartCard('ch-bss-cxc','Evolución CxC vs Efectivo','Problema de cartera: ¿quién debe pagar?',240,'',false,'Cuentas por cobrar versus efectivo disponible. Si la cartera (CxC) crece más que el efectivo, hay dinero ganado que aún no ha entrado a caja. Es el principal riesgo de liquidez de la clínica.')}
     <div class="card">
+      ${chartTools('ch-bss-pasdist','Composición del Pasivo Corriente','Desglose de las obligaciones de corto plazo: proveedores, deuda bancaria y otros. Ayuda a anticipar las salidas de caja más próximas.')}
       <div class="card-hdr"><h3>Composición del Pasivo Corriente</h3><span class="badge">${LP}</span></div>
       <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-bss-pasdist"></canvas></div></div>
     </div>
@@ -6955,6 +7052,7 @@ function buildFinBalance(){
   <!-- GRÁFICO CRUZADO CxC vs CxP — BALANCE DE TESORERÍA -->
   <div class="gfull" style="margin-top:14px">
     <div class="card" style="border-left:4px solid #ffc107">
+      ${chartTools('ch-bss-cxccxp','Capital de Trabajo & Deuda','Compara lo que le deben a la clínica (cuentas por cobrar) contra lo que la clínica debe (cuentas por pagar). Un balance sano mantiene la liquidez operativa.')}
       <div class="card-hdr">
         <h3>⚖️ ¿Qué nos deben vs qué debemos? — Balance de Tesorería</h3>
         <span class="badge" style="background:#ffc107;color:#1a3a2a">Cuentas por cobrar vs cuentas por pagar</span>
@@ -6980,6 +7078,7 @@ function buildFinBalance(){
   <!-- PROYECCIÓN FLUJO DE CAJA -->
   <div class="gfull">
     <div class="card">
+      ${chartTools('ch-sim-proj','Simulador de Liquidez','Proyecta la caja de los próximos meses según distintos escenarios de cobro, pago de deuda e inversión. Sirve para anticipar necesidades de financiamiento.')}
       <div class="card-hdr"><h3>🔧 Simulador de Liquidez — Palancas de Acción</h3><span class="badge">Proyección 12 meses</span></div>
       <div class="card-body">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px">
@@ -8355,10 +8454,12 @@ function buildMktInicio(){
   </div>
   <div class="g2">
     <div class="card">
+      ${chartTools('ch-mkt-tipos','Procedimientos por Tipo','Distribución de los procedimientos según su tipo. Muestra en qué especialidades se concentra la actividad de la clínica.')}
       <div class="card-hdr"><h3>💰 Facturación por Tipo de Procedimiento</h3><span class="badge">2025 vs 2026 YTD</span></div>
       <div class="card-body"><div class="chart-wrap" style="height:260px"><canvas id="ch-mkt-tipos"></canvas></div></div>
     </div>
     <div class="card">
+      ${chartTools('ch-mkt-cir','Cirujanos — Volumen','Volumen de procedimientos por cirujano. Identifica a los médicos de mayor actividad dentro del cuerpo quirúrgico.')}
       <div class="card-hdr"><h3>👨‍⚕️ Top Cirujanos — Facturación 2025</h3></div>
       <div class="card-body"><div class="chart-wrap" style="height:260px"><canvas id="ch-mkt-cir"></canvas></div></div>
     </div>
@@ -8395,6 +8496,7 @@ function buildMktLentes(){
     ${kpiCard('LIO Fáquico 2026 YTD',fv(lioF26),fp(pctVar(lioF26,lioF25))+' vs 2025')}
   </div>
   <div class="gfull"><div class="card">
+    ${chartTools('ch-mkt-lentes','Lentes & LIOs','Volumen de lentes intraoculares implantados. Los LIOs premium son el producto de mayor margen, por lo que su evolución impacta la rentabilidad.')}
     <div class="card-hdr"><h3>👁️ Facturación de Lentes — LIOs Premium y Fáquico</h3>
       ${buildLasikPrkCard.toString().includes('ch-lasik-prk')?'<span class="badge">Ver también LASIK/PRK en Inicio</span>':''}
     </div>
@@ -8428,6 +8530,7 @@ function buildMktGrowth(){
     ${kpiCard('Cirugías 2026 YTD',CIR.mes_26.reduce((a,b)=>a+b,0).toLocaleString(),fp(pctVar(CIR.mes_26.reduce((a,b)=>a+b,0),CIR.mes_25.slice(0,CIR.mes_26.filter(v=>v>0).length).reduce((a,b)=>a+b,0)))+' vs 2025')}
   </div>
   <div class="gfull"><div class="card">
+    ${chartTools('ch-mkt-growth','Crecimiento','Evolución del crecimiento interanual. Permite ver si el ritmo de expansión del negocio se acelera o se desacelera.')}
     <div class="card-hdr"><h3>📈 Crecimiento % mes a mes (2026 vs 2025)</h3></div>
     <div class="card-body"><div class="chart-wrap" style="height:220px"><canvas id="ch-mkt-growth"></canvas></div></div>
   </div></div>`;
@@ -8449,6 +8552,7 @@ function buildMktCirujanos(){
   el.innerHTML=`
   <div class="sec-title">Performance por Cirujano <span class="st-badge">Ticket promedio y crecimiento</span></div>
   <div class="gfull"><div class="card">
+    ${chartTools('ch-mkt-ticket','Ticket Promedio','Valor promedio facturado por procedimiento o paciente. Un ticket creciente indica mejor mezcla de servicios o ajuste de tarifas.')}
     <div class="card-hdr"><h3>🎫 Ticket Promedio por Cirugía (miles COP)</h3><span class="badge">2025 vs 2026 YTD</span></div>
     <div class="card-body"><div class="chart-wrap" style="height:260px"><canvas id="ch-mkt-ticket"></canvas></div></div>
   </div></div>
@@ -8526,10 +8630,12 @@ function buildFarLentes(){
   <div class="sec-title">Lentes & Ojos Operados <span class="st-badge">Facturación mensual de LIOs</span></div>
   <div class="g2">
     <div class="card">
+      ${chartTools('ch-far-lentes-m','Lentes — Facturación Mensual','Facturación mensual de lentes. Permite seguir el comportamiento de esta línea de alto margen a lo largo del año.')}
       <div class="card-hdr"><h3>👁️ Facturación mensual LIOs 2025 vs 2026</h3></div>
       <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-far-lentes-m"></canvas></div></div>
     </div>
     <div class="card">
+      ${chartTools('ch-far-cir-m','Cirugías — Facturación Mensual','Facturación mensual asociada a cirugías. Refleja el ritmo de actividad quirúrgica y su aporte al ingreso total.')}
       <div class="card-hdr"><h3>🏥 Cirugías mensuales (ojos aprox.)</h3></div>
       <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="ch-far-cir-m"></canvas></div></div>
     </div>
