@@ -565,7 +565,7 @@ a{text-decoration:none;color:inherit;}
   padding:7px 14px;gap:6px 10px;align-items:center;flex-wrap:wrap;
 }
 #eps-filter-bar.visible{ display:flex; }
-#content.has-eps-filter-bar{ padding-top:52px; }
+#content.has-eps-filter-bar{ padding-top:90px; }
 @media(max-width:1023px){ #eps-filter-bar{ left:170px; } }
 @media(max-width:767px){ #eps-filter-bar{ left:0; top:calc(var(--hdr-h) + var(--snav-h)); padding:5px 8px; gap:5px 7px; } }
 
@@ -918,6 +918,22 @@ a{text-decoration:none;color:inherit;}
       <button class="cfb-pill"    id="epf-tipo-aseg" onclick="setEpsTipo('aseguradoras',this)">Aseguradoras</button>
     </div>
     <div class="cfb-div"></div>
+    <div class="cfb-group">
+      <span class="cfb-lbl">Mes</span>
+      <button class="cfb-pill cfb-month-pill" data-epm="1"  onclick="toggleEpsMonth(1,this)">Ene</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="2"  onclick="toggleEpsMonth(2,this)">Feb</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="3"  onclick="toggleEpsMonth(3,this)">Mar</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="4"  onclick="toggleEpsMonth(4,this)">Abr</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="5"  onclick="toggleEpsMonth(5,this)">May</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="6"  onclick="toggleEpsMonth(6,this)">Jun</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="7"  onclick="toggleEpsMonth(7,this)">Jul</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="8"  onclick="toggleEpsMonth(8,this)">Ago</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="9"  onclick="toggleEpsMonth(9,this)">Sep</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="10" onclick="toggleEpsMonth(10,this)">Oct</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="11" onclick="toggleEpsMonth(11,this)">Nov</button>
+      <button class="cfb-pill cfb-month-pill" data-epm="12" onclick="toggleEpsMonth(12,this)">Dic</button>
+    </div>
+    <div class="cfb-div"></div>
     <button class="cfb-clear" onclick="clearEpsFilters()">✕ Limpiar</button>
   </div>
   <aside id="sidebar"></aside>
@@ -1214,6 +1230,9 @@ const EPS = {
     'J.A. Jaramillo S.':{'v':370332,'c':213,'by_eps':{'Particular':{'v':281716,'c':152},'SURA':{'v':50492,'c':32},'Coomeva':{'v':15049,'c':16},'Black Mammoth':{'v':2000,'c':1},'Allianz':{'v':7304,'c':4},'Colmédica':{'v':648,'c':1},'Bolívar':{'v':10953,'c':3},'Medplus':{'v':579,'c':1},'AXA Prep.':{'v':1590,'c':3},'AXA Vida':{'v':0,'c':0}}},
     'C. Sardi C.':{'v':132939,'c':79,'by_eps':{'Particular':{'v':43476,'c':37},'SURA':{'v':41477,'c':20},'Coomeva':{'v':5015,'c':4},'Black Mammoth':{'v':0,'c':0},'Allianz':{'v':35611,'c':14},'Colmédica':{'v':0,'c':0},'Bolívar':{'v':6589,'c':2},'Medplus':{'v':772,'c':2},'AXA Prep.':{'v':0,'c':0},'AXA Vida':{'v':0,'c':0}}},
   },
+  m:{"Particular":{"2024":{"tv":[413102,524670,478676,450247,402689,424449,442133,391636,394177,407113,541507,445818],"sv":[149914,246732,204932,214128,195048,207821,225838,220968,166168,224039,269654,232212],"sc":[136,195,172,173,173,155,188,197,150,201,216,204],"lv":[83753,70400,75613,58050,75189,36028,40785,0,49962,0,59110,45597],"lc":[13,25,32,30,33,27,41,33,36,28,45,17],"hv":[113475,171008,161828,138631,101132,146686,138655,141290,126504,129769,148070,109904]},"2025":{"tv":[661928,563730,473173,645613,682251,662769,816625,650450,565546,829158,800649,749210],"sv":[277691,242748,256431,322473,312528,288199,367662,293386,217647,380518,388071,338345],"sc":[223,199,200,239,208,218,254,222,154,268,239,231],"lv":[79848,67608,30214,51718,67072,90258,114937,99512,82852,81283,80319,67490],"lc":[39,47,27,44,68,38,64,58,49,57,61,57],"hv":[236759,175777,113977,191406,223896,212340,247205,174614,190742,278865,262376,273715]},"2026":{"tv":[699688,1112773,450821,0,0,0,0,0,0,0,0,0],"sv":[228873,408415,150687,0,0,0,0,0,0,0,0,0],"sc":[189,236,78,0,0,0,0,0,0,0,0,0],"lv":[164572,239648,102790,0,0,0,0,0,0,0,0,0],"lc":[34,59,24,0,0,0,0,0,0,0,0,0],"hv":[171591,281818,108626,0,0,0,0,0,0,0,0,0]}},"SURA":{"2024":{"tv":[68998,21830,124505,186133,141365,204835,94097,247392,189561,101636,208285,250532],"sv":[30601,3445,75301,90961,91367,119343,43611,152974,106946,56080,118290,151716],"sc":[19,2,39,46,50,58,27,79,53,26,64,112],"lv":[8255,0,0,0,0,0,0,0,0,0,0,0],"lc":[5,1,14,19,13,25,8,30,20,17,26,37],"hv":[17356,3090,30206,68918,24266,64586,36742,84600,56812,45450,75262,77175]},"2025":{"tv":[25880,85824,295660,220173,222354,50180,168276,423295,50587,275085,296391,260525],"sv":[8898,63758,173541,99270,135041,17551,83295,233642,17360,143024,152424,134046],"sc":[7,40,104,60,83,11,55,134,10,88,91,82],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,13,42,23,27,6,18,74,2,34,51,32],"hv":[3060,15619,97526,84719,74155,11517,60605,165082,7080,109575,110259,80877]},"2026":{"tv":[250357,229645,330069,0,0,0,0,0,0,0,0,0],"sv":[116506,83192,149882,0,0,0,0,0,0,0,0,0],"sc":[71,48,98,0,0,0,0,0,0,0,0,0],"lv":[21780,15600,16200,0,0,0,0,0,0,0,0,0],"lc":[22,26,27,0,0,0,0,0,0,0,0,0],"hv":[69809,73479,87854,0,0,0,0,0,0,0,0,0]}},"Coomeva":{"2024":{"tv":[3369,6641,20324,27350,40627,13922,22329,10023,36199,15503,7474,19174],"sv":[0,1325,7029,10083,11136,5300,9275,3047,13801,9168,2862,4172],"sc":[0,1,6,9,11,4,7,3,12,8,2,5],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[0,1665,9399,13488,13763,6661,6661,1665,12089,2395,0,6510]},"2025":{"tv":[28271,12488,16568,20671,46542,39759,37402,51198,44360,20647,32772,23004],"sv":[7814,4293,5724,10825,14618,14974,13265,21791,17853,9644,15025,9841],"sc":[11,3,6,10,15,14,14,16,15,11,17,11],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,2,0,0,0,0,0,0,0],"hv":[11229,3488,4013,2395,21198,11393,12920,12974,12938,3838,4742,902]},"2026":{"tv":[34897,48321,47532,0,0,0,0,0,0,0,0,0],"sv":[15397,18960,18624,0,0,0,0,0,0,0,0,0],"sc":[18,19,21,0,0,0,0,0,0,0,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[10724,15541,8917,0,0,0,0,0,0,0,0,0]}},"Black Mammoth":{"2024":{"tv":[0,2000,0,0,0,0,0,0,0,0,0,0],"sv":[0,2000,0,0,0,0,0,0,0,0,0,0],"sc":[0,1,0,0,0,0,0,0,0,0,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,1,0,0,0,0,0,0,0,0,0,0],"hv":[0,0,0,0,0,0,0,0,0,0,0,0]},"2025":{"tv":[0,0,0,0,0,0,45307,0,5402,14299,22390,165199],"sv":[0,0,0,0,0,0,37970,0,4700,12808,20080,145951],"sc":[0,0,0,0,0,0,21,0,3,8,10,81],"lv":[0,0,0,0,0,0,2470,0,0,0,0,0],"lc":[0,0,0,0,0,0,2,0,0,0,0,0],"hv":[0,0,0,0,0,0,0,0,0,0,0,0]},"2026":{"tv":[84322,0,0,0,0,0,0,0,0,0,0,0],"sv":[74677,0,0,0,0,0,0,0,0,0,0,0],"sc":[43,0,0,0,0,0,0,0,0,0,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[0,0,0,0,0,0,0,0,0,0,0,0]}},"Allianz":{"2024":{"tv":[1165,1014,21190,7014,3140,433,10960,5098,21236,3581,6353,17510],"sv":[0,0,0,0,965,0,5006,2506,4558,2506,2506,5013],"sc":[0,0,0,0,1,0,5,1,3,1,1,2],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[0,0,6197,2594,414,0,5024,1074,6852,1074,1074,2148]},"2025":{"tv":[1590,7461,17270,8149,5671,22848,21760,7140,2041,29384,1355,6785],"sv":[0,4086,1930,4208,3924,3671,3593,3921,0,4971,0,0],"sc":[0,3,2,3,2,2,2,2,0,3,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,2,0,0],"hv":[0,2222,5993,1074,1074,6675,6670,1680,0,8298,0,0]},"2026":{"tv":[15362,7946,2370,0,0,0,0,0,0,0,0,0],"sv":[11562,2637,0,0,0,0,0,0,0,0,0,0],"sc":[5,1,0,0,0,0,0,0,0,0,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[2695,1130,0,0,0,0,0,0,0,0,0,0]}},"Colmédica":{"2024":{"tv":[0,0,0,2225,3914,0,6072,1591,3741,9384,361,18893],"sv":[0,0,0,949,1799,0,990,600,2623,3814,0,6156],"sc":[0,0,0,1,3,0,1,1,4,2,0,4],"lv":[0,0,0,0,0,0,0,0,0,0,0,4193],"lc":[0,0,0,0,0,0,0,0,0,0,0,4],"hv":[0,0,0,736,1735,0,736,0,263,4048,0,5281]},"2025":{"tv":[0,0,0,4410,4809,8242,8223,10455,26783,11640,0,16890],"sv":[0,0,0,1490,1836,4119,3672,3672,8505,3163,0,7765],"sc":[0,0,0,2,1,2,2,2,6,3,0,6],"lv":[0,0,0,0,0,0,0,3340,7533,4193,0,0],"lc":[0,0,0,0,1,1,2,2,3,1,0,2],"hv":[0,0,0,1192,1533,1533,3066,1533,6734,2101,0,7209]},"2026":{"tv":[1311,1395,4356,0,0,0,0,0,0,0,0,0],"sv":[0,0,1536,0,0,0,0,0,0,0,0,0],"sc":[0,0,2,0,0,0,0,0,0,0,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[0,0,1958,0,0,0,0,0,0,0,0,0]}},"Bolívar":{"2024":{"tv":[292,25633,112,0,11136,5192,2614,512,5407,931,6738,7202],"sv":[0,11989,0,0,5400,0,1131,0,0,481,2862,0],"sc":[0,4,0,0,2,0,1,0,0,1,1,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,1,0,0,0,0,0,0,0,0,0,0],"hv":[0,7295,0,0,3425,1050,656,0,1050,450,2550,1050]},"2025":{"tv":[0,7016,0,5431,202,4163,14754,10126,819,3434,0,35041],"sv":[0,2862,0,0,0,1400,8807,1363,0,1100,0,15464],"sc":[0,1,0,0,0,2,3,1,0,1,0,7],"lv":[0,659,0,0,0,0,0,0,0,0,0,0],"lc":[0,1,0,0,0,1,0,0,0,0,0,0],"hv":[0,1875,0,1050,0,1700,4114,2457,0,1248,0,11232]},"2026":{"tv":[1765,2228,1679,0,0,0,0,0,0,0,0,0],"sv":[0,0,0,0,0,0,0,0,0,0,0,0],"sc":[0,0,0,0,0,0,0,0,0,0,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[0,0,0,0,0,0,0,0,0,0,0,0]}},"Medplus":{"2024":{"tv":[0,603,0,1379,6427,582,182,9793,11005,0,2072,9355],"sv":[0,0,0,708,2512,0,0,2900,3962,0,0,3103],"sc":[0,0,0,1,2,0,0,2,3,0,0,2],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[0,0,0,671,2884,0,0,3599,5606,0,0,3599]},"2025":{"tv":[0,443,15688,360,706,4211,6461,10192,4378,3579,0,10173],"sv":[0,0,5600,0,0,1136,2640,3489,1552,2465,0,2688],"sc":[0,0,4,0,0,1,3,3,1,3,0,2],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[0,0,7932,0,0,1235,3038,4338,1893,1114,0,4184]},"2026":{"tv":[6015,685,950,0,0,0,0,0,0,0,0,0],"sv":[1552,0,0,0,0,0,0,0,0,0,0,0],"sc":[1,0,0,0,0,0,0,0,0,0,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[2328,0,0,0,0,0,0,0,0,0,0,0]}},"AXA Prep.":{"2024":{"tv":[0,579,1871,0,4331,349,8612,0,161,8131,1630,0],"sv":[0,0,1178,0,2374,0,4748,0,0,4748,746,0],"sc":[0,0,1,0,1,0,2,0,0,2,1,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,1,0,0,0,0,1,0,0],"hv":[0,0,692,0,1691,0,3383,0,0,3383,884,0]},"2025":{"tv":[0,1581,0,10548,0,1058,349,4732,5211,2704,0,18187],"sv":[0,243,0,5346,0,814,0,1859,1946,530,0,8638],"sc":[0,1,0,4,0,1,0,3,1,1,0,6],"lv":[0,0,0,0,0,0,0,0,0,1424,0,0],"lc":[0,0,0,1,0,0,0,0,0,1,0,0],"hv":[0,155,0,4525,0,243,0,1768,1604,750,0,5979]},"2026":{"tv":[1521,1586,203,0,0,0,0,0,0,0,0,0],"sv":[530,802,0,0,0,0,0,0,0,0,0,0],"sc":[1,1,0,0,0,0,0,0,0,0,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[790,256,0,0,0,0,0,0,0,0,0,0]}},"AXA Vida":{"2024":{"tv":[0,0,0,0,0,0,0,0,2656,4065,0,0],"sv":[0,0,0,0,0,0,0,0,1973,2374,0,0],"sc":[0,0,0,0,0,0,0,0,2,1,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,1,0,0],"hv":[0,0,0,0,0,0,0,0,683,1691,0,0]},"2025":{"tv":[0,824,0,5401,5896,2179,0,143,0,0,0,2145],"sv":[0,0,0,2719,2719,869,0,0,0,0,0,1259],"sc":[0,0,0,1,1,1,0,0,0,0,0,2],"lv":[0,0,0,1424,1424,0,0,0,0,0,0,0],"lc":[0,0,0,1,1,0,0,0,0,0,0,0],"hv":[0,0,0,1259,1259,762,0,0,0,0,0,886]},"2026":{"tv":[441,685,739,0,0,0,0,0,0,0,0,0],"sv":[0,0,0,0,0,0,0,0,0,0,0,0],"sc":[0,0,0,0,0,0,0,0,0,0,0,0],"lv":[0,0,0,0,0,0,0,0,0,0,0,0],"lc":[0,0,0,0,0,0,0,0,0,0,0,0],"hv":[0,0,0,0,0,0,0,0,0,0,0,0]}}},
+  dm:{"M.A. Jaramillo":{"Particular":{"2024":[20,21,24,19,13,32,20,22,12,16,19,15],"2025":[35,18,10,22,27,21,21,23,31,37,20,39],"2026":[8,36,10,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[7,0,2,16,8,12,6,11,8,5,24,26],"2025":[3,2,26,9,6,2,18,20,2,23,14,10],"2026":[5,6,12,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,0,1,5,3,4,3,1,7,1,0,2],"2025":[2,1,1,1,5,1,4,4,2,0,2,1],"2026":[0,2,1,0,0,0,0,0,0,0,0,0]},"Allianz":{"2024":[0,0,0,0,1,0,0,0,1,0,0,0],"2025":[0,1,2,0,0,0,0,1,0,2,0,0],"2026":[1,0,0,0,0,0,0,0,0,0,0,0]},"Colmédica":{"2024":[0,0,0,0,1,0,0,0,0,0,0,0],"2025":[0,0,0,0,0,0,0,0,1,1,0,1]},"Bolívar":{"2024":[0,2,0,0,0,0,0,0,0,0,0,0],"2025":[0,1,0,0,0,0,0,0,0,0,0,4]},"Medplus":{"2024":[0,0,0,1,2,0,0,1,0,0,0,2],"2025":[0,0,2,0,0,0,0,0,0,0,0,1],"2026":[1,0,0,0,0,0,0,0,0,0,0,0]},"AXA Prep.":{"2025":[0,0,0,2,0,0,0,1,0,0,0,0]},"AXA Vida":{"2024":[0,0,0,0,0,0,0,0,0,1,0,0]}},"Jon Kepa B.":{"Particular":{"2024":[45,65,80,71,76,54,63,52,42,64,87,76],"2025":[24,55,65,66,57,67,45,57,35,78,40,11],"2026":[5,2,0,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[2,0,13,7,13,21,3,15,14,4,8,31],"2025":[0,7,25,11,13,4,6,20,4,7,15,14],"2026":[6,0,6,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,0,1,1,1,0,0,0,0,0,0,1],"2025":[3,0,0,0,0,0,0,0,1,0,0,0]},"Black Mammoth":{"2025":[0,0,0,0,0,0,21,0,3,8,10,81],"2026":[43,0,0,0,0,0,0,0,0,0,0,0]},"Colmédica":{"2025":[0,0,0,0,0,0,0,1,1,1,0,0]}},"M. Jaramillo M.":{"Particular":{"2024":[6,4,9,13,6,8,8,8,6,8,8,5],"2025":[7,9,8,7,8,17,21,11,8,9,11,15],"2026":[10,15,7,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[3,0,2,2,1,7,3,11,3,0,1,2],"2025":[1,3,3,4,7,1,8,14,0,17,6,9],"2026":[3,9,3,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,0,2,1,1,0,1,0,0,0,0,1],"2025":[1,0,0,0,2,1,1,1,4,2,0,0],"2026":[0,0,1,0,0,0,0,0,0,0,0,0]},"Allianz":{"2025":[0,1,0,0,0,0,0,0,0,0,0,0]},"Colmédica":{"2025":[0,0,0,0,1,1,2,0,1,1,0,2]},"Bolívar":{"2025":[0,0,0,0,0,0,2,0,0,0,0,3]},"Medplus":{"2024":[0,0,0,0,0,0,0,1,0,0,0,0],"2025":[0,0,0,0,0,0,0,0,0,2,0,1]},"AXA Vida":{"2025":[0,0,0,0,0,1,0,0,0,0,0,1]}},"J.E. Jaramillo":{"Particular":{"2024":[5,20,13,13,8,7,11,13,7,17,8,7],"2025":[11,8,11,14,8,5,0,0,2,0,0,0]},"SURA":{"2024":[0,0,4,4,2,0,1,9,6,4,3,5],"2025":[0,2,7,8,13,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,1,2,1,1,0,0,0,1,1,0,1],"2025":[1,1,0,1,0,2,0,0,0,0,0,0]},"Allianz":{"2024":[0,0,0,0,0,0,1,0,0,0,0,0],"2025":[0,0,0,0,0,0,1,0,0,0,0,0]},"Colmédica":{"2024":[0,0,0,0,0,0,1,0,2,1,0,3],"2025":[0,0,0,1,0,0,0,0,0,0,0,0]},"Bolívar":{"2024":[0,0,0,0,0,0,1,0,0,1,0,0]},"Medplus":{"2024":[0,0,0,0,0,0,0,0,2,0,0,0],"2025":[0,0,0,0,0,0,1,0,0,0,0,0]},"AXA Prep.":{"2024":[0,0,0,0,0,0,2,0,0,2,1,0]},"AXA Vida":{"2024":[0,0,0,0,0,0,0,0,1,0,0,0]}},"B. Ramírez S.":{"Particular":{"2024":[34,35,15,32,36,28,28,28,12,26,20,32],"2025":[46,35,44,28,28,39,70,52,29,38,55,59],"2026":[71,53,9,0,0,0,0,0,0,0,0,0]}},"J.A. Jaramillo H.":{"Particular":{"2024":[1,1,1,2,2,3,1,1,6,2,1,5],"2025":[6,10,3,1,7,3,6,6,4,2,7,2],"2026":[7,6,2,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[0,1,5,0,1,0,5,0,6,8,8,2],"2025":[0,4,2,2,5,0,4,9,0,4,11,5],"2026":[5,8,9,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,0,0,1,2,0,0,0,0,0,0,0],"2025":[0,0,0,0,3,0,0,1,0,0,0,0]},"Colmédica":{"2025":[0,0,0,0,0,0,0,0,0,0,0,2]},"AXA Prep.":{"2024":[0,0,0,0,1,0,0,0,0,0,0,0],"2025":[0,0,0,0,0,0,0,0,0,0,0,2]},"AXA Vida":{"2025":[0,0,0,1,1,0,0,0,0,0,0,0]}},"J.A. Jaramillo S.":{"Particular":{"2024":[8,3,2,7,7,4,3,2,4,2,2,4],"2025":[5,8,6,5,5,4,8,6,6,12,11,8],"2026":[5,11,4,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[0,0,0,2,0,0,0,2,0,0,0,4],"2025":[0,0,0,1,3,0,0,7,0,3,1,2],"2026":[4,0,3,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,0,0,0,0,0,0,0,0,1,0,0],"2025":[0,0,1,0,2,4,1,0,0,0,0,0],"2026":[1,5,1,0,0,0,0,0,0,0,0,0]},"Black Mammoth":{"2024":[0,1,0,0,0,0,0,0,0,0,0,0]},"Allianz":{"2024":[0,0,0,0,0,0,1,0,1,0,0,0],"2025":[0,0,0,0,0,1,0,1,0,0,0,0]},"Colmédica":{"2025":[0,0,0,1,0,0,0,0,0,0,0,0]},"Bolívar":{"2024":[0,0,0,0,2,0,0,0,0,0,0,0],"2025":[0,0,0,0,0,0,1,0,0,0,0,0]},"Medplus":{"2025":[0,0,0,0,0,0,1,0,0,0,0,0]},"AXA Prep.":{"2025":[0,0,0,0,0,0,0,0,0,1,0,1],"2026":[1,0,0,0,0,0,0,0,0,0,0,0]}},"C. Sardi C.":{"Particular":{"2024":[1,3,2,0,2,0,0,1,1,0,3,2],"2025":[3,1,3,3,1,0,0,0,1,1,2,0],"2026":[4,2,1,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[0,0,0,1,0,3,1,0,0,0,0,0],"2025":[0,0,0,0,0,0,0,5,0,0,5,0],"2026":[4,0,1,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2025":[0,0,0,0,0,0,0,2,0,0,0,0],"2026":[0,0,2,0,0,0,0,0,0,0,0,0]},"Allianz":{"2024":[0,0,0,0,0,0,0,1,1,1,1,2],"2025":[0,1,0,1,1,0,1,0,0,1,0,0],"2026":[2,1,0,0,0,0,0,0,0,0,0,0]},"Bolívar":{"2024":[0,2,0,0,0,0,0,0,0,0,0,0]},"Medplus":{"2025":[0,0,0,0,0,0,0,1,0,1,0,0]}}},
+  cm:{"Refractiva":{"Particular":{"2024":[91,145,116,107,121,112,139,148,117,149,158,148],"2025":[158,140,140,155,129,159,173,148,97,149,133,119],"2026":[124,112,34,0,0,0,0,0,0,0,0,0]},"Black Mammoth":{"2025":[0,0,0,0,0,0,10,0,2,4,6,60],"2026":[28,0,0,0,0,0,0,0,0,0,0,0]}},"Catarata":{"Particular":{"2024":[19,31,24,28,20,21,25,21,20,24,27,25],"2025":[40,33,30,39,40,29,44,26,27,42,50,43],"2026":[22,44,19,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[4,1,15,17,13,25,8,31,20,17,26,38],"2025":[0,13,39,23,28,6,18,79,2,33,49,34],"2026":[21,26,28,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,1,5,7,7,4,7,2,9,6,2,2],"2025":[4,3,3,5,7,9,7,14,11,5,7,4],"2026":[6,9,8,0,0,0,0,0,0,0,0,0]},"Black Mammoth":{"2025":[0,0,0,0,0,0,6,0,1,1,3,10],"2026":[11,0,0,0,0,0,0,0,0,0,0,0]},"Colmédica":{"2024":[0,0,0,0,0,0,0,0,0,1,0,3],"2025":[0,0,0,0,1,1,2,2,3,1,0,2]},"Bolívar":{"2024":[0,3,0,0,2,0,0,0,0,0,1,0],"2025":[0,1,0,0,0,0,0,0,0,0,0,4]},"Medplus":{"2024":[0,0,0,0,1,0,0,2,2,0,0,2],"2025":[0,0,3,0,0,0,0,2,1,0,0,1],"2026":[1,0,0,0,0,0,0,0,0,0,0,0]},"AXA Prep.":{"2024":[0,0,0,0,1,0,2,0,0,2,0,0],"2025":[0,0,0,2,0,0,0,0,0,0,0,2]},"AXA Vida":{"2024":[0,0,0,0,0,0,0,0,0,1,0,0],"2025":[0,0,0,1,1,0,0,0,0,0,0,0]}},"Córnea":{"Particular":{"2024":[9,12,19,16,16,11,12,14,6,16,14,12],"2025":[9,11,15,18,15,13,12,13,14,19,6,9],"2026":[7,8,2,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[2,0,1,0,2,1,0,3,2,0,7,0],"2025":[1,0,0,3,4,0,6,3,0,4,0,1],"2026":[1,1,2,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2025":[0,0,0,0,0,0,1,0,0,0,0,0]},"Black Mammoth":{"2025":[0,0,0,0,0,0,4,0,0,2,0,6],"2026":[4,0,0,0,0,0,0,0,0,0,0,0]},"Allianz":{"2024":[0,0,0,0,0,0,0,0,1,0,0,0],"2025":[0,0,0,1,0,0,1,0,0,0,0,0]},"Colmédica":{"2024":[0,0,0,0,1,0,0,0,0,0,0,0],"2025":[0,0,0,0,0,0,0,0,1,0,0,0]},"Bolívar":{"2025":[0,0,0,0,0,1,1,0,0,1,0,1]},"Medplus":{"2025":[0,0,1,0,0,0,1,0,0,0,0,0]},"AXA Vida":{"2024":[0,0,0,0,0,0,0,0,1,0,0,0]}},"Párpados":{"Particular":{"2024":[5,3,2,5,3,1,1,3,1,4,6,1],"2025":[4,4,3,10,5,1,2,13,2,25,22,32],"2026":[18,39,13,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[6,1,6,10,10,5,4,6,6,1,6,16],"2025":[1,5,13,10,12,2,6,11,1,7,7,13],"2026":[8,10,32,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,0,0,0,1,0,0,0,1,0,0,0],"2025":[0,0,1,0,0,0,0,0,1,1,0,0],"2026":[0,0,2,0,0,0,0,0,0,0,0,0]},"Allianz":{"2024":[0,0,0,0,0,0,3,0,0,0,0,0],"2025":[0,1,0,1,1,0,0,0,0,0,0,0]},"Colmédica":{"2024":[0,0,0,0,1,0,1,0,1,0,0,0]},"Bolívar":{"2024":[0,0,0,0,0,0,0,0,0,1,0,0]},"AXA Prep.":{"2025":[0,1,0,1,0,1,0,1,1,0,0,2],"2026":[0,1,0,0,0,0,0,0,0,0,0,0]},"AXA Vida":{"2025":[0,0,0,0,0,0,0,0,0,0,0,1]}},"Vitreoretina":{"Particular":{"2024":[4,1,2,5,6,1,2,4,2,1,5,5],"2025":[5,6,3,6,7,3,7,8,8,19,15,8],"2026":[7,15,7,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[0,0,0,1,0,0,0,0,0,0,1,1],"2025":[0,3,2,2,3,0,1,6,0,3,1,1],"2026":[3,3,3,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2025":[0,0,0,4,3,3,1,0,2,1,6,6],"2026":[9,10,9,0,0,0,0,0,0,0,0,0]},"Black Mammoth":{"2024":[0,1,0,0,0,0,0,0,0,0,0,0]},"Allianz":{"2024":[0,0,0,0,0,0,0,1,1,1,1,2],"2025":[0,1,0,1,1,1,1,1,0,1,0,0],"2026":[4,1,0,0,0,0,0,0,0,0,0,0]},"Colmédica":{"2024":[0,0,0,0,0,0,0,0,0,1,0,0],"2025":[0,0,0,0,0,1,0,0,0,0,0,0]},"Bolívar":{"2024":[0,1,0,0,0,0,0,0,0,0,0,0],"2025":[0,0,0,0,0,0,1,0,0,0,0,0]},"Medplus":{"2025":[0,0,0,0,0,0,1,1,0,1,0,0]},"AXA Prep.":{"2025":[0,0,0,0,0,0,0,0,0,1,0,1],"2026":[1,0,0,0,0,0,0,0,0,0,0,0]}},"Glaucoma":{"Particular":{"2024":[3,1,4,4,1,2,6,3,0,1,3,5],"2025":[1,1,3,7,1,6,6,6,2,4,3,9],"2026":[3,3,2,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[4,0,1,4,2,3,2,5,3,3,6,7],"2025":[2,1,7,2,3,0,3,5,0,8,8,7],"2026":[11,0,4,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,0,1,2,2,0,0,0,0,0,0,2],"2025":[1,0,1,0,4,1,1,1,0,1,1,0],"2026":[1,0,0,0,0,0,0,0,0,0,0,0]},"Black Mammoth":{"2025":[0,0,0,0,0,0,0,0,0,0,0,2]},"Allianz":{"2024":[0,0,0,0,1,0,0,0,1,0,0,0],"2025":[0,1,2,0,0,0,0,1,0,0,0,0],"2026":[1,0,0,0,0,0,0,0,0,0,0,0]},"Colmédica":{"2025":[0,0,0,0,0,0,0,0,2,0,0,1],"2026":[0,0,1,0,0,0,0,0,0,0,0,0]},"Bolívar":{"2025":[0,0,0,0,0,1,0,1,0,0,0,0]},"Medplus":{"2024":[0,0,0,0,0,0,0,0,1,0,0,0]},"AXA Prep.":{"2024":[0,0,1,0,0,0,0,0,0,0,0,0]},"AXA Vida":{"2025":[0,0,0,0,0,1,0,0,0,0,0,0]}},"Lagrimal":{"Particular":{"2024":[1,0,0,0,2,2,1,0,0,0,1,0],"2025":[0,0,1,1,0,1,0,2,0,1,2,2]},"SURA":{"2024":[0,0,7,7,20,19,5,15,15,2,9,28],"2025":[2,15,28,11,20,2,12,19,6,24,15,10],"2026":[12,2,9,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2025":[0,0,0,0,0,0,0,0,0,1,0,0]},"Colmédica":{"2024":[0,0,0,0,0,0,0,0,2,0,0,0],"2025":[0,0,0,1,0,0,0,0,0,1,0,1],"2026":[0,0,1,0,0,0,0,0,0,0,0,0]},"Bolívar":{"2024":[0,0,0,0,0,0,1,0,0,0,0,0],"2025":[0,0,0,0,0,0,1,0,0,0,0,0]},"Medplus":{"2025":[0,0,0,0,0,0,0,0,0,2,0,0]},"AXA Prep.":{"2025":[0,0,0,0,0,0,0,0,0,0,0,1]}},"Láser YAG":{"Particular":{"2024":[3,0,0,4,3,5,1,0,2,3,1,5],"2025":[4,3,2,1,6,4,5,4,3,5,4,2],"2026":[6,7,1,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[3,0,6,5,1,1,6,15,7,3,5,19],"2025":[1,2,14,6,10,1,6,8,0,6,11,13],"2026":[11,5,16,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2024":[0,0,0,0,1,0,0,1,2,2,0,1],"2025":[0,0,1,1,1,0,2,0,1,0,1,1],"2026":[1,0,1,0,0,0,0,0,0,0,0,0]},"Black Mammoth":{"2025":[0,0,0,0,0,0,1,0,0,0,0,2]},"Allianz":{"2025":[0,0,0,0,0,1,0,0,0,0,0,0]},"Colmédica":{"2024":[0,0,0,0,1,0,0,1,0,0,0,1],"2025":[0,0,0,1,0,0,0,0,0,0,0,2]},"Medplus":{"2024":[0,0,0,1,1,0,0,0,0,0,0,0],"2025":[0,0,0,0,0,1,1,0,0,0,0,1]},"AXA Prep.":{"2024":[0,0,0,0,0,0,0,0,0,0,1,0],"2025":[0,0,0,0,0,0,0,1,0,0,0,0]},"AXA Vida":{"2025":[0,0,0,0,0,0,0,0,0,0,0,1]}},"Otras":{"Particular":{"2024":[1,2,5,4,1,0,1,4,2,3,1,3],"2025":[2,1,3,2,5,2,5,2,1,4,4,7],"2026":[2,8,0,0,0,0,0,0,0,0,0,0]},"SURA":{"2024":[0,0,3,2,2,4,2,4,0,0,4,3],"2025":[0,1,1,3,3,0,3,3,1,3,0,3],"2026":[4,1,4,0,0,0,0,0,0,0,0,0]},"Coomeva":{"2025":[6,0,0,0,0,1,2,1,0,2,2,0],"2026":[1,0,1,0,0,0,0,0,0,0,0,0]},"Black Mammoth":{"2025":[0,0,0,0,0,0,0,0,0,1,1,1]},"Allianz":{"2024":[0,0,0,0,0,0,2,0,0,0,0,0],"2025":[0,0,0,0,0,0,0,0,0,2,0,0]},"Colmédica":{"2024":[0,0,0,1,0,0,0,0,1,0,0,0],"2025":[0,0,0,0,0,0,0,0,0,1,0,0]},"Bolívar":{"2025":[0,0,0,0,0,0,0,0,0,0,0,2]},"AXA Prep.":{"2025":[0,0,0,1,0,0,0,1,0,0,0,0]},"AXA Vida":{"2024":[0,0,0,0,0,0,0,0,1,0,0,0]}}},
 };
 
 // ════════════════════════════════════════
@@ -2292,7 +2311,7 @@ function updateFilterBarHeight(){
 const COM_SECS=['com-inicio','com-lineas','com-cirujanos','com-honorarios','com-lentes','com-trend','com-meta'];
 const MKT_SECS=['mkt-inicio','mkt-lentes','mkt-growth','mkt-cirujanos','mkt-roi'];
 const FAR_SECS=['far-inicio','far-lentes','far-compras'];
-const EPS_SECS=['eps-inicio','eps-cirujanos','eps-cirugias','eps-lentes','eps-servicios','eps-tendencia'];
+const EPS_SECS=['eps-inicio','eps-cirujanos','eps-cirugias','eps-lentes','eps-servicios','eps-mensual'];
 function clearTabBuilt(secs){
   secs.forEach(sid=>{
     const el=document.getElementById(sid);
@@ -2421,6 +2440,7 @@ let _pnlCumM = null; // mes de corte para el comparativo acumulado (null = auto)
 // ════════════════════════════════════════
 const EF = {
   years: new Set([2024,2025,2026]),
+  months: new Set(),
   tipo: 'all', // 'all' | 'particular' | 'aseguradoras' | 'empresas'
 };
 function _efEnts(){
@@ -2444,9 +2464,22 @@ function setEpsTipo(tipo,btn){
   btn.classList.add('on');
   clearEpsBuilt();navigate(activeSection);
 }
+function _efMonths(){ return EF.months.size>0?Array.from(EF.months).sort((a,b)=>a-b):[1,2,3,4,5,6,7,8,9,10,11,12]; }
+function _efMonthSum(arr){ return arr.reduce((s,v,i)=>EF.months.size===0||EF.months.has(i+1)?s+(v||0):s,0); }
+function _efMS(sh,y,f){ const b=(EPS.m[sh]&&EPS.m[sh][y]&&EPS.m[sh][y][f])||Array(12).fill(0); return EF.months.size===0?b:b.map((v,i)=>EF.months.has(i+1)?v:0); }
+function _efDS(doc,sh,y){ const b=(EPS.dm[doc]&&EPS.dm[doc][sh]&&EPS.dm[doc][sh][y])||Array(12).fill(0); return EF.months.size===0?b:b.map((v,i)=>EF.months.has(i+1)?v:0); }
+function _efCS(cat,sh,y){ const b=(EPS.cm[cat]&&EPS.cm[cat][sh]&&EPS.cm[cat][sh][y])||Array(12).fill(0); return EF.months.size===0?b:b.map((v,i)=>EF.months.has(i+1)?v:0); }
+function _efSumFilt(y,f){ return _efEnts().reduce((s,e)=>s+_efMonthSum(_efMS(e.short,y,f)),0); }
+function toggleEpsMonth(m,btn){
+  if(EF.months.has(m)&&EF.months.size>1){EF.months.delete(m);btn.classList.remove('on');}
+  else if(EF.months.has(m)&&EF.months.size===1){/* don't remove last */}
+  else{EF.months.add(m);btn.classList.add('on');}
+  clearEpsBuilt();navigate(activeSection);
+}
 function clearEpsFilters(){
-  EF.years=new Set([2024,2025,2026]);EF.tipo='all';
+  EF.years=new Set([2024,2025,2026]);EF.months=new Set();EF.tipo='all';
   document.querySelectorAll('[data-epyear]').forEach(b=>b.classList.add('on'));
+  document.querySelectorAll('[data-epm]').forEach(b=>b.classList.remove('on'));
   document.querySelectorAll('#eps-filter-bar [id^="epf-tipo-"]').forEach(b=>b.classList.remove('on'));
   const a=document.getElementById('epf-tipo-all');if(a)a.classList.add('on');
   clearEpsBuilt();navigate(activeSection);
@@ -2772,7 +2805,7 @@ const NAVS = {
     {id:'eps-cirugias',   label:'Tipos de Cirugía', icon:'🔬'},
     {id:'eps-lentes',     label:'LIOs & Lentes',    icon:'👁️'},
     {id:'eps-servicios',  label:'Por Servicio',     icon:'📋'},
-    {id:'eps-tendencia',  label:'Tendencia',        icon:'📈'},
+    {id:'eps-mensual',    label:'Mes a Mes',          icon:'📅'},
   ],
   acc:[
     {id:'acc-inicio',   label:'Inicio',           icon:'🏠'},
@@ -7228,53 +7261,52 @@ function buildEpsInicio(){
   const el=document.getElementById('eps-inicio'); if(!el)return;
   const ents=_efEnts();
   const yrs=_efYears();
-  const _tvY=(e,y)=>Object.values(e.tipo_val).reduce((s,yr)=>s+(yr[String(y)]||0),0);
-  const _tvFilt=e=>yrs.reduce((s,y)=>s+_tvY(e,y),0);
-  const totFilt=ents.reduce((s,e)=>s+_tvFilt(e),0);
   const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
   const refY=yrs.length>1?(yrs.includes(2024)?2024:yrs[0]):null;
-  const totCur=ents.reduce((s,e)=>s+_tvY(e,curY),0);
-  const totRef=refY?ents.reduce((s,e)=>s+_tvY(e,refY),0):0;
-  const totCx=Object.values(EPS.cir_cat_tot).reduce((s,v)=>s+v.c,0);
-  const topCat=EPS.cir_cats.reduce((best,c)=>EPS.cir_cat_tot[c].c>(EPS.cir_cat_tot[best]||{c:0}).c?c:best,EPS.cir_cats[0]);
-  const totLio=Object.values(EPS.lio_cat_tot).reduce((s,v)=>s+v.c,0);
-  const premLio=EPS.lio_cat_tot['Premium Multifocal'].c+EPS.lio_cat_tot['Premium Tórico'].c;
-  const pctPrem=totLio?((premLio/totLio)*100):0;
-  const sorted=[...ents].sort((a,b)=>_tvY(b,curY)-_tvY(a,curY));
-  const top2tot=(_tvFilt(sorted[0]||{})||0)+(_tvFilt(sorted[1]||{})||0);
-  const top2pct=totFilt>0?(top2tot/totFilt*100):0;
+
+  // Totals using monthly data
+  const totCur=yrs.reduce((s,y)=>s+_efSumFilt(y,'tv'),0);
+  const totRef=refY?ents.reduce((s,e)=>s+_efMonthSum(_efMS(e.short,refY,'tv')),0):0;
+  const totCxFilt=yrs.reduce((s,y)=>s+_efSumFilt(y,'sc'),0);
+  const totLioFilt=yrs.reduce((s,y)=>s+_efSumFilt(y,'lc'),0);
   const yrLabel=yrs.map(y=>y===2026?'2026 YTD':y).join(' + ');
+
+  // Sort ents by curY tv for insight
+  const sorted=[...ents].sort((a,b)=>_efMonthSum(_efMS(b.short,curY,'tv'))-_efMonthSum(_efMS(a.short,curY,'tv')));
+  const top2tv=(_efMonthSum(_efMS(sorted[0]?.short,curY,'tv'))||0)+(_efMonthSum(_efMS(sorted[1]?.short,curY,'tv'))||0);
+  const totCurD=ents.reduce((s,e)=>s+_efMonthSum(_efMS(e.short,curY,'tv')),0)||1;
+  const top2pct=totCurD>0?(top2tv/totCurD*100):0;
 
   el.innerHTML=`
   <div class="sec-title">Pagadores — EPS, Aseguradoras y Particular <span class="st-badge">${yrLabel}</span></div>
   <div class="kpis k4">
-    ${kpiCard('Facturado '+yrLabel,fv(totFilt),refY?fp(pctVar(totCur,totRef))+' ('+curY+' vs '+refY+')':'acumulado')}
-    ${kpiCard('Total Cirugías',totCx.toLocaleString('es-CO'),'Top: '+topCat+' · '+EPS.cir_cat_tot[topCat].c+' cx')}
-    ${kpiCard('LIOs Implantados',totLio+' impl.',fp(pctPrem)+' premium','navy')}
-    ${kpiCard('Entidades activas',''+ents.length,'en período seleccionado')}
+    ${kpiCard('Facturado '+yrLabel,fv(totCur),refY?fp(pctVar(ents.reduce((s,e)=>s+_efMonthSum(_efMS(e.short,curY,'tv')),0),totRef))+' ('+curY+' vs '+refY+')':'período seleccionado')}
+    ${kpiCard('Cirugías período',totCxFilt.toLocaleString('es-CO'),'Top entidad: '+sorted[0]?.short)}
+    ${kpiCard('LIOs período',totLioFilt+' impl.','lentes intraoculares implantados','navy')}
+    ${kpiCard('Entidades activas',''+ents.length,'en filtro seleccionado')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-donut','Mix de pagadores — '+yrLabel,'Participación por facturación',230,'')}
-    ${chartCard('ch-eps-topbar','Facturación por entidad','Barras por año seleccionado',250,'')}
+    ${chartCard('ch-eps-donut','Mix de pagadores — '+curY,'Participación por facturación',230,'')}
+    ${chartCard('ch-eps-topbar','Facturación por entidad y año','Barras por año seleccionado',250,'')}
   </div>
   <div class="insight">
-    💡 <strong>Concentración:</strong> ${sorted[0]?sorted[0].short:''} + ${sorted[1]?sorted[1].short:''}
-    representan el <strong>${top2pct.toFixed(1)}%</strong> de la facturación.
-    Diversificación baja — riesgo ante cambios contractuales con SURA.
+    💡 <strong>Concentración:</strong> ${sorted[0]?.short||''} + ${sorted[1]?.short||''}
+    representan el <strong>${top2pct.toFixed(1)}%</strong> de la facturación ${curY}.
+    Diversificación baja — riesgo ante cambios contractuales con ${sorted[1]?.short||'SURA'}.
     Particular domina refractiva y LIOs premium.
   </div>`;
 
-  // Donut: año más reciente seleccionado
-  const donutVals=ents.map(e=>_tvY(e,curY));
+  // Donut: curY usando monthly data
+  const donutVals=ents.map(e=>_efMonthSum(_efMS(e.short,curY,'tv')));
   const donutTot=donutVals.reduce((s,v)=>s+v,0)||1;
   mkChart('ch-eps-donut',{type:'doughnut',data:{labels:ents.map(e=>e.short),datasets:[{data:donutVals,backgroundColor:_EPS_COLORES,hoverOffset:6}]},
     options:{plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10},padding:6}},
       tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+fv(ctx.parsed)+' ('+((ctx.parsed/donutTot)*100).toFixed(1)+'%)'}}}}});
 
-  // Bar vertical — un dataset por año seleccionado
+  // Bar vertical - monthly-aware
   const _YC={2024:'rgba(68,108,179,0.75)',2025:'rgba(45,197,171,0.88)',2026:'rgba(255,193,7,0.85)'};
   const top8=sorted.slice(0,8);
-  const yrDs=yrs.map(y=>({label:String(y)+(y===2026?' YTD':''),data:top8.map(e=>_tvY(e,y)),backgroundColor:_YC[y]||'#aaa',borderRadius:3}));
+  const yrDs=yrs.map(y=>({label:String(y)+(y===2026?' YTD':''),data:top8.map(e=>_efMonthSum(_efMS(e.short,y,'tv'))),backgroundColor:_YC[y]||'#aaa',borderRadius:3}));
   mkChart('ch-eps-topbar',{type:'bar',data:{labels:top8.map(e=>e.short),datasets:yrDs},
     options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
       scales:{x:{ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{ticks:{callback:v=>fv(v),font:{size:9}}}}}});
@@ -7283,39 +7315,48 @@ function buildEpsInicio(){
 
 function buildEpsCirujanos(){
   const el=document.getElementById('eps-cirujanos'); if(!el)return;
+  const filtEnts=_efEnts();
+  const yrs=_efYears();
+  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
   const docs=EPS.docs_sh;
-  const epsNames=EPS.entidades.map(e=>e.short);
 
-  // KPI data from doc_tot
-  const sorted=[...docs].sort((a,b)=>EPS.doc_tot[b].c-EPS.doc_tot[a].c);
-  const topVol=sorted[0];
-  const topVal=[...docs].sort((a,b)=>EPS.doc_tot[b].v-EPS.doc_tot[a].v)[0];
-  // most diverse = most EPS with c>0
-  const diversity=d=>Object.values(EPS.doc_tot[d].by_eps).filter(x=>x.c>0).length;
+  // Compute doc totals across filtered entities and months
+  const docTotals={};
+  docs.forEach(d=>{
+    docTotals[d]=filtEnts.reduce((s,e)=>s+_efMonthSum(_efDS(d,e.short,curY)),0);
+  });
+  const sortedDocs=[...docs].sort((a,b)=>docTotals[b]-docTotals[a]);
+  const topDoc=sortedDocs[0];
+  const totCxFilt=sortedDocs.reduce((s,d)=>s+docTotals[d],0);
+  const totSvFilt=_efSumFilt(curY,'sv');
+
+  // Diversity in filtered entities
+  const diversity=d=>filtEnts.filter(e=>_efMonthSum(_efDS(d,e.short,curY))>0).length;
   const topDiv=[...docs].sort((a,b)=>diversity(b)-diversity(a))[0];
-  // B. Ramírez S. = 100% Particular
-  const excl='B. Ramírez S.';
 
   el.innerHTML=`
-  <div class="sec-title">Cirujanos por Pagador <span class="st-badge">Distribución de cirugías y facturación</span></div>
+  <div class="sec-title">Cirujanos por Pagador <span class="st-badge">${curY} · entidades filtradas</span></div>
   <div class="kpis k4">
-    ${kpiCard('Top por volumen',topVol,EPS.doc_tot[topVol].c+' cx — líder absoluto')}
-    ${kpiCard('Top por facturación',topVal,fv(EPS.doc_tot[topVal].v),'navy')}
-    ${kpiCard('Más diverso',topDiv,diversity(topDiv)+' entidades atendidas')}
-    ${kpiCard('Exclusivo Particular',excl,'100% Particular — '+EPS.doc_tot[excl].c+' cx')}
+    ${kpiCard('Top cirujano '+curY,topDoc,docTotals[topDoc]+' cx en entidades filtradas')}
+    ${kpiCard('Total cirugías '+curY,totCxFilt.toLocaleString('es-CO'),'cirugías en período/entidades filtradas','navy')}
+    ${kpiCard('Facturación honorarios',fv(totSvFilt),'derechos de sala filtrados')}
+    ${kpiCard('Más diverso',topDiv||'—',diversity(topDiv||docs[0])+' entidades filtradas')}
+  </div>
+  <div class="gfull">
+    ${chartCard('ch-eps-doc-monthly','Evolución mensual por cirujano — '+curY,'Top 4 cirujanos · entidades filtradas',260,'')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-doc-bar','Cirugías por cirujano y pagador','Stacked — cada color = EPS',280,'')}
-    ${chartCard('ch-eps-doc-val','Facturación total por cirujano 2025','',230,'')}
+    ${chartCard('ch-eps-doc-bar','Cirugías por cirujano × entidad — '+curY,'Agrupado — cada color = EPS',280,'')}
+    ${chartCard('ch-eps-doc-val','Total cirugías por cirujano — '+curY,'',230,'')}
   </div>
   <div class="gfull">
     <div class="card">
-      <div class="card-hdr"><h3>Detalle: Cirugías por Cirujano × EPS</h3><span class="badge">Conteo de cirugías</span></div>
+      <div class="card-hdr"><h3>Detalle mensual: Cirugías por Cirujano — ${curY}</h3><span class="badge">Conteo de cirugías</span></div>
       <div class="card-body" style="overflow-x:auto">
-        <table class="tbl" style="min-width:900px" id="eps-doc-tbl">
+        <table class="tbl" style="min-width:900px">
           <thead><tr>
             <th style="text-align:left;min-width:150px;position:sticky;left:0;background:#0c3028">Cirujano</th>
-            ${epsNames.map(s=>`<th>${s}</th>`).join('')}
+            ${MNS_E.map(m=>`<th style="font-size:10px">${m}</th>`).join('')}
             <th>Total</th>
           </tr></thead>
           <tbody id="eps-doc-body"></tbody>
@@ -7324,37 +7365,49 @@ function buildEpsCirujanos(){
     </div>
   </div>`;
 
-  // Stacked bar: docs x EPS (count)
-  const docDs=epsNames.map((sh,i)=>({
-    label:sh,
-    data:docs.map(d=>EPS.doc_tot[d].by_eps[sh]?EPS.doc_tot[d].by_eps[sh].c:0),
-    backgroundColor:_EPS_COLORES[i%10],stack:'s',borderRadius:2
+  // Line chart: monthly evolution top 4 docs
+  const top4=sortedDocs.slice(0,4);
+  const lineDs=top4.map((d,i)=>({
+    label:d,
+    data:Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efDS(d,e.short,curY)[m]||0),0)),
+    borderColor:_EPS_COLORES[i],backgroundColor:'transparent',
+    borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true
   }));
-  mkChart('ch-eps-doc-bar',{type:'bar',data:{labels:docs,datasets:docDs},
-    options:{scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{stacked:true,ticks:{font:{size:9}}}},
+  mkChart('ch-eps-doc-monthly',{type:'line',data:{labels:MNS_E,datasets:lineDs},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
+      scales:{y:{ticks:{font:{size:9}}}}}});
+
+  // Bar grouped: docs x filtEnts
+  const useStack=filtEnts.length>3;
+  const barDs=filtEnts.map((e,i)=>({
+    label:e.short,
+    data:sortedDocs.map(d=>_efMonthSum(_efDS(d,e.short,curY))),
+    backgroundColor:_EPS_COLORES[i%10],
+    ...(useStack?{stack:'s'}:{}),
+    borderRadius:2
+  }));
+  mkChart('ch-eps-doc-bar',{type:'bar',data:{labels:sortedDocs,datasets:barDs},
+    options:{scales:{x:{stacked:useStack,ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{stacked:useStack,ticks:{font:{size:9}}}},
       plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
 
-  // Bar vertical: total facturación por cirujano
-  const sortedVal=[...docs].sort((a,b)=>EPS.doc_tot[b].v-EPS.doc_tot[a].v);
-  const docClr=sortedVal.map((_,i)=>_EPS_COLORES[i%10]);
+  // Bar: total cx per doc
+  const docClr=sortedDocs.map((_,i)=>_EPS_COLORES[i%10]);
   mkChart('ch-eps-doc-val',{type:'bar',data:{
-    labels:sortedVal,
-    datasets:[{label:'Facturación acumulada (miles COP)',data:sortedVal.map(d=>EPS.doc_tot[d].v),
+    labels:sortedDocs,
+    datasets:[{label:'Cirugías '+curY,data:sortedDocs.map(d=>docTotals[d]),
       backgroundColor:docClr,borderRadius:3}]},
     options:{plugins:{legend:{display:false}},
-      scales:{x:{ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{ticks:{callback:v=>fv(v),font:{size:9}}}}}});
+      scales:{x:{ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{ticks:{font:{size:9}}}}}});
 
-  // Table
+  // Table: top docs monthly
   const tbody=document.getElementById('eps-doc-body');
   if(tbody){
     let rows='';
-    docs.forEach(d=>{
-      const bg='#fafaf9';
-      const cells=epsNames.map(sh=>{
-        const c=(EPS.doc_tot[d].by_eps[sh]||{c:0}).c;
-        return `<td>${c>0?c:''}</td>`;
-      }).join('');
-      rows+=`<tr><td style="font-weight:600;position:sticky;left:0;background:${bg}">${d}</td>${cells}<td style="font-weight:700">${EPS.doc_tot[d].c}</td></tr>`;
+    sortedDocs.slice(0,8).forEach(d=>{
+      const monthly=Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efDS(d,e.short,curY)[m]||0),0));
+      const tot=monthly.reduce((s,v)=>s+v,0);
+      const cells=monthly.map(v=>`<td>${v>0?v:''}</td>`).join('');
+      rows+=`<tr><td style="font-weight:600;position:sticky;left:0;background:#fafaf9">${d}</td>${cells}<td style="font-weight:700">${tot||''}</td></tr>`;
     });
     tbody.innerHTML=rows;
   }
@@ -7364,27 +7417,42 @@ function buildEpsCirujanos(){
 function buildEpsCirugias(){
   const el=document.getElementById('eps-cirugias'); if(!el)return;
   const cats=EPS.cir_cats;
-  const ents=EPS.entidades;
+  const filtEnts=_efEnts();
+  const yrs=_efYears();
+  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
 
-  const refTot=EPS.cir_cat_tot['Refractiva'];
-  const catTot=EPS.cir_cat_tot['Catarata'];
-  const totCx=cats.reduce((s,c)=>s+EPS.cir_cat_tot[c].c,0);
+  // Cat totals across filtered entities and months
+  const catTotals={};
+  cats.forEach(cat=>{catTotals[cat]=filtEnts.reduce((s,e)=>s+_efMonthSum(_efCS(cat,e.short,curY)),0);});
+  const totCxFilt=cats.reduce((s,c)=>s+catTotals[c],0)||1;
+  const sortedCats=[...cats].sort((a,b)=>catTotals[b]-catTotals[a]);
+  const topCat=sortedCats[0];
+  const refCx=catTotals['Refractiva']||0;
+  const catCx=catTotals['Catarata']||0;
+
+  // Var refractiva 2024 vs 2025 if both in yrs
+  let varRef='';
+  if(yrs.includes(2024)&&yrs.includes(2025)){
+    const ref24=filtEnts.reduce((s,e)=>s+_efMonthSum(_efCS('Refractiva',e.short,2024)),0);
+    const ref25=filtEnts.reduce((s,e)=>s+_efMonthSum(_efCS('Refractiva',e.short,2025)),0);
+    varRef=fp(pctVar(ref25,ref24))+' vs 2024';
+  }
 
   el.innerHTML=`
-  <div class="sec-title">Tipos de Cirugía por Pagador <span class="st-badge">Composición del mix quirúrgico</span></div>
+  <div class="sec-title">Tipos de Cirugía por Pagador <span class="st-badge">${curY} · entidades filtradas</span></div>
   <div class="kpis k4">
-    ${kpiCard('Refractiva (PRK+LASIK)',refTot.c+' cx',fv(refTot.v)+' — '+((refTot.c/totCx)*100).toFixed(1)+'% del total')}
-    ${kpiCard('Catarata',catTot.c+' cx',fv(catTot.v)+' — '+((catTot.c/totCx)*100).toFixed(1)+'% del total','navy')}
-    ${kpiCard('Domina Particular','Refractiva','3.521 cx — 97% de toda la refractiva')}
-    ${kpiCard('Domina SURA','Catarata + Lagrimal','614 cx catarata · 314 lagrimal')}
+    ${kpiCard('Top categoría',topCat,catTotals[topCat]+' cx — '+((catTotals[topCat]/totCxFilt)*100).toFixed(1)+'% del total')}
+    ${kpiCard('Refractiva',refCx+' cx',varRef||((refCx/totCxFilt)*100).toFixed(1)+'% del total')}
+    ${kpiCard('Catarata',catCx+' cx',((catCx/totCxFilt)*100).toFixed(1)+'% del total','navy')}
+    ${kpiCard('Entidades filtradas',''+filtEnts.length,filtEnts.map(e=>e.short).join(' · '))}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-cir-cat','Cirugías por categoría — total clínica','Conteo total todas las entidades',230,'')}
-    ${chartCard('ch-eps-cir-eps','Tipos de cirugía — top 5 pagadores','Agrupado por categoría',230,'')}
+    ${chartCard('ch-eps-cir-cat','Cirugías por categoría — '+curY,'Conteo entidades filtradas',230,'')}
+    ${chartCard('ch-eps-cir-monthly','Evolución mensual top 3 categorías — '+curY,'Tendencia mensual',240,'')}
   </div>
   <div class="gfull">
     <div class="card">
-      <div class="card-hdr"><h3>Detalle: Cirugías por EPS × Categoría</h3><span class="badge">Conteo de cirugías</span></div>
+      <div class="card-hdr"><h3>Detalle: Entidades × Categoría de Cirugía — ${curY}</h3><span class="badge">Conteo de cirugías</span></div>
       <div class="card-body" style="overflow-x:auto">
         <table class="tbl" style="min-width:900px">
           <thead><tr>
@@ -7398,41 +7466,42 @@ function buildEpsCirugias(){
     </div>
   </div>
   <div class="insight">
-    💡 <strong>PARTICULAR</strong> domina la refractiva (97%), <strong>SURA</strong> domina catarata (37% del total).
+    💡 <strong>${topCat}</strong> lidera con ${catTotals[topCat]} cx (${((catTotals[topCat]/totCxFilt)*100).toFixed(1)}%).
+    <strong>Particular</strong> domina refractiva; <strong>SURA</strong> domina catarata y lagrimal.
     Concentración quirúrgica por EPS = oportunidad de negociación de tarifas diferenciadas.
   </div>`;
 
-  // Bar vertical total por categoría
+  // Bar vertical: totals per cat (sorted desc)
   mkChart('ch-eps-cir-cat',{type:'bar',data:{
-    labels:cats,
-    datasets:[{label:'Cirugías',data:cats.map(c=>EPS.cir_cat_tot[c].c),
+    labels:sortedCats,
+    datasets:[{label:'Cirugías',data:sortedCats.map(c=>catTotals[c]),
       backgroundColor:_CIR_CAT_COLORES,borderRadius:3}]},
     options:{plugins:{legend:{display:false}},
       scales:{x:{ticks:{font:{size:9},maxRotation:35,minRotation:20}},y:{ticks:{font:{size:9}}}}}});
 
-  // Grouped bar top 5 EPS x category (first 6 cats)
-  const top5=EPS.entidades.slice(0,5);
-  const main6=cats.slice(0,6);
-  const epsCirDs=top5.map((e,i)=>({
-    label:e.short,
-    data:main6.map(c=>e.cir_cat[c]?e.cir_cat[c].c:0),
-    backgroundColor:_EPS_COLORES[i],borderRadius:3
+  // Line chart: top 3 cats monthly
+  const top3cats=sortedCats.slice(0,3);
+  const catLineDs=top3cats.map((cat,i)=>({
+    label:cat,
+    data:Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efCS(cat,e.short,curY)[m]||0),0)),
+    borderColor:_CIR_CAT_COLORES[i],backgroundColor:'transparent',
+    borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true
   }));
-  mkChart('ch-eps-cir-eps',{type:'bar',data:{labels:main6,datasets:epsCirDs},
-    options:{plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}},
-      scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+  mkChart('ch-eps-cir-monthly',{type:'line',data:{labels:MNS_E,datasets:catLineDs},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
+      scales:{y:{ticks:{font:{size:9}}}}}});
 
-  // Table
+  // Table: filtEnts x cats
   const tbody=document.getElementById('eps-cir-body');
   if(tbody){
     let rows='';
-    ents.forEach(e=>{
-      const tot=cats.reduce((s,c)=>s+(e.cir_cat[c]?e.cir_cat[c].c:0),0);
-      const cells=cats.map(c=>{
-        const v=e.cir_cat[c]?e.cir_cat[c].c:0;
+    filtEnts.forEach(e=>{
+      const cells=cats.map(cat=>{
+        const v=_efMonthSum(_efCS(cat,e.short,curY));
         return `<td>${v>0?v:''}</td>`;
       }).join('');
-      rows+=`<tr><td style="font-weight:600;position:sticky;left:0;background:#fafaf9">${e.short}</td>${cells}<td style="font-weight:700">${tot}</td></tr>`;
+      const tot=cats.reduce((s,cat)=>s+_efMonthSum(_efCS(cat,e.short,curY)),0);
+      rows+=`<tr><td style="font-weight:600;position:sticky;left:0;background:#fafaf9">${e.short}</td>${cells}<td style="font-weight:700">${tot||''}</td></tr>`;
     });
     tbody.innerHTML=rows;
   }
@@ -7442,26 +7511,33 @@ function buildEpsCirugias(){
 function buildEpsLentes(){
   const el=document.getElementById('eps-lentes'); if(!el)return;
   const cats=EPS.lio_cats;
-  const ents=EPS.entidades;
+  const filtEnts=_efEnts();
+  const yrs=_efYears();
+  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
 
-  const totLio=cats.reduce((s,c)=>s+EPS.lio_cat_tot[c].c,0);
-  const prem=EPS.lio_cat_tot['Premium Multifocal'].c+EPS.lio_cat_tot['Premium Tórico'].c;
-  const pctPrem=totLio?((prem/totLio)*100):0;
-  const totVal=cats.reduce((s,c)=>s+EPS.lio_cat_tot[c].v,0);
-  const ticketAvg=totLio?Math.round(totVal/totLio):0;
-  const faq=EPS.lio_cat_tot['Fáquico (ICL)'].c;
+  // Monthly-aware totals
+  const totLioFilt=filtEnts.reduce((s,e)=>s+_efMonthSum(_efMS(e.short,curY,'lc')),0);
+  const totLvFilt=filtEnts.reduce((s,e)=>s+_efMonthSum(_efMS(e.short,curY,'lv')),0);
+  const ticketAvg=totLioFilt?Math.round(totLvFilt/totLioFilt):0;
+
+  // Premium from static lio_cat data filtered to filtEnts
+  const premFilt=filtEnts.reduce((s,e)=>s+((e.lio_cat['Premium Multifocal']||{c:0}).c+(e.lio_cat['Premium Tórico']||{c:0}).c),0);
+  const pctPrem=totLioFilt?((premFilt/totLioFilt)*100):0;
 
   el.innerHTML=`
-  <div class="sec-title">LIOs & Lentes Intraoculares <span class="st-badge">Mix de implantes por pagador</span></div>
+  <div class="sec-title">LIOs & Lentes Intraoculares <span class="st-badge">${curY} · entidades filtradas</span></div>
   <div class="kpis k4">
-    ${kpiCard('Total LIOs implantados',totLio+' impl.','acumulado todas las entidades')}
-    ${kpiCard('Premium (Multifocal+Tórico)',prem+' ('+pctPrem.toFixed(1)+'%)','mayor margen — exclusivo Particular','navy')}
+    ${kpiCard('Total LIOs '+curY,totLioFilt+' impl.','entidades filtradas · período')}
+    ${kpiCard('Premium (Multifocal+Tórico)',premFilt+' ('+pctPrem.toFixed(1)+'%)','mayor margen — exclusivo Particular','navy')}
+    ${kpiCard('Valor LIOs',fv(totLvFilt),'facturación lentes entidades filtradas')}
     ${kpiCard('Ticket promedio LIO',fv(ticketAvg),'valor / implante')}
-    ${kpiCard('Fáquicos ICL',faq+' impl.','cirugías refractivas con lente fáquico')}
+  </div>
+  <div class="gfull">
+    ${chartCard('ch-eps-lio-monthly','Evolución mensual LIOs — '+curY,'Por entidad filtrada',240,'')}
   </div>
   <div class="g2">
-    ${chartCard('ch-eps-lio-donut','Mix LIOs — total clínica','Por tipo de lente',220,'')}
-    ${chartCard('ch-eps-lio-eps','LIOs por pagador','Stacked por tipo de lente',250,'')}
+    ${chartCard('ch-eps-lio-cat','LIOs por tipo y entidad','Stacked por categoría de lente',250,'')}
+    ${chartCard('ch-eps-lio-yoy','LIOs por año — comparativa','Por entidad filtrada',230,'')}
   </div>
   <div class="gfull">
     <div class="card">
@@ -7471,7 +7547,7 @@ function buildEpsLentes(){
           <thead><tr>
             <th style="text-align:left;min-width:140px;position:sticky;left:0;background:#0c3028">Entidad</th>
             ${cats.map(c=>`<th style="font-size:10px">${c}</th>`).join('')}
-            <th>Total cx</th>
+            <th>Total</th>
           </tr></thead>
           <tbody id="eps-lio-body"></tbody>
         </table>
@@ -7480,30 +7556,46 @@ function buildEpsLentes(){
   </div>
   <div class="insight">
     💡 <strong>Particular</strong> concentra el 99% de las LIOs premium.
-    <strong>SURA</strong> importa solo lentes estándar (612 cx) — oportunidad de upsell si se negocia cobertura multifocal.
+    <strong>SURA</strong> solo lentes estándar — oportunidad de upsell si se negocia cobertura multifocal.
   </div>`;
 
-  // Donut mix LIOs
-  mkChart('ch-eps-lio-donut',{type:'doughnut',data:{labels:cats,
-    datasets:[{data:cats.map(c=>EPS.lio_cat_tot[c].c),backgroundColor:_LIO_COLORES,hoverOffset:6}]},
-    options:{plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10},padding:6}},
-      tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.parsed+' impl. ('+((ctx.parsed/totLio)*100).toFixed(1)+'%)'}}}}});
+  // Line: monthly LIO evolution per filtEnt
+  const lioLineDs=filtEnts.map((e,i)=>({
+    label:e.short,
+    data:_efMS(e.short,curY,'lc'),
+    borderColor:_EPS_COLORES[i],backgroundColor:'transparent',
+    borderWidth:2,pointRadius:3,tension:0.3,spanGaps:true
+  }));
+  mkChart('ch-eps-lio-monthly',{type:'line',data:{labels:MNS_E,datasets:lioLineDs},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
+      scales:{y:{ticks:{font:{size:9}}}}}});
 
-  // Stacked bar EPS x LIO type
+  // Stacked bar filtEnts x LIO type (static data)
   const lioCatDs=cats.map((c,i)=>({
     label:c,
-    data:ents.map(e=>e.lio_cat[c]?e.lio_cat[c].c:0),
+    data:filtEnts.map(e=>e.lio_cat[c]?e.lio_cat[c].c:0),
     backgroundColor:_LIO_COLORES[i],stack:'s',borderRadius:2
   }));
-  mkChart('ch-eps-lio-eps',{type:'bar',data:{labels:ents.map(e=>e.short),datasets:lioCatDs},
+  mkChart('ch-eps-lio-cat',{type:'bar',data:{labels:filtEnts.map(e=>e.short),datasets:lioCatDs},
     options:{scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:30,minRotation:15}},y:{stacked:true,ticks:{callback:v=>v+'',font:{size:9}}}},
       plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
+
+  // YoY bar: filtEnts x years
+  const _YC={2024:'rgba(68,108,179,0.75)',2025:'rgba(45,197,171,0.88)',2026:'rgba(255,193,7,0.85)'};
+  const yoyDs=yrs.map(y=>({
+    label:String(y)+(y===2026?' YTD':''),
+    data:filtEnts.map(e=>_efMonthSum(_efMS(e.short,y,'lc'))),
+    backgroundColor:_YC[y]||'#aaa',borderRadius:3
+  }));
+  mkChart('ch-eps-lio-yoy',{type:'bar',data:{labels:filtEnts.map(e=>e.short),datasets:yoyDs},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}},
+      scales:{x:{ticks:{font:{size:9},maxRotation:30}},y:{ticks:{font:{size:9}}}}}});
 
   // Table
   const tbody=document.getElementById('eps-lio-body');
   if(tbody){
     let rows='';
-    ents.forEach(e=>{
+    filtEnts.forEach(e=>{
       const tot=cats.reduce((s,c)=>s+(e.lio_cat[c]?e.lio_cat[c].c:0),0);
       const cells=cats.map(c=>{
         const lc=e.lio_cat[c]||{c:0,v:0};
@@ -7604,49 +7696,81 @@ function buildEpsServicios(){
   requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
 
-function buildEpsTendencia(){
-  const el=document.getElementById('eps-tendencia'); if(!el)return;
-  const top5=EPS.entidades.slice(0,5);
+function buildEpsMensual(){
+  const el=document.getElementById('eps-mensual'); if(!el)return;
+  const filtEnts=_efEnts();
+  const yrs=_efYears();
+  const curY=yrs.includes(2025)?2025:(yrs[yrs.length-1]||2025);
 
-  // Best and worst month 2025 (total across all entities)
-  const totByMonth=Array(12).fill(0);
-  EPS.entidades.forEach(e=>e.m25_total.forEach((v,i)=>totByMonth[i]+=v));
-  const maxM=totByMonth.indexOf(Math.max(...totByMonth));
-  const minMFiltered=totByMonth.map((v,i)=>v>0?v:Infinity);
-  const minM=minMFiltered.indexOf(Math.min(...minMFiltered));
+  // Monthly totals across filtEnts for curY
+  const totByMonth=Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efMS(e.short,curY,'tv')[m]||0),0));
+  const totCxByMonth=Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efMS(e.short,curY,'sc')[m]||0),0));
+  const totLioByMonth=Array(12).fill(0).map((_,m)=>filtEnts.reduce((s,e)=>s+(_efMS(e.short,curY,'lc')[m]||0),0));
+
+  const activeMonths=totByMonth.filter(v=>v>0);
+  const maxVal=Math.max(...totByMonth);
+  const maxM=totByMonth.indexOf(maxVal);
+  const minVal=activeMonths.length?Math.min(...activeMonths):0;
+  const minM=totByMonth.findIndex(v=>v===minVal&&v>0);
+  const totCxPer=totCxByMonth.reduce((s,v)=>s+v,0);
+  const totLioPer=totLioByMonth.reduce((s,v)=>s+v,0);
+  const yrLabel=yrs.map(y=>y===2026?'2026 YTD':y).join(' + ');
 
   el.innerHTML=`
-  <div class="sec-title">Tendencia Mensual 2025 — Top 5 Pagadores <span class="st-badge">Evolución mes a mes</span></div>
+  <div class="sec-title">Mes a Mes — Pagadores <span class="st-badge">${yrLabel} · entidades filtradas</span></div>
   <div class="kpis k4">
-    ${kpiCard('Mejor mes 2025',MNS_E[maxM],fv(totByMonth[maxM])+' — total clínica')}
-    ${kpiCard('Mes más bajo 2025',MNS_E[minM<12?minM:0],fv(totByMonth[minM<12?minM:0])+' — total clínica')}
-    ${kpiCard('Pagador #1 todo el año','Particular',fv(EPS.entidades[0].m25_total.reduce((s,v)=>s+v,0)))}
-    ${kpiCard('Mayor crecimiento 2025','Black Mammoth','Apareció en H2-2025 · +100%')}
+    ${kpiCard('Mejor mes ('+curY+')',maxM>=0?MNS_E[maxM]:'—',fv(maxVal)+' — total entidades filtradas')}
+    ${kpiCard('Mes más bajo ('+curY+')',minM>=0?MNS_E[minM]:'—',fv(minVal)+' — meses con actividad')}
+    ${kpiCard('Total cirugías período',totCxPer.toLocaleString('es-CO'),'en meses/entidades filtradas')}
+    ${kpiCard('Total LIOs período',totLioPer+' impl.','en meses/entidades filtradas','navy')}
   </div>
-  <div class="gfull">${chartCard('ch-eps-trend-total','Facturación total mensual 2025 — top 5 pagadores','Líneas por entidad',270,'')}</div>
-  <div class="gfull">${chartCard('ch-eps-trend-sala','Derechos de Sala mensual 2025 — top 5 pagadores','Barras apiladas',230,'')}</div>
+  <div class="gfull">${chartCard('ch-eps-trend-tv','Facturación total mensual — top 3 entidades por año','Líneas · '+yrLabel,270,'')}</div>
+  <div class="g2">
+    ${chartCard('ch-eps-trend-cx','Cirugías mensuales — '+curY,'Barras apiladas por entidad',230,'')}
+    ${chartCard('ch-eps-trend-lio','LIOs mensuales — '+curY,'Barras apiladas por entidad',230,'')}
+  </div>
   <div class="insight">
-    💡 <strong>Octubre</strong> fue el mes de mayor actividad total. <strong>Particular</strong> lidera todos los meses.
-    <strong>Black Mammoth</strong> concentró el 65% de su volumen 2025 en Diciembre.
-    <strong>SURA</strong> muestra los meses más variables (picos en Mar, Ago, Oct).
+    💡 <strong>${maxM>=0?MNS_E[maxM]:'—'}</strong> fue el mes pico (${fv(maxVal)}).
+    <strong>Particular</strong> lidera todos los meses.
+    <strong>SURA</strong> muestra alta variabilidad mensual — revisar calendario quirúrgico.
   </div>`;
 
-  // Line chart total
-  const lineDs=top5.map((e,i)=>({
-    label:e.short, data:e.m25_total, borderColor:_EPS_COLORES[i], backgroundColor:'transparent',
-    borderWidth:2, pointRadius:3, tension:0.3, spanGaps:true
-  }));
-  mkChart('ch-eps-trend-total',{type:'line',data:{labels:MNS_E,datasets:lineDs},
-    options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:6}}},
+  // Line: top 3 ents × all years (limit to 3 ents to keep ≤9 lines)
+  const top3ents=filtEnts.slice(0,3);
+  const trendDs=[];
+  top3ents.forEach((e,ei)=>{
+    yrs.forEach(y=>{
+      trendDs.push({
+        label:e.short+' '+y,
+        data:_efMS(e.short,y,'tv'),
+        borderColor:_EPS_COLORES[ei*3+(yrs.indexOf(y))]||_EPS_COLORES[ei],
+        backgroundColor:'transparent',
+        borderWidth:2,pointRadius:2,tension:0.3,spanGaps:true
+      });
+    });
+  });
+  mkChart('ch-eps-trend-tv',{type:'line',data:{labels:MNS_E,datasets:trendDs},
+    options:{plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:9},padding:4}}},
       scales:{y:{ticks:{callback:v=>fv(v),font:{size:9}}}}}});
 
-  // Stacked bar sala
-  const salaDs=top5.map((e,i)=>({
-    label:e.short, data:e.m25_sala,
-    backgroundColor:_EPS_COLORES[i],stack:'s',borderRadius:2
+  // Stacked bar: cirugías por mes × filtEnts (curY)
+  const cxDs=filtEnts.map((e,i)=>({
+    label:e.short,
+    data:_efMS(e.short,curY,'sc'),
+    backgroundColor:_EPS_COLORES[i%10],stack:'s',borderRadius:2
   }));
-  mkChart('ch-eps-trend-sala',{type:'bar',data:{labels:MNS_E,datasets:salaDs},
-    options:{scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{callback:v=>fv(v),font:{size:9}}}},
+  mkChart('ch-eps-trend-cx',{type:'bar',data:{labels:MNS_E,datasets:cxDs},
+    options:{scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:9}}}},
+      plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
+
+  // Stacked bar: LIOs por mes × filtEnts (curY)
+  const lioDs=filtEnts.map((e,i)=>({
+    label:e.short,
+    data:_efMS(e.short,curY,'lc'),
+    backgroundColor:_EPS_COLORES[i%10],stack:'s',borderRadius:2
+  }));
+  mkChart('ch-eps-trend-lio',{type:'bar',data:{labels:MNS_E,datasets:lioDs},
+    options:{scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:9}}}},
       plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:8},padding:4}}}}});
   requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
@@ -7681,7 +7805,7 @@ const BUILDERS = {
   'eps-cirugias':  buildEpsCirugias,
   'eps-lentes':    buildEpsLentes,
   'eps-servicios': buildEpsServicios,
-  'eps-tendencia': buildEpsTendencia,
+  'eps-mensual':   buildEpsMensual,
   'acc-inicio':   buildAccInicio,
   'acc-plan':     buildAccPlan,
   'acc-kpi':      buildAccKpi,
