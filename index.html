@@ -2444,9 +2444,10 @@ const EF = {
   tipo: 'all', // 'all' | 'particular' | 'aseguradoras' | 'empresas'
 };
 function _efEnts(){
-  if(EF.tipo==='particular')   return EPS.entidades.filter(e=>e.tipo==='Particular');
-  if(EF.tipo==='aseguradoras') return EPS.entidades.filter(e=>e.tipo==='Aseguradora');
-  if(EF.tipo==='empresas')     return EPS.entidades.filter(e=>e.tipo==='Empresa');
+  // Clasificación por nombre (el campo tipo no existe en entidades)
+  if(EF.tipo==='particular')   return EPS.entidades.filter(e=>e.short==='Particular');
+  if(EF.tipo==='aseguradoras') return EPS.entidades.filter(e=>e.short!=='Particular'&&e.short!=='Black Mammoth');
+  if(EF.tipo==='empresas')     return EPS.entidades.filter(e=>e.short==='Black Mammoth');
   return EPS.entidades;
 }
 function _efYears(){ return [2024,2025,2026].filter(y=>EF.years.has(y)); }
