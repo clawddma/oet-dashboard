@@ -1543,8 +1543,7 @@ const hasEEFF = d => !d.eeffPending;
 function fv(v, decimals=1){
   const s = v<0?'-':'';
   const abs = Math.abs(v);
-  if(abs>=1000000) return s+'$'+(abs/1000000).toFixed(decimals)+'B';
-  if(abs>=1000)    return s+'$'+(abs/1000).toFixed(0)+'M';
+  if(abs>=1000) return s+'$'+Math.round(abs/1000).toLocaleString('es-CO')+'M';
   return s+'$'+abs.toFixed(0)+'K';
 }
 // fvFull: número exacto para tooltips (millones con 1 decimal — evita abreviación en billones)
