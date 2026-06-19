@@ -1038,7 +1038,8 @@ const D = [
   {p:'Ene-26',f:'2026-01',y:2026,m:1,ing:1201695.46,cost:966134.06,ub:235561.39,mbp:19.6,ga:422456.16,go:239731.76,da:67378.36,uo:-186994.77,mop:-15.6,oInc:19509,oGas:17429.62,un:-184915.38,mnp:-15.4,ebitda:-117537.02,mep:-9.8},
   {p:'Feb-26',f:'2026-02',y:2026,m:2,ing:1538191.36,cost:697032.06,ub:841159.3,mbp:54.7,ga:566796.2,go:360941.89,da:70949.5,uo:274363.09,mop:17.8,oInc:19611.63,oGas:42851.12,un:212946.24,mnp:13.8,ebitda:322073.1,mep:20.9},
   {p:'Mar-26',f:'2026-03',y:2026,m:3,ing:1622729.33,cost:1117130.15,ub:505599.19,mbp:31.2,ga:631743.3,go:407597.02,da:73206.06,uo:-126144.11,mop:-7.8,oInc:16814.8,oGas:40506.05,un:-149835.36,mnp:-9.2,ebitda:-76629.3,mep:-4.7},
-  {p:'Abr-26',f:'2026-04',y:2026,m:4,ing:1476758.25,cost:906322.19,ub:570436.06,mbp:38.6,ga:511262.73,go:284454.79,da:73562.29,uo:59173.33,mop:4,oInc:21290.8,oGas:42971.54,un:37492.59,mnp:2.5,ebitda:111054.89,mep:7.5}
+  {p:'Abr-26',f:'2026-04',y:2026,m:4,ing:1476758.25,cost:906322.19,ub:570436.06,mbp:38.6,ga:511262.73,go:284454.79,da:73562.29,uo:59173.33,mop:4,oInc:21290.8,oGas:42971.54,un:37492.59,mnp:2.5,ebitda:111054.89,mep:7.5},
+  {p:'May-26',f:'2026-05',y:2026,m:5,ing:1564868.07,cost:971587.76,ub:593280.32,mbp:37.9,ga:544390.3,go:299367.23,da:73831.52,uo:48890.01,mop:3.1,oInc:26607.8,oGas:26883.46,un:48614.36,mnp:3.1,ebitda:122445.87,mep:7.8}
 ];
 
 // ════════════════════════════════════════
@@ -1313,6 +1314,26 @@ const EPS = {
 // ════════════════════════════════════════
 const COMENTARIOS_MENSUALES = [
   {
+    periodo:'May-26',
+    archivo:'EEFF-OET-2026-05-Mayo.xlsx',
+    archivo_periodo:'May-26 · Acumulado Ene-May 2026',
+    archivo_fecha:'Junio 2026',
+    archivo_autora:'Elaborado por Paola / Asesores Financieros',
+    comentarios:[
+      {
+        autor:'Paola',
+        rol:'Contadora OET · Cierre Mayo 2026',
+        fecha:'Junio 2026',
+        items:[
+          'En mayo se registró una <strong class="pos">utilidad de $49 MM</strong>, con una <strong class="neg">pérdida acumulada de $52 MM</strong> — una caída del <strong class="neg">−106,07%</strong> (<strong class="neg">−$911 MM</strong>) frente al mismo período del año anterior.',
+          'Los ingresos crecieron <strong class="pos">+36%</strong> (<strong class="pos">+$1.987 MM</strong>), pasando de $5.521 MM a $7.508 MM. Sin embargo, los costos y gastos crecieron en mayor proporción: <strong class="neg">+61,36%</strong> (<strong class="neg">+$2.860 MM</strong>), pasando de $4.662 MM a $7.522 MM — explicado principalmente por honorarios, compra de insumos y gastos de operación (arrendamientos y honorarios administrativos).',
+          'Este desbalance entre ingresos y costos impactó negativamente el EBITDA, con una <strong class="neg">reducción del −67,36%</strong> (<strong class="neg">−$712 MM</strong>).',
+        ],
+        nota:'En la hoja <em>Notas May-26</em> del EEFF oficial se encuentran las explicaciones del Balance — la estructura de activos y pasivos con la participación de cada rubro.'
+      }
+    ]
+  },
+  {
     periodo:'Abr-26',
     archivo:'EEFF-OET-2026-04-Abril.xlsx',
     archivo_periodo:'Abr-26 · Acumulado Ene-Abr 2026',
@@ -1484,6 +1505,7 @@ const BSS = {
     {periodo:'Feb-26', f:'2026-02', y:2026, m:2,  cash:-1793,  cxc:1914000, actCorr:2481000, actTotal:12982000, deudaBco:757000, cxpProv:335000, pasCorr:8491000, pasNoCorr:2142000, pasTotal:10633000, patrimonio:2349000},
     {periodo:'Mar-26', f:'2026-03', y:2026, m:3,  cash:43708,  cxc:2374000, actCorr:2987000, actTotal:13471000, deudaBco:736000, cxpProv:560000, pasCorr:5289000, pasNoCorr:2066000, pasTotal:7355000,  patrimonio:6116000},
     {periodo:'Abr-26', f:'2026-04', y:2026, m:4,  cash:-45707, cxc:2458000, actCorr:2981000, actTotal:13419000, deudaBco:684000, cxpProv:323000, pasCorr:5151000, pasNoCorr:2115000, pasTotal:7266000,  patrimonio:6153000},
+    {periodo:'May-26', f:'2026-05', y:2026, m:5,  cash:905064, cxc:1647000, actCorr:3121000, actTotal:13511000, deudaBco:643000, cxpProv:327000, pasCorr:5289000, pasNoCorr:2036000, pasTotal:7326000,  patrimonio:6185000},
   ],
   // Compatibilidad: arrays paralelos derivados (NO editar — se generan automáticamente)
   get labels()    {return this.snapshots.map(s=>s.periodo);},
