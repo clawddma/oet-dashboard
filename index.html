@@ -1076,13 +1076,13 @@ const COM = {
   v24: [3911625,2419606,1763875,794067,534799,207394], /* AUTO */
   v25: [5682677,3663733,3128993,910896,780285,363360], /* AUTO */
 
-  v26: [3894615,2079168,1407211,542101,419073,216960],   // Jun 2026 (YTD) /* AUTO */
+  v26: [4017205,2151742,1444825,553576,431910,219060],   // Jul 2026 (YTD) /* AUTO */
   // Facturación mensual real por año — Google Sheets (todos los tipos) — auto-sync
   ing_m24: [502408,743383,800424,877574,801279,848154,815805,987861,896286,753531,1041208,938560],  /* AUTO-ING */
   ing_m25: [976326,959050,1095783,1202319,1323610,1010050,1417183,1537444,1054156,1643647,1496749,1649307],  /* AUTO-ING */
-  ing_m26: [1217968,1554089,1658337,1531112,1597474,1572103,0,0,0,0,0,0],  /* AUTO-ING */
+  ing_m26: [1217968,1554089,1658337,1531112,1597474,1572103,273205,0,0,0,0,0],  /* AUTO-ING */
   pct25: [37.0,23.8,20.4,5.9,5.1,2.4],
-  cirugias: {v24:2955, v25:3918, v26:2438, pct:32.6}, /* AUTO */
+  cirugias: {v24:2955, v25:3918, v26:2521, pct:32.6}, /* AUTO */
   pacientes: {v24:8884, v25:10122, pct:13.9},
   // LIOs — Unidad de Negocio Lentes — auto-sync (espera primer sync con columnas Q+R)
   //  lio_cir_mYY = nº de cirugías de lente por mes (1 fila LIOS = 1 cirugía-paciente)
@@ -1120,7 +1120,7 @@ const CIR = {
   mes_labels:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
   mes_24:[163,208,225,237,254,225,233,291,242,246,299,332],  // total=2955 /* AUTO */
   mes_25:[254,272,330,325,323,254,361,387,201,405,365,441],  // total=3918 /* AUTO */
-  mes_26:[375,371,426,415,388,463,0,0,0,0,0,0],  // total=2438 (2026-07-06 07:30) /* AUTO */
+  mes_26:[375,371,426,415,388,463,83,0,0,0,0,0],  // total=2521 (2026-07-06 07:54) /* AUTO */
 };
 /* ==OET_DATA_END== */
 
@@ -1137,7 +1137,7 @@ const CIR = {
 //   cirujanos: [{name,bill,cir}, ...]     // top cirujanos MTD
 // };
 // ==MTD_DATA_START==
-const MTD_RAW = {y:2026,m:7,d:6,ing:0,cir:0,lio_cir:0,lio_uni:0,daysInMonth:31,lineas:[0,0,0,0,0,0],cirujanos:[]}; /* AUTO-MTD */
+const MTD_RAW = {y:2026,m:7,d:6,ing:273205,cir:83,daysInMonth:31,lineas:[122590,72574,37614,11475,12837,2101],cirujanos:[{name:'Dr. M.A. Jaramillo N.',bill:33955,cir:4},{name:'Dr. Jon K. Balparda',bill:24788,cir:12},{name:'Dr. M. Jaramillo M.',bill:8981,cir:3},{name:'Dr. J.E. Jaramillo N.',bill:29081,cir:3},{name:'Dr. J.A. Jaramillo H.',bill:11284,cir:2},{name:'Dr. J.G. Sánchez M.',bill:412,cir:0},{name:'Dr. B.A. Ramírez S.',bill:23557,cir:19},{name:'Dr. J.A. Jaramillo S.',bill:34681,cir:3},{name:'Dra. C. Sardi Correa',bill:1956,cir:1}]}; /* AUTO-MTD */
 // ==MTD_DATA_END==
 
 // ════════════════════════════════════════
