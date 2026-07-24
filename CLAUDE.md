@@ -80,7 +80,7 @@ Google Sheets (facturación) ──30min──► Apps Script (oet_autosync.gs)
 
 ### Correr localmente
 ```bash
-cd /Users/braindma/Desktop/OET/oet-dashboard
+cd /Users/braindma/braindma/proyectos/oet/oet-dashboard
 python -m http.server 8000
 # Abrir http://localhost:8000
 ```
@@ -191,7 +191,7 @@ Los campos entre estos marcadores son sobrescritos automáticamente cada 30 min:
 
 ```bash
 # 1. Siempre sincronizar primero
-cd /Users/braindma/Desktop/OET/oet-dashboard
+cd /Users/braindma/braindma/proyectos/oet/oet-dashboard
 git pull --rebase origin main
 
 # 2. Hacer los cambios en index.html
@@ -232,7 +232,7 @@ oet-dashboard/
 
 ### Estructura local completa (Desktop/OET)
 ```
-/Users/braindma/Desktop/OET/
+/Users/braindma/braindma/proyectos/oet/
 ├── oet-dashboard/          ← REPO GIT (código producción) ← aquí trabajamos
 ├── 01_Panel_360/           ← Archivos locales previos
 ├── 02_EEFF/                ← Estados financieros (Excel + CSV)
@@ -536,9 +536,9 @@ git show backup-2026-04-20:index.html > index_recovered.html
 | Repositorio GitHub | https://github.com/clawddma/oet-dashboard |
 | Google Sheet (privado) | Administración OET — no compartir |
 | Apps Script | Vinculado al Google Sheet, edita Daniel |
-| Backups locales | `/Users/braindma/Desktop/OET/oet-backups/` |
-| Backups históricos | `/Users/braindma/Desktop/OET/07_Backups_Historicos/` |
-| Documento Maestro | `/Users/braindma/Desktop/OET/DOCUMENTO_MAESTRO_OET.md` |
+| Backups locales | `/Users/braindma/braindma/proyectos/oet/oet-backups/` |
+| Backups históricos | `/Users/braindma/braindma/proyectos/oet/07_Backups_Historicos/` |
+| Documento Maestro | `/Users/braindma/braindma/proyectos/oet/DOCUMENTO_MAESTRO_OET.md` |
 
 **Daniel Mesa:** danielmesar@hotmail.com · CFO externo · dueño del proyecto
 
