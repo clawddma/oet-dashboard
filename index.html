@@ -8843,5 +8843,248 @@ initComFilters();
 initFinFilters();
 switchTab('fin'); // Start on Financiero
 </script>
+
+<!-- OET-CHAT:INICIO -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAT PRIVADO — se inyecta al final de <body> del tablero.
+
+     Regla de oro: si el navegador no tiene la llave guardada, este bloque no
+     crea NADA. Ni un botón, ni un nodo, ni una petición. El tablero es un sitio
+     público de GitHub Pages, así que esconder un panel con CSS no sería
+     privacidad: sería un panel escondido. Además la dirección del servicio
+     tampoco vive aquí — viaja dentro de la llave, así que el código público no
+     revela ni siquiera que este chat existe.
+
+     Para activarlo en un dispositivo, en la consola del navegador:
+       localStorage.oetChat = JSON.stringify({url:'https://…', k:'…'})
+     Para desactivarlo:  delete localStorage.oetChat
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  var cfg; try{ cfg = JSON.parse(localStorage.oetChat||'null'); }catch(e){}
+  if(!cfg || !cfg.url || !cfg.k) return;          // sin llave: no existe nada
+
+  var css = document.createElement('style');
+  css.textContent = `
+  #oq-fab{position:fixed;right:18px;bottom:calc(var(--bnav-h,62px) + 16px);z-index:900;
+    width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--oet-teal,#2dc5ab);color:var(--oet-dark,#0c3028);
+    box-shadow:0 4px 16px rgba(12,48,40,.28);font-size:22px;line-height:1;
+    display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+  #oq-fab:hover{transform:scale(1.06);}
+  #oq-fab.abierto{transform:rotate(45deg);}
+  #oq{position:fixed;right:0;bottom:0;top:0;z-index:901;width:min(460px,100vw);
+    background:var(--oet-bg,#f0f5f4);display:none;flex-direction:column;
+    box-shadow:-4px 0 24px rgba(12,48,40,.18);}
+  #oq.on{display:flex;}
+  #oq header{background:var(--oet-dark,#0c3028);color:#fff;padding:12px 14px;
+    display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  #oq header b{font-size:14px;font-weight:700;}
+  #oq header small{font-size:11px;color:var(--gray-md,#a8c4be);margin-left:auto;}
+  #oq header button{background:rgba(255,255,255,.12);color:#fff;border:none;
+    border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;}
+  #oq-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;
+    -webkit-overflow-scrolling:touch;}
+  .oq-m{max-width:100%;border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.55;}
+  .oq-yo{background:var(--oet-teal2,#1a8a7a);color:#fff;align-self:flex-end;max-width:85%;
+    border-bottom-right-radius:3px;}
+  .oq-ia{background:#fff;color:#1a2e28;box-shadow:var(--shadow,0 2px 10px rgba(12,48,40,.10));
+    border-bottom-left-radius:3px;}
+  .oq-ia h2{font-size:14.5px;margin:2px 0 8px;color:var(--oet-dark,#0c3028);line-height:1.35;}
+  .oq-ia h3{font-size:13.5px;margin:10px 0 5px;color:var(--oet-mid,#144838);}
+  .oq-ia p{margin:7px 0;}
+  .oq-ia ul,.oq-ia ol{margin:7px 0 7px 18px;}
+  .oq-ia li{margin:3px 0;}
+  .oq-ia strong{color:var(--oet-dark,#0c3028);}
+  .oq-ia code{background:var(--gray-lt,#f5f8f7);padding:1px 4px;border-radius:4px;font-size:12px;}
+  .oq-tw{overflow-x:auto;margin:9px 0;}
+  .oq-ia table{border-collapse:collapse;font-size:12px;width:100%;}
+  .oq-ia th,.oq-ia td{border:1px solid #dbe8e5;padding:5px 8px;text-align:right;white-space:nowrap;}
+  .oq-ia th:first-child,.oq-ia td:first-child{text-align:left;white-space:normal;}
+  .oq-ia thead th{background:var(--oet-light,#e8f5f2);color:var(--oet-dark,#0c3028);}
+  .oq-err{background:#fdecea;color:#a52a24;font-size:12.5px;}
+  #oq-espera{background:#fff;border-radius:10px;padding:10px 12px;font-size:12.5px;
+    color:var(--oet-teal2,#1a8a7a);display:none;align-items:center;gap:8px;
+    box-shadow:var(--shadow,0 2px 10px rgba(12,48,40,.10));}
+  #oq-espera.on{display:flex;}
+  #oq-espera i{width:9px;height:9px;border-radius:50%;background:var(--oet-teal,#2dc5ab);
+    animation:oqp 1s infinite;}
+  @keyframes oqp{0%,100%{opacity:.25}50%{opacity:1}}
+  #oq-pie{flex-shrink:0;padding:10px;background:#fff;border-top:1px solid #dbe8e5;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom));}
+  #oq-form{display:flex;gap:8px;align-items:flex-end;}
+  #oq-txt{flex:1;border:1px solid #cfe0dc;border-radius:9px;padding:9px 11px;
+    font:inherit;font-size:16px;resize:none;max-height:120px;outline:none;}
+  #oq-txt:focus{border-color:var(--oet-teal,#2dc5ab);}
+  #oq-env{background:var(--oet-teal,#2dc5ab);color:var(--oet-dark,#0c3028);border:none;
+    border-radius:9px;min-width:46px;height:42px;font-size:17px;cursor:pointer;
+    touch-action:manipulation;}
+  #oq-env:disabled{opacity:.45;cursor:default;}
+  .oq-sug{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;}
+  .oq-sug button{background:var(--oet-light,#e8f5f2);color:var(--oet-mid,#144838);
+    border:1px solid #cfe0dc;border-radius:14px;padding:5px 10px;font-size:11.5px;
+    cursor:pointer;touch-action:manipulation;}
+  @media(max-width:520px){#oq{width:100vw;} #oq-fab{right:12px;}}
+  @media print{#oq,#oq-fab{display:none!important;}}`;
+  document.head.appendChild(css);
+
+  var fab = document.createElement('button');
+  fab.id = 'oq-fab'; fab.title = 'Preguntar sobre OET'; fab.textContent = '✦';
+  var box = document.createElement('div');
+  box.id = 'oq';
+  box.innerHTML =
+    '<header><b>Analista OET</b><small id="oq-est">conectando…</small>' +
+    '<button id="oq-nueva">nueva</button><button id="oq-x">✕</button></header>' +
+    '<div id="oq-log"><div id="oq-espera"><i></i><span></span></div></div>' +
+    '<div id="oq-pie"><div class="oq-sug"></div>' +
+    '<form id="oq-form"><textarea id="oq-txt" rows="1" ' +
+    'placeholder="Pregunta cualquier cifra o evento del negocio…"></textarea>' +
+    '<button id="oq-env" type="submit">↑</button></form></div>';
+  document.body.appendChild(fab); document.body.appendChild(box);
+
+  var log = box.querySelector('#oq-log'), espera = box.querySelector('#oq-espera'),
+      txt = box.querySelector('#oq-txt'), env = box.querySelector('#oq-env'),
+      est = box.querySelector('#oq-est'), sug = box.querySelector('.oq-sug');
+  var sesion = null, ocupado = false, reloj = null;
+
+  // ── Markdown mínimo. Se escribe a mano en vez de traer una librería porque el
+  //    tablero es un archivo suelto sin red de terceros. Cubre lo que el analista
+  //    usa de verdad: titulares, negrilla, listas y TABLAS (que son la mitad del
+  //    valor de una respuesta financiera).
+  function esc(s){ return s.replace(/[&<>]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function enlinea(s){
+    return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+                 .replace(/`([^`]+)`/g,'<code>$1</code>')
+                 .replace(/(^|[\s(])\*([^*\n]+)\*/g,'$1<em>$2</em>');
+  }
+  function md(t){
+    var ls = t.replace(/\r/g,'').split('\n'), out = [], i = 0;
+    function celdas(l){ return l.replace(/^\||\|$/g,'').split('|').map(function(c){return c.trim();}); }
+    while(i < ls.length){
+      var l = ls[i];
+      // tabla: una fila de encabezado seguida de la línea de guiones
+      if(/^\s*\|/.test(l) && i+1 < ls.length && /^\s*\|?[\s:-]*-[-\s|:]*$/.test(ls[i+1])){
+        var th = celdas(l), filas = []; i += 2;
+        while(i < ls.length && /^\s*\|/.test(ls[i])){ filas.push(celdas(ls[i])); i++; }
+        out.push('<div class="oq-tw"><table><thead><tr>' +
+          th.map(function(c){return '<th>'+enlinea(c)+'</th>';}).join('') +
+          '</tr></thead><tbody>' + filas.map(function(f){
+            return '<tr>' + f.map(function(c){return '<td>'+enlinea(c)+'</td>';}).join('') + '</tr>';
+          }).join('') + '</tbody></table></div>');
+        continue;
+      }
+      var h = l.match(/^(#{2,6})\s+(.*)$/);
+      if(h){ var n = Math.min(h[1].length,3); out.push('<h'+n+'>'+enlinea(h[2])+'</h'+n+'>'); i++; continue; }
+      if(/^\s*[-*]\s+/.test(l) || /^\s*\d+\.\s+/.test(l)){
+        var ord = /^\s*\d+\./.test(l), items = [];
+        while(i < ls.length && (/^\s*[-*]\s+/.test(ls[i]) || /^\s*\d+\.\s+/.test(ls[i]))){
+          items.push('<li>' + enlinea(ls[i].replace(/^\s*(?:[-*]|\d+\.)\s+/,'')) + '</li>'); i++;
+        }
+        out.push((ord?'<ol>':'<ul>') + items.join('') + (ord?'</ol>':'</ul>'));
+        continue;
+      }
+      if(!l.trim()){ i++; continue; }
+      var p = [];
+      while(i < ls.length && ls[i].trim() && !/^\s*[-*|#]|^\s*\d+\./.test(ls[i])){ p.push(ls[i]); i++; }
+      out.push('<p>' + enlinea(p.join(' ')) + '</p>');
+    }
+    return out.join('');
+  }
+
+  function burbuja(clase, html){
+    var d = document.createElement('div');
+    d.className = 'oq-m ' + clase; d.innerHTML = html;
+    log.insertBefore(d, espera);
+    log.scrollTop = log.scrollHeight;
+    return d;
+  }
+
+  // Las respuestas profundas tardan: el modelo va a leer el libro y a calcular.
+  // Mostrar el reloj y lo que está haciendo evita que 90 segundos se lean como
+  // "se rompió".
+  var FASES = [[0,'consultando los hechos del cierre…'],[12,'revisando el libro mayor…'],
+               [30,'calculando…'],[60,'cruzando meses, ya casi…'],[100,'armando la respuesta…']];
+  function esperar(on){
+    espera.classList.toggle('on', on);
+    clearInterval(reloj);
+    if(!on) return;
+    var t0 = Date.now();
+    var pinta = function(){
+      var s = Math.floor((Date.now()-t0)/1000), f = FASES[0][1];
+      for(var k=0;k<FASES.length;k++) if(s>=FASES[k][0]) f = FASES[k][1];
+      espera.querySelector('span').textContent = f + '  ' + s + 's';
+      log.scrollTop = log.scrollHeight;
+    };
+    pinta(); reloj = setInterval(pinta, 1000);
+  }
+
+  function enviar(pregunta){
+    if(ocupado || !pregunta.trim()) return;
+    ocupado = true; env.disabled = true; sug.innerHTML = '';
+    burbuja('oq-yo', enlinea(pregunta));
+    txt.value = ''; txt.style.height = 'auto'; esperar(true);
+    fetch(cfg.url.replace(/\/$/,'') + '/api/pregunta', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'X-OET-Key': cfg.k},
+      body: JSON.stringify({pregunta: pregunta, sesion: sesion})
+    }).then(function(r){
+      if(!r.ok) return r.json().catch(function(){return {};}).then(function(j){
+        throw new Error(j.detail || ('HTTP ' + r.status)); });
+      return r.json();
+    }).then(function(d){
+      sesion = d.sesion || sesion;
+      burbuja('oq-ia', md(d.respuesta));
+    }).catch(function(e){
+      burbuja('oq-m oq-err', enlinea('No pude responder: ' + e.message +
+        '. Si el Mac Mini está apagado o el túnel caído, el chat no responde.'));
+    }).finally(function(){
+      ocupado = false; env.disabled = false; esperar(false); txt.focus();
+    });
+  }
+
+  var SUGERENCIAS = ['¿Cómo va el año contra 2025?', '¿Dónde se está yendo la plata?',
+                     '¿Qué le digo al socio sobre la caja?', '¿Cuánto falta para el punto de llenado?'];
+  function bienvenida(){
+    log.querySelectorAll('.oq-m').forEach(function(n){ n.remove(); });
+    sesion = null;
+    burbuja('oq-ia', md('Pregúntame cualquier cifra o evento de OET. Respondo con el ' +
+      'libro oficial conciliado del cierre vigente, y si un dato no existe te lo digo ' +
+      'en vez de estimarlo.\n\nLas respuestas de fondo tardan entre 30 y 120 segundos: ' +
+      'voy a leer y a calcular, no a adivinar.'));
+    sug.innerHTML = '';
+    SUGERENCIAS.forEach(function(s){
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = s;
+      b.onclick = function(){ enviar(s); };
+      sug.appendChild(b);
+    });
+  }
+
+  fab.onclick = function(){
+    var on = box.classList.toggle('on');
+    fab.classList.toggle('abierto', on);
+    if(on && !log.querySelector('.oq-m')) bienvenida();
+    if(on) setTimeout(function(){ if(window.innerWidth > 520) txt.focus(); }, 60);
+  };
+  box.querySelector('#oq-x').onclick = fab.onclick;
+  box.querySelector('#oq-nueva').onclick = bienvenida;
+  box.querySelector('#oq-form').onsubmit = function(e){ e.preventDefault(); enviar(txt.value); };
+  txt.addEventListener('input', function(){
+    txt.style.height = 'auto'; txt.style.height = Math.min(txt.scrollHeight, 120) + 'px';
+  });
+  txt.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.shiftKey && window.innerWidth > 520){
+      e.preventDefault(); enviar(txt.value);
+    }
+  });
+
+  fetch(cfg.url.replace(/\/$/,'') + '/salud', {headers:{'X-OET-Key': cfg.k}})
+    .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+    .then(function(d){ est.textContent = 'cierre ' + d.cierre; })
+    .catch(function(){ est.textContent = 'sin conexión'; });
+})();
+</script>
+<!-- OET-CHAT:FIN -->
 </body>
 </html>
