@@ -8844,6 +8844,7 @@ initFinFilters();
 switchTab('fin'); // Start on Financiero
 </script>
 
+
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
@@ -9003,8 +9004,9 @@ switchTab('fin'); // Start on Financiero
   // Las respuestas profundas tardan: el modelo va a leer el libro y a calcular.
   // Mostrar el reloj y lo que está haciendo evita que 90 segundos se lean como
   // "se rompió".
-  var FASES = [[0,'consultando los hechos del cierre…'],[12,'revisando el libro mayor…'],
-               [30,'calculando…'],[60,'cruzando meses, ya casi…'],[100,'armando la respuesta…']];
+  var FASES = [[0,'consultando los hechos…'],[8,'buscando en la base de datos…'],
+               [25,'cruzando el libro mayor…'],[60,'calculando, ya casi…'],
+               [110,'armando la respuesta…']];
   function esperar(on){
     espera.classList.toggle('on', on);
     clearInterval(reloj);
@@ -9024,14 +9026,36 @@ switchTab('fin'); // Start on Financiero
     ocupado = true; env.disabled = true; sug.innerHTML = '';
     burbuja('oq-yo', enlinea(pregunta));
     txt.value = ''; txt.style.height = 'auto'; esperar(true);
-    fetch(cfg.url.replace(/\/$/,'') + '/api/pregunta', {
+    // La respuesta NO viene en esta petición: Cloudflare corta a los 100 segundos y
+    // una pregunta de fondo puede tardar más. Se lanza una tarea y se pregunta por
+    // ella cada dos segundos, así ningún límite de proxy mata una respuesta ya lista.
+    var base = cfg.url.replace(/\/$/,''), cab = {'X-OET-Key': cfg.k};
+    function fallo(r){
+      return r.json().catch(function(){return {};}).then(function(j){
+        throw new Error(j.detail || ('HTTP ' + r.status)); });
+    }
+    function sondear(tid){
+      return new Promise(function(ok, mal){
+        var tic = setInterval(function(){
+          fetch(base + '/api/tarea/' + tid, {headers: cab})
+            .then(function(r){ return r.ok ? r.json() : fallo(r); })
+            .then(function(t){
+              if(t.estado === 'en_curso') return;
+              clearInterval(tic);
+              t.estado === 'listo' ? ok(t) : mal(new Error(t.detalle || 'falló la consulta'));
+            })
+            .catch(function(e){ clearInterval(tic); mal(e); });
+        }, 2000);
+      });
+    }
+    fetch(base + '/api/pregunta', {
       method: 'POST',
       headers: {'Content-Type':'application/json', 'X-OET-Key': cfg.k},
       body: JSON.stringify({pregunta: pregunta, sesion: sesion})
     }).then(function(r){
-      if(!r.ok) return r.json().catch(function(){return {};}).then(function(j){
-        throw new Error(j.detail || ('HTTP ' + r.status)); });
-      return r.json();
+      return r.ok ? r.json() : fallo(r);
+    }).then(function(d){
+      return sondear(d.tarea);
     }).then(function(d){
       sesion = d.sesion || sesion;
       burbuja('oq-ia', md(d.respuesta));
