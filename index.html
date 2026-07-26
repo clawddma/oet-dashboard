@@ -8845,6 +8845,7 @@ switchTab('fin'); // Start on Financiero
 </script>
 
 
+
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
@@ -8960,12 +8961,13 @@ switchTab('fin'); // Start on Financiero
                  .replace(/(^|[\s(])\*([^*\n]+)\*/g,'$1<em>$2</em>');
   }
   function md(t){
-    var ls = t.replace(/\r/g,'').split('\n'), out = [], i = 0;
+    var ls = String(t == null ? '' : t).replace(/\r/g,'').split('\n'), out = [], i = 0;
     function celdas(l){ return l.replace(/^\||\|$/g,'').split('|').map(function(c){return c.trim();}); }
+    var ES_BLOQUE = /^\s*(\||#{1,6}\s|[-*+]\s|\d+\.\s|[-*_]{3,}\s*$)/;
     while(i < ls.length){
-      var l = ls[i];
-      // tabla: una fila de encabezado seguida de la línea de guiones
-      if(/^\s*\|/.test(l) && i+1 < ls.length && /^\s*\|?[\s:-]*-[-\s|:]*$/.test(ls[i+1])){
+      var l = ls[i], antes = i;
+      // tabla: encabezado + línea de guiones
+      if(/^\s*\|/.test(l) && i+1 < ls.length && /^\s*\|?[\s:|-]*-[-\s|:]*$/.test(ls[i+1])){
         var th = celdas(l), filas = []; i += 2;
         while(i < ls.length && /^\s*\|/.test(ls[i])){ filas.push(celdas(ls[i])); i++; }
         out.push('<div class="oq-tw"><table><thead><tr>' +
@@ -8973,22 +8975,31 @@ switchTab('fin'); // Start on Financiero
           '</tr></thead><tbody>' + filas.map(function(f){
             return '<tr>' + f.map(function(c){return '<td>'+enlinea(c)+'</td>';}).join('') + '</tr>';
           }).join('') + '</tbody></table></div>');
-        continue;
       }
-      var h = l.match(/^(#{2,6})\s+(.*)$/);
-      if(h){ var n = Math.min(h[1].length,3); out.push('<h'+n+'>'+enlinea(h[2])+'</h'+n+'>'); i++; continue; }
-      if(/^\s*[-*]\s+/.test(l) || /^\s*\d+\.\s+/.test(l)){
-        var ord = /^\s*\d+\./.test(l), items = [];
-        while(i < ls.length && (/^\s*[-*]\s+/.test(ls[i]) || /^\s*\d+\.\s+/.test(ls[i]))){
-          items.push('<li>' + enlinea(ls[i].replace(/^\s*(?:[-*]|\d+\.)\s+/,'')) + '</li>'); i++;
+      else if(/^\s*[-*_]{3,}\s*$/.test(l)){ out.push('<hr>'); i++; }
+      else if(/^\s*#{1,6}\s/.test(l)){
+        // el modelo a veces abre con "# ": se degrada a h2, nunca se ignora
+        var h = l.match(/^\s*(#{1,6})\s+(.*)$/);
+        var n = Math.min(Math.max(h[1].length, 2), 3);
+        out.push('<h'+n+'>'+enlinea(h[2])+'</h'+n+'>'); i++;
+      }
+      else if(/^\s*([-*+]|\d+\.)\s+/.test(l)){
+        var ord = /^\s*\d+\.\s/.test(l), items = [];
+        while(i < ls.length && /^\s*([-*+]|\d+\.)\s+/.test(ls[i])){
+          items.push('<li>' + enlinea(ls[i].replace(/^\s*([-*+]|\d+\.)\s+/,'')) + '</li>'); i++;
         }
         out.push((ord?'<ol>':'<ul>') + items.join('') + (ord?'</ol>':'</ul>'));
-        continue;
       }
-      if(!l.trim()){ i++; continue; }
-      var p = [];
-      while(i < ls.length && ls[i].trim() && !/^\s*[-*|#]|^\s*\d+\./.test(ls[i])){ p.push(ls[i]); i++; }
-      out.push('<p>' + enlinea(p.join(' ')) + '</p>');
+      else if(!l.trim()){ i++; }
+      else {
+        // Párrafo. CONSUME SIEMPRE la primera línea aunque parezca de bloque: si no,
+        // una fila de tabla suelta o un "---" dejaban el índice quieto y el ciclo
+        // crecía hasta reventar con "Invalid array length".
+        var p = [ls[i]]; i++;
+        while(i < ls.length && ls[i].trim() && !ES_BLOQUE.test(ls[i])){ p.push(ls[i]); i++; }
+        out.push('<p>' + enlinea(p.join(' ')) + '</p>');
+      }
+      if(i <= antes){ i = antes + 1; }        // cinturón: el índice siempre avanza
     }
     return out.join('');
   }
