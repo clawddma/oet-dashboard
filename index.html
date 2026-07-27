@@ -1313,6 +1313,20 @@ const EPS = {
 //  primero). Los campos archivo, archivo_periodo y archivo_fecha apuntan al
 //  Excel oficial subido a /eeff/.
 // ════════════════════════════════════════
+/*REPORTES:INI*/
+const REPORTES_ESTRATEGICOS = [
+  {
+    periodo:'Junio 2026',
+    titulo:'Cierre de junio y del año en curso',
+    archivo:'Reporte_Junta_OET_Junio_2026.html',
+    paginas:12,
+    fecha:'Julio 2026',
+    resumen:'Lectura del cierre de junio y del primer semestre a la luz de la ampliación de capacidad de quirófanos, con un capítulo sobre el costo con terceros reconstruido proveedor por proveedor desde el libro mayor.',
+    temas:['El mes y el año acumulado','El puente de margen','La ampliación','Capacidad instalada','Costo con terceros','Caja y balance','Recomendaciones'],
+  },
+];
+/*REPORTES:FIN*/
+
 const COMENTARIOS_MENSUALES = [
   {
     periodo:'Jun-26',
@@ -2816,7 +2830,7 @@ function periodLabel(){
   return qLabel+(names.length<=4?names.join('+'):names.length+' meses');
 }
 
-const FIN_SECS_ALL=['fin-inicio','fin-pnl','fin-ebitda','fin-margen','fin-costos','fin-flujo','fin-balance','fin-anual','fin-eeff'];
+const FIN_SECS_ALL=['fin-inicio','fin-pnl','fin-ebitda','fin-margen','fin-costos','fin-flujo','fin-balance','fin-anual','fin-eeff','fin-reportes'];
 function clearFinBuilt(){
   FIN_SECS_ALL.forEach(sid=>{
     const el=document.getElementById(sid);
@@ -2965,6 +2979,7 @@ const NAVS = {
     {id:'fin-balance', label:'Balance/Liquidez', icon:'🏦'},
     {id:'fin-anual',   label:'Resumen Anual',    icon:'📋'},
     {id:'fin-eeff',    label:'EEFF Definitivos',  icon:'📄'},
+    {id:'fin-reportes',label:'Reportes Estratégicos', icon:'📑'},
   ],
   com:[
     {id:'com-inicio',    label:'Inicio',          icon:'🏠'},
@@ -4576,6 +4591,57 @@ window._resetTaskOverrides = function(){
     buildAccTareas();
   }
 };
+
+/*BUILDREP:INI*/
+// ════════════════════════════════════════
+//  BUILD: REPORTES ESTRATÉGICOS
+// ════════════════════════════════════════
+function buildFinReportes(){
+  const el=document.getElementById('fin-reportes');
+  const BASE='./reportes/';
+  el.innerHTML=`
+  <div class="sec-title">Reportes Estratégicos <span class="st-badge">${REPORTES_ESTRATEGICOS.length} informe${REPORTES_ESTRATEGICOS.length===1?'':'s'}</span></div>
+
+  <div class="insight" style="margin-bottom:14px;border-left:4px solid #2dc5ab;background:rgba(45,197,171,.06);font-size:12px">
+    📑 <strong>Informe mensual de la asesoría.</strong> La lectura que Mesa de Estrategia hace del cierre, para socializar con la junta directiva. Se abre en el navegador y se lee igual en el computador y en el celular; para guardarlo en PDF basta <strong>Cmd+P</strong> (o Compartir → Imprimir en el teléfono). El más reciente aparece primero.
+  </div>
+
+  <div class="gfull">
+    ${REPORTES_ESTRATEGICOS.map((r, idx) => {
+      const nuevo = idx === 0;
+      return `
+      <div class="card" style="margin-bottom:14px;border-left:4px solid ${nuevo?'#2dc5ab':'#9eb3ad'}">
+        <div class="card-hdr" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h3 style="margin:0">📑 ${r.titulo}</h3>
+          <span style="background:#1a3a2a;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px">${r.periodo}</span>
+          ${nuevo?'<span style="background:#2dc5ab;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:14px;margin-left:auto">MÁS RECIENTE</span>':''}
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:#2d3f38;line-height:1.6;margin:0 0 12px">${r.resumen}</p>
+
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+            ${r.temas.map(t=>`<span style="background:#f0f5f4;border:1px solid #dbe8e5;color:#33463f;font-size:11px;padding:4px 10px;border-radius:13px">${t}</span>`).join('')}
+          </div>
+
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#f5f8f7;border-radius:10px;padding:12px 16px">
+            <div style="font-size:24px">📄</div>
+            <div style="flex:1;min-width:190px">
+              <div style="font-weight:600;font-size:13px;color:#1a3a2a">${r.paginas} páginas · emitido en ${r.fecha}</div>
+              <div style="font-size:11px;color:#607d76;margin-top:2px">Mesa de Estrategia · David Gómez y Daniel Mesa</div>
+            </div>
+            <a href="${BASE}${r.archivo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#1a3a2a;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">
+              👁 Abrir informe
+            </a>
+            <a href="${BASE}${r.archivo}" download style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#1a3a2a;border:1.5px solid #1a3a2a;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap">
+              ⬇ Descargar
+            </a>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+/*BUILDREP:FIN*/
 
 // ════════════════════════════════════════
 //  BUILD: EEFF DEFINITIVOS
@@ -8048,6 +8114,7 @@ const BUILDERS = {
   'fin-balance': buildFinBalance,
   'fin-anual':   buildFinAnual,
   'fin-eeff':    buildFinEeff,
+  'fin-reportes':buildFinReportes,
   'com-inicio':    buildComInicio,
   'com-lineas':    buildComLineas,
   'com-cirujanos':  buildComCirujanos,
