@@ -8984,6 +8984,7 @@ switchTab('fin'); // Start on Financiero
 
 
 
+
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
@@ -9273,7 +9274,12 @@ switchTab('fin'); // Start on Financiero
 
   fetch(cfg.url.replace(/\/$/,'') + '/salud', {headers:{'X-OET-Key': cfg.k}})
     .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
-    .then(function(d){ est.textContent = 'cierre ' + d.cierre; })
+    .then(function(d){
+      // Dos frescuras distintas y conviene ver las dos: el cierre contable se mueve una
+      // vez al mes, lo operativo cada semana con la actualización del viernes.
+      est.textContent = 'cierre ' + d.cierre +
+        (d.operativo ? ' · operación a ' + d.operativo : '');
+    })
     .catch(function(){ est.textContent = 'sin conexión'; });
 })();
 </script>
