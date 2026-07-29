@@ -8983,6 +8983,7 @@ switchTab('fin'); // Start on Financiero
 
 
 
+
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
@@ -9184,15 +9185,27 @@ switchTab('fin'); // Start on Financiero
     }
     function sondear(tid){
       return new Promise(function(ok, mal){
+        // Un sondeo fallido NO mata la pregunta: el celular cambia de red, el túnel
+        // hipa, y la respuesta sigue cocinándose del otro lado. Antes un solo fetch
+        // caído la abandonaba, y al reintentar el servicio contestaba que había otra
+        // pregunta en curso — que era cierto, pero incomprensible.
+        var seguidos = 0, TOLERA = 5;
         var tic = setInterval(function(){
           fetch(base + '/api/tarea/' + tid, {headers: cab})
-            .then(function(r){ return r.ok ? r.json() : fallo(r); })
+            .then(function(r){
+              if(r.status === 404) return fallo(r);   // ya no existe: rendirse
+              return r.ok ? r.json() : fallo(r);
+            })
             .then(function(t){
+              seguidos = 0;
               if(t.estado === 'en_curso') return;
               clearInterval(tic);
               t.estado === 'listo' ? ok(t) : mal(new Error(t.detalle || 'falló la consulta'));
             })
-            .catch(function(e){ clearInterval(tic); mal(e); });
+            .catch(function(e){
+              if(++seguidos < TOLERA) return;
+              clearInterval(tic); mal(e);
+            });
         }, 2000);
       });
     }
@@ -9203,6 +9216,13 @@ switchTab('fin'); // Start on Financiero
     }).then(function(r){
       return r.ok ? r.json() : fallo(r);
     }).then(function(d){
+      if(d.reenganche){
+        // El servicio ya venía respondiendo otra cosa. Decirlo, traer ESA respuesta y
+        // dejar claro que esta pregunta hay que repetirla: nunca dejarlo sin salida.
+        burbuja('oq-m', enlinea('Ya venía respondiendo la pregunta anterior (hace ' +
+          d.segundos + 's). Te traigo esa respuesta primero; vuelve a enviar esta ' +
+          'cuando aparezca.'));
+      }
       return sondear(d.tarea);
     }).then(function(d){
       sesion = d.sesion || sesion;
