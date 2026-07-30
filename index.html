@@ -722,6 +722,8 @@ a{text-decoration:none;color:inherit;}
   .cmo-note{ font-size:12px; margin-top:10px; }
   .card-expand-btn{ width:26px; height:26px; font-size:12px; top:6px; right:6px; }
 }
+
+.corte-nota{font-size:10.5px;color:#8a6d1f;background:#fff8e6;border:1px solid #f0e0b0;border-radius:7px;padding:5px 9px;margin:6px 0 2px;line-height:1.4;}
 </style>
 </head>
 <body>
@@ -1903,16 +1905,53 @@ Chart.register({
 });
 
 // Opciones base para todos los charts
+/*CORTE:INI*/
+// ── HASTA QUÉ FECHA LLEGAN LOS NÚMEROS ───────────────────────────────────────
+// Lo genera `30d_corte_al_tablero.py` del libro real en cada actualización. NO es la
+// hora de sincronización: es la fecha de la ÚLTIMA FACTURA registrada, que es lo único
+// que permite leer bien la evolución de un mes todavía abierto. Un mes al 27 y el mismo
+// mes al 15 cuentan historias distintas con el mismo número.
+const CORTE = {"fecha": "2026-07-27", "anio": 2026, "mes": 7, "dia": 27, "dias_mes": 31, "texto": "27 de julio", "mes_nombre": "Julio", "abierto": true, "cerrado_hasta": "2026-06", "cobertura": 87};
+
+// Reconoce si una etiqueta del eje X es el mes en curso. Tolera los formatos que usan
+// los distintos gráficos —'Jul', 'Jul-26', 'Julio'— y descarta el mismo mes de otro año:
+// en una comparación 2025 vs 2026, julio de 2025 sí está completo.
+function corteDeEtiqueta(lbl){
+  if(!CORTE || !CORTE.abierto) return null;
+  const s = String(lbl == null ? '' : lbl).toLowerCase();
+  if(s.indexOf(_MN_SHORT[CORTE.mes].toLowerCase()) === -1) return null;
+  const m = s.match(/(\d{4}|\d{2})(?!\d)/);
+  if(m){
+    const a = m[1].length === 2 ? '20' + m[1] : m[1];
+    if(a !== String(CORTE.anio)) return null;
+  }
+  return CORTE;
+}
+
+// La leyenda que se muestra en el gráfico y en las tarjetas del mes abierto.
+function avisoCorte(){
+  if(!CORTE || !CORTE.abierto) return '';
+  return `${CORTE.mes_nombre} está en curso: datos hasta el ${CORTE.texto} `
+       + `(${CORTE.dia} de ${CORTE.dias_mes} días, ${CORTE.cobertura}% del mes).`;
+}
+/*CORTE:FIN*/
+
 const BASE_OPTS = {
   responsive:true, maintainAspectRatio:false,
   plugins:{
     legend:{position:'top',labels:{boxWidth:12,font:{size:11},padding:10}},
     tooltip:{
-      backgroundColor:'rgba(12,48,40,.92)',titleFont:{size:12},bodyFont:{size:11},padding:10,
+      backgroundColor:'rgba(12,48,40,.92)',titleFont:{size:12},bodyFont:{size:11},padding:10,footerFont:{size:10,weight:'400',style:'italic'},footerColor:'#9ec9c0',
       callbacks:{label: c=>{
         const v = c.parsed.y;
         if(c.dataset.isPct) return ' '+c.dataset.label+': '+v.toFixed(1)+'%';
         return ' '+c.dataset.label+': '+fv(v);
+      },
+      // Al pararse sobre la barra del mes en curso, decir hasta qué fecha llega. Va en
+      // BASE_OPTS y no en cada gráfico: así ninguno se queda sin el aviso al agregarse.
+      footer: items=>{
+        const c = items && items.length ? corteDeEtiqueta(items[0].label) : null;
+        return c ? `${c.mes_nombre} en curso · datos hasta el ${c.texto} (${c.cobertura}% del mes)` : '';
       }}
     }
   },
@@ -1947,7 +1986,37 @@ function mkChart(id, cfg, _targetEl){
       if(k!=='scales'&&k!=='plugins') opts[k]=cfg.options[k];
     });
   }
-  return new Chart(el,{type:_type,data:cfg.data,options:opts});
+  // REPONER_CALLBACKS — ver 30d_corte_al_tablero.py
+  const _propio = (cfg.options&&cfg.options.plugins&&cfg.options.plugins.tooltip
+                   &&cfg.options.plugins.tooltip.callbacks) || {};
+  opts.plugins = opts.plugins || {};
+  opts.plugins.tooltip = opts.plugins.tooltip || {};
+  opts.plugins.tooltip.callbacks = Object.assign(
+    {}, BASE_OPTS.plugins.tooltip.callbacks, _propio);
+  if(opts.scales && opts.scales.y && !_circular){
+    opts.scales.y.ticks = opts.scales.y.ticks || {};
+    if(!opts.scales.y.ticks.callback)
+      opts.scales.y.ticks.callback = BASE_OPTS.scales.y.ticks.callback;
+  }
+  const _inst = new Chart(el,{type:_type,data:cfg.data,options:opts});
+
+  // El aviso VISIBLE, sin tener que pasar el mouse: si el gráfico incluye el mes en
+  // curso, se rotula debajo hasta qué fecha llegan los datos. Se cuelga como HERMANO
+  // del contenedor y no dentro: un div extra adentro le robaría alto al canvas, que es
+  // responsive, y Chart.js entraría en un ciclo de redimensionado.
+  try{
+    const _lbls = (cfg.data && cfg.data.labels) || [];
+    const _cont = el.parentElement;
+    if(_cont && _lbls.some(l=>corteDeEtiqueta(l))
+       && !(_cont.nextElementSibling && _cont.nextElementSibling.classList
+            && _cont.nextElementSibling.classList.contains('corte-nota'))){
+      const _n = document.createElement('div');
+      _n.className = 'corte-nota';
+      _n.textContent = '⏱ ' + avisoCorte();
+      _cont.insertAdjacentElement('afterend', _n);
+    }
+  }catch(e){}
+  return _inst;
 }
 
 // ── Expand / fullscreen modal ─────────────────────────────────────────────────
@@ -8958,7 +9027,8 @@ function buildFarCompras(){
 // Inicializa metadatos del header desde META (data-driven)
 (function(){
   const r=document.getElementById('hdr-range');
-  if(r) r.textContent = META.rangeLabel + ' · EEFF al ' + META.lastP;
+  if(r) r.textContent = META.rangeLabel + ' · EEFF al ' + META.lastP
+    + (CORTE && CORTE.abierto ? ' · operación al ' + CORTE.texto : '');
 })();
 buildAllSections();
 document.querySelectorAll('.ttab').forEach(t=>{
