@@ -8987,6 +8987,8 @@ switchTab('fin'); // Start on Financiero
 
 
 
+
+
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
@@ -9006,6 +9008,15 @@ switchTab('fin'); // Start on Financiero
 (function(){
   var cfg; try{ cfg = JSON.parse(localStorage.oetChat||'null'); }catch(e){}
   if(!cfg || !cfg.url || !cfg.k) return;          // sin llave: no existe nada
+
+  // Huella de ESTE panel, estampada por `instalar_panel.py` con el sha1 de panel.html.
+  // El servicio calcula la misma huella del archivo en disco, así que no hay número de
+  // versión que se pueda olvidar de subir: cualquier edición cambia las dos a la vez.
+  // Existe porque el tablero vive en GitHub Pages y una pestaña abierta desde antes de
+  // un despliegue sigue corriendo el panel viejo — pasó con los gráficos: el asistente
+  // los generaba y el panel de la pestaña, que no sabía dibujarlos, mostraba el texto
+  // crudo. Un panel viejo que no se anuncia se diagnostica como si el bot fallara.
+  var PANEL_VER = '167af03eb7';
 
   var css = document.createElement('style');
   css.textContent = `
@@ -9332,6 +9343,13 @@ switchTab('fin'); // Start on Financiero
       // vez al mes, lo operativo cada semana con la actualización del viernes.
       est.textContent = 'cierre ' + d.cierre +
         (d.operativo ? ' · operación a ' + d.operativo : '');
+      if(d.panel && PANEL_VER.indexOf('_') === -1 && d.panel !== PANEL_VER){
+        est.textContent = 'panel desactualizado';
+        est.style.color = '#ffcf6b';
+        burbuja('oq-m oq-err', 'Esta pestaña tiene una versión vieja del panel, así que ' +
+          'puede mostrar mal los gráficos o los informes. <b>Recarga la página</b> ' +
+          '(Cmd+Shift+R) y vuelve a abrir el chat.');
+      }
     })
     .catch(function(){ est.textContent = 'sin conexión'; });
 })();
