@@ -9059,6 +9059,8 @@ switchTab('fin'); // Start on Financiero
 
 
 
+
+
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
@@ -9086,7 +9088,7 @@ switchTab('fin'); // Start on Financiero
   // un despliegue sigue corriendo el panel viejo — pasó con los gráficos: el asistente
   // los generaba y el panel de la pestaña, que no sabía dibujarlos, mostraba el texto
   // crudo. Un panel viejo que no se anuncia se diagnostica como si el bot fallara.
-  var PANEL_VER = '167af03eb7';
+  var PANEL_VER = '040c2f9876';
 
   var css = document.createElement('style');
   css.textContent = `
@@ -9097,20 +9099,37 @@ switchTab('fin'); // Start on Financiero
     display:flex;align-items:center;justify-content:center;transition:transform .15s;}
   #oq-fab:hover{transform:scale(1.06);}
   #oq-fab.abierto{transform:rotate(45deg);}
-  #oq{position:fixed;right:0;bottom:0;top:0;z-index:901;width:min(460px,100vw);
+  #oq{position:fixed;right:0;bottom:0;top:0;z-index:901;
+    width:min(var(--oq-w,460px),96vw);
     background:var(--oet-bg,#f0f5f4);display:none;flex-direction:column;
     box-shadow:-4px 0 24px rgba(12,48,40,.18);}
   #oq.on{display:flex;}
+  #oq.oq-resizing{transition:none!important;}
+  #oq:not(.oq-resizing){transition:width .18s ease;}
+  /* El tirador: una franja angosta en el borde IZQUIERDO del panel. Arrastrarlo hacia
+     la izquierda AGRANDA el panel porque está anclado por la derecha (right:0) — crecer
+     hacia la izquierda es justamente lo que pidió Daniel para ver gráficos y tablas
+     completos sin achicarlos. */
+  #oq-resize{position:absolute;left:-5px;top:0;bottom:0;width:11px;cursor:ew-resize;
+    z-index:2;touch-action:none;}
+  #oq-resize::after{content:'';position:absolute;left:5px;top:0;bottom:0;width:2px;
+    background:transparent;transition:background .12s;}
+  #oq-resize:hover::after,#oq-resize.arrastrando::after{background:var(--oet-teal,#2dc5ab);}
   #oq header{background:var(--oet-dark,#0c3028);color:#fff;padding:12px 14px;
-    display:flex;align-items:center;gap:10px;flex-shrink:0;}
+    display:flex;align-items:center;gap:8px;flex-shrink:0;position:relative;}
   #oq header b{font-size:14px;font-weight:700;}
   #oq header small{font-size:11px;color:var(--gray-md,#a8c4be);margin-left:auto;}
   #oq header button{background:rgba(255,255,255,.12);color:#fff;border:none;
-    border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;}
+    border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;flex-shrink:0;}
+  #oq-ancho{font-size:13px!important;line-height:1;padding:5px 8px!important;}
+  @media(min-width:900px){
+    /* Solo tiene sentido expandir en pantallas que de verdad tienen sitio de sobra. */
+    #oq{width:min(var(--oq-w,460px),92vw);}
+  }
   #oq-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;
     -webkit-overflow-scrolling:touch;}
   .oq-m{max-width:100%;border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.55;}
-  .oq-graf{display:block;width:100%;max-width:560px;border:1px solid #e3e9ee;
+  .oq-graf{display:block;width:100%;max-width:1040px;border:1px solid #e3e9ee;
     border-radius:8px;margin:6px 0;background:#fff;}
   .oq-glink{display:block;}
   .oq-doc{display:inline-block;background:#f0f5f4;border:1px solid #cfe0dc;color:#0c3028;
@@ -9153,7 +9172,13 @@ switchTab('fin'); // Start on Financiero
   .oq-sug button{background:var(--oet-light,#e8f5f2);color:var(--oet-mid,#144838);
     border:1px solid #cfe0dc;border-radius:14px;padding:5px 10px;font-size:11.5px;
     cursor:pointer;touch-action:manipulation;}
-  @media(max-width:520px){#oq{width:100vw;} #oq-fab{right:12px;}}
+  @media(max-width:520px){
+    /* En el teléfono no hay «hacia la izquierda» que valga: ya usa toda la pantalla,
+       y arrastrar ahí compite con el gesto de hacer scroll. El tirador se esconde. */
+    #oq{width:100vw!important;}
+    #oq-resize,#oq-ancho{display:none;}
+    #oq-fab{right:12px;}
+  }
   @media print{#oq,#oq-fab{display:none!important;}}`;
   document.head.appendChild(css);
 
@@ -9162,7 +9187,9 @@ switchTab('fin'); // Start on Financiero
   var box = document.createElement('div');
   box.id = 'oq';
   box.innerHTML =
+    '<div id="oq-resize" title="Arrastra para agrandar el panel"></div>' +
     '<header><b>Analista OET</b><small id="oq-est">conectando…</small>' +
+    '<button id="oq-ancho" title="Expandir / achicar el panel">⤢</button>' +
     '<button id="oq-nueva">nueva</button><button id="oq-x">✕</button></header>' +
     '<div id="oq-log"><div id="oq-espera"><i></i><span></span></div></div>' +
     '<div id="oq-pie"><div class="oq-sug"></div>' +
@@ -9170,6 +9197,76 @@ switchTab('fin'); // Start on Financiero
     'placeholder="Pregunta cualquier cifra o evento del negocio…"></textarea>' +
     '<button id="oq-env" type="submit">↑</button></form></div>';
   document.body.appendChild(fab); document.body.appendChild(box);
+
+  // ── Ancho del panel: arrastrable y con un botón de un clic ──────────────────
+  // Por qué existe: Daniel pidió ver gráficos y tablas «impecables», y a 460px una
+  // tabla de seis columnas o un gráfico a resolución completa quedan apretados. El
+  // panel está anclado por la derecha (right:0), así que crecer hacia la IZQUIERDA
+  // —que fue el pedido textual— es sencillamente agrandar el ancho.
+  var OQ_MIN = 380, OQ_MAX_VW = 0.96;
+  function oqMax(){ return Math.min(1200, Math.round(window.innerWidth * OQ_MAX_VW)); }
+  function oqAncho(px){
+    px = Math.max(OQ_MIN, Math.min(oqMax(), Math.round(px)));
+    document.documentElement.style.setProperty('--oq-w', px + 'px');
+    try{ localStorage.oetChatW = px; }catch(e){}
+    return px;
+  }
+  (function(){
+    // Ancho recordado de la última vez; si nunca se tocó, el CSS ya trae 460px.
+    var guardado = parseInt(localStorage.oetChatW, 10);
+    if(guardado) oqAncho(guardado);
+  })();
+
+  var resize = box.querySelector('#oq-resize'), btnAncho = box.querySelector('#oq-ancho');
+  (function(){
+    var arrastrando = false, x0 = 0, w0 = 0;
+    function mover(x){
+      // El panel crece hacia la izquierda: mover el mouse a la izquierda (x menor)
+      // debe AUMENTAR el ancho, por eso el signo está invertido.
+      box.classList.add('oq-resizing');
+      oqAncho(w0 + (x0 - x));
+    }
+    function soltar(){
+      if(!arrastrando) return;
+      arrastrando = false;
+      resize.classList.remove('arrastrando');
+      box.classList.remove('oq-resizing');
+      document.body.style.userSelect = '';
+    }
+    resize.addEventListener('mousedown', function(e){
+      arrastrando = true; x0 = e.clientX; w0 = box.getBoundingClientRect().width;
+      resize.classList.add('arrastrando');
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e){ if(arrastrando) mover(e.clientX); });
+    window.addEventListener('mouseup', soltar);
+    // Táctil: por si alguien lo prueba desde un iPad con el tablero en escritorio.
+    resize.addEventListener('touchstart', function(e){
+      arrastrando = true; x0 = e.touches[0].clientX; w0 = box.getBoundingClientRect().width;
+      resize.classList.add('arrastrando');
+    }, {passive:true});
+    window.addEventListener('touchmove', function(e){
+      if(arrastrando) mover(e.touches[0].clientX);
+    }, {passive:true});
+    window.addEventListener('touchend', soltar);
+    // Doble clic en el tirador: vuelve al ancho por defecto, para no quedar atascado
+    // en un tamaño raro después de jugar con él.
+    resize.addEventListener('dblclick', function(){ oqAncho(460); });
+  })();
+  btnAncho.onclick = function(){
+    // Un clic para la demo: sin tener que explicar que se arrastra, salta a un ancho
+    // amplio (o vuelve al normal si ya estaba amplio).
+    var actual = box.getBoundingClientRect().width;
+    box.classList.remove('oq-resizing');           // este sí anima, con transición
+    oqAncho(actual > 620 ? 460 : oqMax());
+  };
+  window.addEventListener('resize', function(){
+    // Si la ventana se achica (o gira el iPad) y el ancho guardado ya no cabe, se ajusta.
+    var actual = parseInt(getComputedStyle(document.documentElement)
+      .getPropertyValue('--oq-w'), 10);
+    if(actual > oqMax()) oqAncho(oqMax());
+  });
 
   var log = box.querySelector('#oq-log'), espera = box.querySelector('#oq-espera'),
       txt = box.querySelector('#oq-txt'), env = box.querySelector('#oq-env'),
