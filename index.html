@@ -8986,6 +8986,7 @@ switchTab('fin'); // Start on Financiero
 
 
 
+
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
@@ -9179,6 +9180,28 @@ switchTab('fin'); // Start on Financiero
     return d;
   }
 
+  // La conversación sobrevive a recargar la página: se guarda en el navegador junto
+  // con la sesión del modelo, así el hilo («¿y en mayo?») no se pierde por un F5.
+  // Caduca a las 24 horas: retomar hoy tiene sentido, retomar la semana pasada no.
+  function guardar(){
+    try{
+      var ms = [].map.call(log.querySelectorAll('.oq-m'), function(n){ return n.outerHTML; });
+      localStorage.oetChatHist = JSON.stringify({sesion: sesion, html: ms.join(''), t: Date.now()});
+    }catch(e){}
+  }
+  function restaurar(){
+    try{
+      var h = JSON.parse(localStorage.oetChatHist || 'null');
+      if(!h || !h.html || Date.now() - h.t > 864e5) return false;
+      var cont = document.createElement('div');
+      cont.innerHTML = h.html;
+      [].slice.call(cont.children).forEach(function(n){ log.insertBefore(n, espera); });
+      sesion = h.sesion || null;
+      log.scrollTop = log.scrollHeight;
+      return true;
+    }catch(e){ return false; }
+  }
+
   // Las respuestas profundas tardan: el modelo va a leer el libro y a calcular.
   // Mostrar el reloj y lo que está haciendo evita que 90 segundos se lean como
   // "se rompió".
@@ -9261,6 +9284,7 @@ switchTab('fin'); // Start on Financiero
         '. Si el Mac Mini está apagado o el túnel caído, el chat no responde.'));
     }).finally(function(){
       ocupado = false; env.disabled = false; esperar(false); txt.focus();
+      guardar();
     });
   }
 
@@ -9269,6 +9293,7 @@ switchTab('fin'); // Start on Financiero
   function bienvenida(){
     log.querySelectorAll('.oq-m').forEach(function(n){ n.remove(); });
     sesion = null;
+    try{ delete localStorage.oetChatHist; }catch(e){}
     burbuja('oq-ia', md('Pregúntame cualquier cifra o evento de OET. Respondo con el ' +
       'libro oficial conciliado del cierre vigente, y si un dato no existe te lo digo ' +
       'en vez de estimarlo.\n\nLas respuestas de fondo tardan entre 30 y 120 segundos: ' +
@@ -9285,7 +9310,7 @@ switchTab('fin'); // Start on Financiero
   fab.onclick = function(){
     var on = box.classList.toggle('on');
     fab.classList.toggle('abierto', on);
-    if(on && !log.querySelector('.oq-m')) bienvenida();
+    if(on && !log.querySelector('.oq-m') && !restaurar()) bienvenida();
     if(on) setTimeout(function(){ if(window.innerWidth > 520) txt.focus(); }, 60);
   };
   box.querySelector('#oq-x').onclick = fab.onclick;
