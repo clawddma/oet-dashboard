@@ -8985,6 +8985,7 @@ switchTab('fin'); // Start on Financiero
 
 
 
+
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
@@ -9027,6 +9028,11 @@ switchTab('fin'); // Start on Financiero
   #oq-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;
     -webkit-overflow-scrolling:touch;}
   .oq-m{max-width:100%;border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.55;}
+  .oq-graf{display:block;width:100%;max-width:560px;border:1px solid #e3e9ee;
+    border-radius:8px;margin:6px 0;background:#fff;}
+  .oq-glink{display:block;}
+  .oq-doc{display:inline-block;background:#f0f5f4;border:1px solid #cfe0dc;color:#0c3028;
+    font-weight:600;padding:7px 12px;border-radius:9px;text-decoration:none;margin:4px 0;}
   .oq-yo{background:var(--oet-teal2,#1a8a7a);color:#fff;align-self:flex-end;max-width:85%;
     border-bottom-right-radius:3px;}
   .oq-ia{background:#fff;color:#1a2e28;box-shadow:var(--shadow,0 2px 10px rgba(12,48,40,.10));
@@ -9094,10 +9100,32 @@ switchTab('fin'); // Start on Financiero
   //    valor de una respuesta financiera).
   function esc(s){ return s.replace(/[&<>]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function ruta(p){
+    // Rutas del propio servicio: se les pega la llave, porque una <img> o un enlace
+    // abierto en otra pestaña no pueden mandar encabezados. Nunca para URLs ajenas.
+    if(!/^\/(api\/grafico|salida)\//.test(p)) return null;
+    return cfg.url.replace(/\/$/,'') + p + '?k=' + encodeURIComponent(cfg.k);
+  }
   function enlinea(s){
-    return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
-                 .replace(/`([^`]+)`/g,'<code>$1</code>')
-                 .replace(/(^|[\s(])\*([^*\n]+)\*/g,'$1<em>$2</em>');
+    return esc(s)
+      // imagen: ![alt](/api/grafico/x.png) → gráfico de marca, listo para copiar
+      .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, function(m, alt, p){
+        var u = ruta(p);
+        if(!u) return esc(alt);
+        return '<a href="' + u + '" target="_blank" rel="noopener" class="oq-glink">' +
+               '<img class="oq-graf" src="' + u + '" alt="' + alt + '" loading="lazy">' +
+               '</a>';
+      })
+      // enlace: [texto](/salida/x.html) → informe express en otra pestaña
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function(m, txt, p){
+        var u = ruta(p);
+        if(!u) return txt;
+        return '<a href="' + u + '" target="_blank" rel="noopener" class="oq-doc">📄 ' +
+               txt + '</a>';
+      })
+      .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+      .replace(/`([^`]+)`/g,'<code>$1</code>')
+      .replace(/(^|[\s(])\*([^*\n]+)\*/g,'$1<em>$2</em>');
   }
   function md(t){
     var ls = String(t == null ? '' : t).replace(/\r/g,'').split('\n'), out = [], i = 0;
