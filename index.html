@@ -724,6 +724,202 @@ a{text-decoration:none;color:inherit;}
 }
 
 .corte-nota{font-size:10.5px;color:#8a6d1f;background:#fff8e6;border:1px solid #f0e0b0;border-radius:7px;padding:5px 9px;margin:6px 0 2px;line-height:1.4;}
+
+/*CMS-CSS:INI*/
+/* NADA DE PALETA NUEVA. Todo lo de aquí abajo es ESTRUCTURA: dónde vive cada cosa y
+   cómo fluye. Los colores salen de las variables que el tablero ya tenía
+   (--oet-dark, --oet-mid, --oet-teal, --gray-md) y los componentes existentes
+   —pestañas de filtro, tarjetas, gráficos— se dejan exactamente como estaban.
+   Dato afortunado: la barra de filtros ya vivía sobre fondo #071f18 con acentos teal,
+   o sea el mismo lenguaje del sidebar, así que al moverla no hay que retocar ni un
+   color de sus pastillas. */
+:root{
+  --sb-w:268px;          /* el sidebar necesita aire: ahora carga módulos Y secciones */
+  --sb-line:rgba(255,255,255,.09);
+}
+
+/* ═══ ESTRUCTURA: el sidebar manda, el contenido respira ═══ */
+#sidebar{
+  width:var(--sb-w);top:0;bottom:0;left:0;
+  background:var(--oet-mid);               /* el mismo verde que ya tenía */
+  border-right:1px solid rgba(0,0,0,.18);
+  display:flex;flex-direction:column;
+  padding:0;overflow:hidden;               /* el scroll vive en .sb-nav, no aquí */
+  z-index:220;                             /* por encima del encabezado */
+}
+#app{padding-top:0;}
+#content{
+  margin-left:var(--sb-w);
+  padding-top:var(--hdr-h);
+  min-height:100vh;
+}
+/* El encabezado conserva su fondo oscuro y su filo teal —tal cual hoy—; lo único que
+   cambia es su contenido: donde había seis pestañas ahora dice dónde estás. */
+#hdr{
+  left:var(--sb-w);
+  z-index:150;gap:12px;padding:0 20px;
+}
+#hdr .hdr-brand,#hdr .top-tabs{display:none;}
+#hdr .hdr-meta{margin-left:auto;padding-right:0;}
+#cms-titulo{display:flex;align-items:baseline;gap:9px;min-width:0;}
+#cms-titulo .ct-mod{
+  font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;
+  color:var(--oet-teal);flex-shrink:0;
+}
+#cms-titulo .ct-sep{color:rgba(255,255,255,.28);flex-shrink:0;}
+#cms-titulo .ct-sec{
+  font-size:15px;font-weight:700;color:#fff;letter-spacing:-.2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* ═══ MARCA ═══ */
+/* Es la misma marca del encabezado, movida al sidebar: mismos tamaños y colores que
+   tenía en .hdr-brand, para que no se sienta un componente nuevo. */
+.sb-brand{
+  display:flex;align-items:center;gap:10px;
+  padding:0 16px;height:var(--hdr-h);flex-shrink:0;
+  border-bottom:1px solid var(--sb-line);
+}
+.sb-brand .bx{
+  width:36px;height:36px;border-radius:8px;background:var(--oet-teal);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-weight:900;font-size:15px;color:var(--oet-dark);letter-spacing:-.5px;
+}
+.sb-brand .tx{line-height:1.2;min-width:0;}
+.sb-brand .t1{font-weight:700;font-size:14px;color:#fff;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;}
+.sb-brand .t2{font-size:10px;color:var(--gray-md);}
+
+/* ═══ BUSCADOR ═══ */
+/* Con más de treinta secciones repartidas en seis módulos, buscar llega antes que
+   recorrer. El atajo «/» es el que ya espera cualquiera que use Slack o GitHub. */
+.sb-buscar{padding:11px 12px 7px;flex-shrink:0;position:relative;}
+.sb-buscar input{
+  width:100%;background:rgba(255,255,255,.07);border:1px solid var(--sb-line);
+  border-radius:8px;padding:7px 30px 7px 29px;color:#fff;font:inherit;font-size:12.5px;
+  outline:none;transition:border-color .15s,background .15s;
+}
+.sb-buscar input::placeholder{color:var(--gray-md);opacity:.75;}
+.sb-buscar input:focus{border-color:var(--oet-teal);background:rgba(255,255,255,.11);}
+.sb-buscar .lupa{position:absolute;left:22px;top:50%;transform:translateY(-50%);
+  font-size:13px;color:var(--gray-md);pointer-events:none;}
+.sb-buscar kbd{
+  position:absolute;right:21px;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,.1);border:1px solid var(--sb-line);border-radius:4px;
+  font-size:10px;color:var(--gray-md);padding:1px 5px;pointer-events:none;
+  font-family:inherit;
+}
+
+/* ═══ NAVEGACIÓN ═══ */
+.sb-nav{flex:1;overflow-y:auto;padding:2px 0 12px;-webkit-overflow-scrolling:touch;}
+.sb-nav::-webkit-scrollbar{width:7px;}
+.sb-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:4px;}
+.sb-nav::-webkit-scrollbar-track{background:transparent;}
+.sb-grupo{margin-top:6px;}
+/* La etiqueta de grupo reusa el estilo de .sb-section que el tablero ya tenía. */
+.sb-glbl{
+  display:flex;align-items:center;gap:7px;
+  padding:12px 14px 4px;font-size:10px;font-weight:600;letter-spacing:.8px;
+  text-transform:uppercase;color:var(--gray-md);
+}
+.sb-glbl .gi{font-size:12px;opacity:.9;}
+.sb-glbl .wip{
+  font-style:normal;font-size:8.5px;letter-spacing:.3px;color:var(--gray-md);
+  background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;
+  text-transform:none;opacity:.8;
+}
+/* `.sbtn` NO se redefine: conserva el estilo que ya tenía el tablero —borde izquierdo
+   teal y fondo tenue en el activo—. Solo se le acota el texto para que un rótulo largo
+   no rompa la columna. */
+.sbtn .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sb-vacio{padding:16px 14px;font-size:11.5px;color:var(--gray-md);line-height:1.5;}
+
+/* ═══ FILTROS EN EL SIDEBAR ═══ */
+/* Van abajo y colapsados: se usan menos que la navegación, pero cuando se usan hay que
+   verlos completos. Colapsados muestran cuántos están activos, para que esconderlos
+   nunca esconda el estado. Conservan su fondo #071f18 original. */
+.sb-filtros{
+  flex-shrink:0;border-top:1px solid var(--sb-line);background:#071f18;
+  max-height:54vh;display:flex;flex-direction:column;
+}
+.sb-fhead{
+  display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;
+  font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;
+  color:var(--gray-md);user-select:none;flex-shrink:0;
+}
+.sb-fhead:hover{color:#fff;}
+.sb-fhead .fchev{margin-left:auto;transition:transform .2s;font-size:10px;}
+.sb-filtros.abierto .sb-fhead .fchev{transform:rotate(180deg);}
+.sb-fhead .fcount{
+  background:var(--oet-teal);color:var(--oet-dark);border-radius:20px;
+  padding:1px 7px;font-size:9.5px;font-weight:800;letter-spacing:0;
+}
+.sb-fbody{display:none;overflow-y:auto;padding:0 12px 12px;}
+.sb-filtros.abierto .sb-fbody{display:block;}
+
+/* Las barras de filtro se MUEVEN tal cual: mismo marcado, mismos manejadores, mismas
+   pastillas. Lo único que cambia es que dejan de estar fijas arriba y fluyen en
+   columna, envolviendo. Ni un color de .cfb-pill se toca. */
+.sb-fbody #com-filter-bar,.sb-fbody #fin-filter-bar,.sb-fbody #eps-filter-bar{
+  position:static!important;display:none;background:transparent!important;
+  border:none!important;box-shadow:none!important;padding:0!important;margin:0!important;
+  height:auto!important;max-height:none!important;overflow:visible!important;
+  flex-direction:column;align-items:stretch;gap:0;width:auto!important;
+  left:auto!important;right:auto!important;top:auto!important;
+}
+.sb-fbody #com-filter-bar.visible,.sb-fbody #fin-filter-bar.visible,
+.sb-fbody #eps-filter-bar.visible{display:flex!important;}
+.sb-fbody .cfb-group,.sb-fbody .ffb-group,.sb-fbody .efb-group{
+  display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+  padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.sb-fbody .cfb-lbl,.sb-fbody .ffb-lbl,.sb-fbody .efb-lbl{
+  width:100%;margin-bottom:3px;      /* el rótulo manda línea propia; su estilo no cambia */
+}
+/* separadores pensados para una fila horizontal: en columna sobran */
+.sb-fbody .cfb-sep,.sb-fbody .cfb-div,.sb-fbody .ffb-div,.sb-fbody .efb-div{display:none;}
+.sb-fbody select{max-width:100%;}
+/* El contenido ya no cede espacio a barras de filtro que dejaron de estar arriba. */
+#content.has-filter-bar,#content.has-fin-filter-bar,#content.has-eps-filter-bar{
+  padding-top:var(--hdr-h)!important;
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:1180px){:root{--sb-w:232px;}}
+
+@media(max-width:980px){
+  /* El sidebar se vuelve cajón: entra por la izquierda sobre un velo. Deja el ancho
+     completo de la pantalla para los gráficos, que es lo que importa en tableta. */
+  :root{--sb-w:284px;}
+  #sidebar{
+    display:flex!important;transform:translateX(-100%);
+    box-shadow:2px 0 26px rgba(0,0,0,.34);
+  }
+  #sidebar.open{transform:translateX(0);}
+  #content{margin-left:0;padding-bottom:calc(var(--bnav-h,62px) + 12px);}
+  #hdr{left:0;padding-left:52px;}     /* sitio para el botón del cajón */
+  #cms-velo{
+    position:fixed;inset:0;background:rgba(6,26,21,.5);z-index:210;
+    opacity:0;pointer-events:none;transition:opacity .22s;
+  }
+  #cms-velo.on{opacity:1;pointer-events:auto;}
+  #hamburger{
+    display:flex!important;align-items:center;justify-content:center;
+    top:0;left:0;right:auto;width:52px;height:var(--hdr-h);
+    color:#fff;font-size:20px;z-index:160;
+  }
+  #cms-titulo .ct-mod,#cms-titulo .ct-sep{display:none;}
+  /* El bottom-nav se queda tal cual: cambiar de módulo con el pulgar es más rápido que
+     abrir el cajón, y el cajón queda para saltar a una sección puntual. */
+}
+@media(max-width:520px){
+  :root{--sb-w:min(300px,86vw);}
+  #cms-titulo .ct-sec{font-size:14px;}
+}
+/* En impresión no hay navegación que valga. */
+@media print{#sidebar,#hdr,#cms-velo,#hamburger,#bottom-nav{display:none!important;}
+  #content{margin-left:0!important;padding-top:0!important;}}
+/*CMS-CSS:FIN*/
 </style>
 </head>
 <body>
@@ -9061,6 +9257,242 @@ switchTab('fin'); // Start on Financiero
 
 
 
+<script>
+/*CMS-JS:INI*/
+// ══════════════════════════════════════════════════════════════════════════
+//  NAVEGACIÓN CMS — sidebar único, estilo Shopify admin
+// ══════════════════════════════════════════════════════════════════════════
+// `buildSidebar` se reemplaza por completo: antes pintaba solo las secciones del
+// módulo activo, ahora pinta el mapa entero (módulos como grupos) para que no haya
+// que entrar a un módulo para descubrir qué contiene.
+(function(){
+  var MODS = [
+    {id:'fin', label:'Financiero',    icon:'💰'},
+    {id:'com', label:'Administrativo', icon:'📊'},
+    {id:'mkt', label:'Comercial',      icon:'📈', wip:'en proceso'},
+    {id:'far', label:'Farmacia',       icon:'💊'},
+    {id:'eps', label:'Pagadores',      icon:'🏥'},
+    {id:'acc', label:'Acciones 2026',  icon:'✅'},
+  ];
+  var filtro = '';   // texto del buscador
+
+  function norm(s){
+    return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  }
+
+  // Ir a una sección de cualquier módulo. Si es de otro módulo, primero se cambia de
+  // módulo (switchTab deja el estado y las barras de filtro coherentes) y después se
+  // navega a la sección pedida — switchTab por sí solo caería en la primera.
+  window.cmsIr = function(tab, secId){
+    if(tab !== activeTab){ switchTab(tab); }
+    if(secId && secId !== activeSection){ navigate(secId); }
+    else { buildSidebar(activeTab); cmsTitulo(); }
+    if(window.innerWidth <= 980) cmsCerrarCajon();
+  };
+
+  window.buildSidebar = function(tab){
+    var nav = document.getElementById('sb-nav');
+    if(!nav) return;
+    nav.innerHTML = '';
+    var q = norm(filtro), hubo = false;
+
+    MODS.forEach(function(m){
+      var items = (NAVS[m.id]||[]).filter(function(it){
+        return !q || norm(it.label).indexOf(q) >= 0 || norm(m.label).indexOf(q) >= 0;
+      });
+      if(!items.length) return;
+      hubo = true;
+      var g = document.createElement('div');
+      g.className = 'sb-grupo';
+      g.innerHTML = '<div class="sb-glbl"><span class="gi">' + m.icon + '</span>' +
+        m.label + (m.wip ? '<em class="wip">' + m.wip + '</em>' : '') + '</div>';
+      items.forEach(function(it){
+        var b = document.createElement('div');
+        b.className = 'sbtn' + (it.id === activeSection ? ' active' : '');
+        b.innerHTML = '<span class="si">' + it.icon + '</span><span class="lbl">' +
+                      it.label + '</span>';
+        b.onclick = function(){ cmsIr(m.id, it.id); };
+        g.appendChild(b);
+      });
+      nav.appendChild(g);
+    });
+
+    if(!hubo){
+      nav.innerHTML = '<div class="sb-vacio">Nada coincide con «' +
+        String(filtro).replace(/[&<>]/g,'') + '».</div>';
+    }
+
+    // El sub-nav horizontal del teléfono se conserva: es el atajo entre secciones del
+    // módulo en el que ya estás, sin abrir el cajón.
+    var sn = document.getElementById('sub-nav');
+    if(sn){
+      sn.innerHTML = '';
+      (NAVS[tab]||[]).forEach(function(it){
+        var btn = document.createElement('div');
+        btn.className = 'snav-btn' + (it.id === activeSection ? ' active' : '');
+        btn.innerHTML = '<span class="snav-ico">' + it.icon + '</span>' + it.label;
+        btn.onclick = function(){ navigate(it.id); };
+        sn.appendChild(btn);
+      });
+      setTimeout(function(){
+        var ab = sn.querySelector('.snav-btn.active');
+        if(ab) ab.scrollIntoView({block:'nearest', inline:'center', behavior:'smooth'});
+      }, 30);
+    }
+    cmsTitulo();
+    cmsContarFiltros();
+  };
+
+  // La barra de contexto: módulo · sección. Sustituye a las pestañas como señal de
+  // «dónde estoy», que es lo único que hacían de verdad.
+  window.cmsTitulo = function(){
+    var t = document.getElementById('cms-titulo');
+    if(!t) return;
+    var m = MODS.filter(function(x){ return x.id === activeTab; })[0] || {label:''};
+    var s = (NAVS[activeTab]||[]).filter(function(x){ return x.id === activeSection; })[0];
+    t.innerHTML = '<span class="ct-mod">' + m.label + '</span>' +
+                  '<span class="ct-sep">/</span>' +
+                  '<span class="ct-sec">' + (s ? s.label : '') + '</span>';
+  };
+
+  // Cuántas selecciones hay activas, para que colapsar los filtros no esconda el estado.
+  // Se cuenta lo que está encendido, incluidos los valores por defecto — por eso el
+  // rótulo dice «selecciones» y no «filtros aplicados»: prometer lo segundo y mostrar
+  // lo primero sería mentirle a quien lee el número.
+  window.cmsContarFiltros = function(){
+    var c = document.querySelectorAll(
+      '.sb-fbody #com-filter-bar.visible .cfb-pill.on, ' +
+      '.sb-fbody #fin-filter-bar.visible .ffb-pill.on, ' +
+      '.sb-fbody #eps-filter-bar.visible .efb-pill.on, ' +
+      '.sb-fbody #com-filter-bar.visible .cfb-pill.active, ' +
+      '.sb-fbody #fin-filter-bar.visible .ffb-pill.active, ' +
+      '.sb-fbody #eps-filter-bar.visible .efb-pill.active'
+    ).length;
+    var b = document.getElementById('sb-fcount');
+    if(b){
+      b.textContent = c;
+      b.style.display = c ? '' : 'none';
+      b.title = c + ' selección' + (c === 1 ? '' : 'es') + ' activa' +
+                (c === 1 ? '' : 's') + ' en este módulo';
+    }
+    // Si el módulo activo no tiene filtros, no tiene sentido ofrecer el bloque.
+    var hay = !!document.querySelector('.sb-fbody > .visible');
+    var f = document.getElementById('sb-filtros');
+    if(f) f.style.display = hay ? '' : 'none';
+  };
+
+  window.cmsCerrarCajon = function(){
+    var sb = document.getElementById('sidebar'), v = document.getElementById('cms-velo');
+    if(sb) sb.classList.remove('open');
+    if(v) v.classList.remove('on');
+  };
+  // `toggleSidebar` ya lo llama el botón ☰ que venía en el HTML: se le añade el velo.
+  window.toggleSidebar = function(){
+    var sb = document.getElementById('sidebar'), v = document.getElementById('cms-velo');
+    var on = sb.classList.toggle('open');
+    if(v) v.classList.toggle('on', on);
+  };
+
+  function montar(){
+    var sb = document.getElementById('sidebar');
+    if(!sb || document.getElementById('sb-nav')) return;
+
+    // 1. el armazón del sidebar, con la navegación en medio y los filtros abajo
+    var brand = document.createElement('div');
+    brand.className = 'sb-brand';
+    brand.innerHTML = '<div class="bx">OET</div><div class="tx">' +
+      '<div class="t1">Oftalmólogos El Tesoro</div>' +
+      '<div class="t2">Tablero de gestión</div></div>';
+
+    var buscar = document.createElement('div');
+    buscar.className = 'sb-buscar';
+    buscar.innerHTML = '<span class="lupa">⌕</span>' +
+      '<input id="sb-q" type="text" placeholder="Buscar sección…" ' +
+      'autocomplete="off" spellcheck="false"><kbd>/</kbd>';
+
+    var nav = document.createElement('div');
+    nav.className = 'sb-nav'; nav.id = 'sb-nav';
+
+    var filt = document.createElement('div');
+    filt.className = 'sb-filtros'; filt.id = 'sb-filtros';
+    filt.innerHTML = '<div class="sb-fhead" id="sb-fhead">Filtros' +
+      '<span class="fcount" id="sb-fcount" style="display:none">0</span>' +
+      '<span class="fchev">▾</span></div>' +
+      '<div class="sb-fbody" id="sb-fbody"></div>';
+
+    sb.innerHTML = '';
+    sb.appendChild(brand); sb.appendChild(buscar);
+    sb.appendChild(nav); sb.appendChild(filt);
+
+    // 2. mover las barras de filtro EXISTENTES adentro. Se mueve el nodo, no se copia:
+    //    conserva sus onclick en línea y todo su estado.
+    var cuerpo = document.getElementById('sb-fbody');
+    ['fin-filter-bar','com-filter-bar','eps-filter-bar'].forEach(function(id){
+      var n = document.getElementById(id);
+      if(n) cuerpo.appendChild(n);
+    });
+
+    // 3. la barra de contexto en el encabezado
+    var hdr = document.getElementById('hdr');
+    if(hdr && !document.getElementById('cms-titulo')){
+      var t = document.createElement('div');
+      t.id = 'cms-titulo';
+      hdr.insertBefore(t, hdr.firstChild);
+    }
+
+    // 4. el velo del cajón en móvil
+    if(!document.getElementById('cms-velo')){
+      var v = document.createElement('div');
+      v.id = 'cms-velo';
+      v.onclick = cmsCerrarCajon;
+      document.body.appendChild(v);
+    }
+
+    // 5. conducta del buscador y del bloque de filtros
+    var q = document.getElementById('sb-q');
+    q.addEventListener('input', function(){ filtro = q.value; buildSidebar(activeTab); });
+    q.addEventListener('keydown', function(e){
+      if(e.key === 'Escape'){ q.value = ''; filtro = ''; buildSidebar(activeTab); q.blur(); }
+      // Enter salta a la primera coincidencia: buscar y llegar en un gesto.
+      if(e.key === 'Enter'){
+        var p = document.querySelector('#sb-nav .sbtn');
+        if(p) p.click();
+      }
+    });
+    document.addEventListener('keydown', function(e){
+      var t = e.target || {}, esCampo = /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'');
+      if(e.key === '/' && !esCampo){ e.preventDefault(); q.focus(); q.select(); }
+    });
+
+    // El bloque de filtros recuerda si lo dejaste abierto: quien filtra mucho no tiene
+    // que volver a abrirlo en cada carga, y quien no filtra nunca no lo ve estorbar.
+    var cajaF = document.getElementById('sb-filtros');
+    try{ if(localStorage.oetFiltrosAbiertos === '1') cajaF.classList.add('abierto'); }catch(e){}
+    document.getElementById('sb-fhead').onclick = function(){
+      var ab = cajaF.classList.toggle('abierto');
+      try{ localStorage.oetFiltrosAbiertos = ab ? '1' : '0'; }catch(e){}
+    };
+
+    // Esc cierra el cajón en móvil: es lo que espera cualquiera y evita quedar atrapado
+    // si el velo no recibe el toque.
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape') cmsCerrarCajon();
+    });
+    // Cualquier clic dentro de los filtros puede cambiar el conteo; se recalcula después
+    // de que corran los onclick originales.
+    cuerpo.addEventListener('click', function(){ setTimeout(cmsContarFiltros, 40); });
+
+    buildSidebar(activeTab);
+  }
+
+  // El HTML del tablero define su estructura antes de este bloque, pero las secciones
+  // se construyen al final: se espera a que el DOM esté listo por si acaso.
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', montar);
+  } else { montar(); }
+})();
+/*CMS-JS:FIN*/
+</script>
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
