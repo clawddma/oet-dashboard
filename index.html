@@ -973,8 +973,6 @@ a{text-decoration:none;color:inherit;}
 
 #franja .fm.vacia{color:#9aada7;font-size:11.5px;}
 
-/* Las tarjetas que subieron a la franja no se repiten abajo. */
-.kpi.promovido{display:none!important;}
 /* Faltaban estos anchos de grilla: al quitar dos tarjetas de una fila de cuatro, sin
    k2 las dos restantes dejaban un hueco a la derecha. */
 .kpis.k1{grid-template-columns:minmax(0,1fr);}
@@ -9589,18 +9587,49 @@ switchTab('fin'); // Start on Financiero
 <script>
 /*FRANJA-JS:INI*/
 // ══════════════════════════════════════════════════════════════════════════
-//  FRANJA DE MÉTRICAS — dos del negocio + dos de la sección
+//  FRANJA DE MÉTRICAS — las cuatro cifras que gobiernan cada módulo
 // ══════════════════════════════════════════════════════════════════════════
+// Cómo se llegó aquí: la primera versión subía las DOS PRIMERAS tarjetas de la sección,
+// fueran cuales fueran. En Financiero resultaban ser cifras de 2025, y quedaban al lado
+// de un acumulado de 2026 sin ninguna relación entre sí. Daniel lo vio de una: no
+// generaba valor y confundía.
+//
+// La corrección es dejar de improvisar y DECIDIR qué gobierna cada módulo. Las cuatro
+// cifras de arriba tienen que contar una sola historia, en el mismo período, con la
+// misma unidad, y reconciliar con las tablas de abajo — si no, el tablero se contradice
+// solo y pierde credibilidad.
+//
+// La historia de OET en 2026 es conocida y la franja debe hacerla evidente: creció el
+// volumen, se congeló el ticket y explotó la estructura, así que la utilidad se
+// desplomó. Por eso en la operación van juntas cirugías, ticket, costo y margen POR
+// CIRUGÍA: es la única forma de separar «vendemos más» de «vendemos mejor».
 (function(){
 
-  // ── las dos fijas: el pulso del negocio, AJUSTADO AL FILTRO ──────────────
-  // Daniel: «mantener la métrica, pero ajustada al filtro». O sea que Ingreso y EBITDA
-  // siguen siendo Ingreso y EBITDA, pero calculados sobre el período que esté filtrado.
-  // Una cifra sin su período es una trampa, así que el rótulo SIEMPRE dice cuál es.
-  //
-  // Cada módulo tiene su propio estado de filtro (FF financiero, CF comercial, EF
-  // pagadores). Se lee el del módulo activo y se agrega sobre `D`, que es la serie de
-  // EEFF — la misma de la que salen las tarjetas, así que no puede contradecirlas.
+  // ── formato ──────────────────────────────────────────────────────────────
+  // `fv` viene del tablero y expresa miles de COP en millones. Para las cifras por
+  // cirugía hace falta otra: $3.674 mil se perdería redondeado a «$4M».
+  function esp(n, dec){
+    // Notación española: punto de miles, coma decimal. Hay que separar la parte entera
+    // ANTES de tocar el decimal. Al revés, «2.438» terminaba escrito «2,438», que en
+    // español significa dos con cuatrocientos treinta y ocho — un error de tres órdenes
+    // de magnitud en una cifra que alguien va a leer en voz alta en una junta.
+    var s = n.toFixed(dec == null ? 0 : dec).split('.');
+    s[0] = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return s.length > 1 ? s[0] + ',' + s[1] : s[0];
+  }
+  function mil(v){ return '$' + esp(v) + ' mil'; }
+  function pct(v, dec){ return esp(v, dec == null ? 1 : dec) + '%'; }
+  function delta(a, b, invertir){
+    if(!b) return '';
+    var v = (a - b) / Math.abs(b) * 100;
+    var bueno = invertir ? v <= 0 : v >= 0;
+    return ' <span class="' + (bueno ? 'p' : 'n') + '">' + (v >= 0 ? '▲' : '▼') + ' ' +
+           esp(Math.abs(v), 1) + '%</span>';
+  }
+
+  // ── el período filtrado ──────────────────────────────────────────────────
+  // Cada módulo tiene su propio estado de filtro. Se lee el del módulo activo para que
+  // la franja obedezca lo que la persona acaba de marcar.
   function estadoFiltro(){
     try{
       if(activeTab === 'fin' && typeof FF !== 'undefined') return FF;
@@ -9609,34 +9638,66 @@ switchTab('fin'); // Start on Financiero
     }catch(e){}
     return null;
   }
-
-  function mesesSeguidos(ms){
+  function seguidos(ms){
     for(var i = 1; i < ms.length; i++) if(ms[i] !== ms[i-1] + 1) return false;
     return true;
   }
-  function etiquetaPeriodo(anio, ms){
+  function etiqueta(anio, ms){
     var yy = String(anio).slice(2);
-    if(!ms.length) return yy;
+    if(!ms.length) return String(anio);
     if(ms.length === 1) return _MN_SHORT[ms[0]] + '-' + yy;
-    if(ms.length === 12) return 'año ' + anio;
-    if(mesesSeguidos(ms)) return _MN_SHORT[ms[0]] + '–' + _MN_SHORT[ms[ms.length-1]] + ' ' + yy;
+    if(ms.length === 12) return String(anio);
+    if(seguidos(ms)) return _MN_SHORT[ms[0]] + '–' + _MN_SHORT[ms[ms.length-1]] + ' ' + yy;
     return ms.length + ' meses ' + yy;
   }
 
-  function fijas(){
-    if(typeof D === 'undefined' || !D.length) return [];
+  function serie(base, anio){
+    // Las series del tablero no nombran igual: unas llevan guion bajo antes del año
+    // (`mes_26`) y otras no (`ing_m26`, `lio_uni_m26`). Se prueban las dos formas en
+    // vez de asumir una — asumirla dejaba la mitad de las métricas sin datos.
+    var yy = String(anio).slice(2);
+    var claves = [base + '_' + yy, base + yy];
+    try{
+      for(var i = 0; i < claves.length; i++){
+        var k = claves[i];
+        if(typeof CIR !== 'undefined' && CIR[k]) return CIR[k];
+        if(typeof COM !== 'undefined' && COM[k]) return COM[k];
+        if(base === 'hon' && typeof HONORARIOS !== 'undefined' && HONORARIOS['m' + yy])
+          return HONORARIOS['m' + yy];
+      }
+    }catch(e){}
+    return null;
+  }
+  // Si a la serie le FALTA algún mes del período pedido, no se devuelve una suma parcial.
+  // Este fue un defecto real: `HONORARIOS.m26` solo tiene enero a marzo, así que la
+  // franja sumaba tres meses y los rotulaba «Ene–Jun». Una cifra con menos meses de los
+  // que anuncia su rótulo es peor que no mostrarla: nadie la audita y todos la repiten.
+  function sumaSerie(base, anio, ms){
+    var a = serie(base, anio);
+    if(!a) return null;
+    var t = 0;
+    for(var i = 0; i < ms.length; i++){
+      var v = a[ms[i] - 1];
+      if(v == null || v === 0) return null;      // mes sin dato: la serie no sirve aquí
+      t += v;
+    }
+    return ms.length ? t : null;
+  }
+
+  // Contexto: todo lo que las métricas puedan necesitar, ya agregado sobre el filtro.
+  function contexto(){
+    if(typeof D === 'undefined' || !D.length) return null;
     var F = estadoFiltro();
     var anios = (F && F.years && F.years.size) ? F.years : null;
     var meses = (F && F.months && F.months.size) ? F.months : null;
 
-    // El año de referencia es el MÁS RECIENTE de los seleccionados que tenga cierres.
-    // Sumar 2024+2025+2026 daría un total de tres años, que como pulso del negocio no
-    // dice nada; lo útil es el año en curso y su comparación contra el anterior.
+    // Se toma el año MÁS RECIENTE de los seleccionados, no la suma de los tres: un
+    // total de tres años no es el pulso de nada.
     var cerrados = D.filter(function(d){ return !d.eeffPending; });
-    if(!cerrados.length) return [];
-    var candidatos = cerrados.filter(function(d){ return !anios || anios.has(d.y); });
-    if(!candidatos.length) candidatos = cerrados;
-    var anio = Math.max.apply(null, candidatos.map(function(d){ return d.y; }));
+    if(!cerrados.length) return null;
+    var cand = cerrados.filter(function(d){ return !anios || anios.has(d.y); });
+    if(!cand.length) cand = cerrados;
+    var anio = Math.max.apply(null, cand.map(function(d){ return d.y; }));
 
     function filas(y){
       return cerrados.filter(function(d){
@@ -9644,89 +9705,128 @@ switchTab('fin'); // Start on Financiero
       });
     }
     var act = filas(anio);
-    if(!act.length) return [];
+    if(!act.length) return null;
     var ms = act.map(function(d){ return d.m; }).sort(function(a,b){ return a-b; });
-    // La comparación se hace contra los MISMOS meses del año anterior. Comparar seis
-    // meses contra doce es el error que más rápido desprestifica una cifra en junta.
-    var prev = filas(anio - 1).filter(function(d){ return ms.indexOf(d.m) >= 0; });
+    // Contra los MISMOS meses del año anterior. Comparar seis meses contra doce es el
+    // error que más rápido desprestigia una cifra en una junta.
+    var ant = filas(anio - 1).filter(function(d){ return ms.indexOf(d.m) >= 0; });
+    var msAnt = ant.map(function(d){ return d.m; });
 
-    function suma(arr, campo){
-      return arr.reduce(function(s, d){ return s + (d[campo] || 0); }, 0);
-    }
-    function delta(a, b){
-      if(!b) return '';
-      var v = (a - b) / Math.abs(b) * 100, c = v >= 0 ? 'p' : 'n';
-      return ' <span class="' + c + '">' + (v >= 0 ? '▲' : '▼') + ' ' +
-             Math.abs(v).toFixed(1).replace('.', ',') + '%</span>';
-    }
-
-    var per = etiquetaPeriodo(anio, ms);
-    var ing = suma(act, 'ing'), ebi = suma(act, 'ebitda');
-    var ingP = suma(prev, 'ing'), ebiP = suma(prev, 'ebitda');
-    var mg = ing ? (ebi / ing * 100) : null;
-
-    return [
-      {lbl:'Ingreso ' + per, val: fv(ing),
-       sub: (prev.length ? 'vs ' + (anio-1) + delta(ing, ingP) : 'acumulado del período')},
-      {lbl:'EBITDA ' + per, val: fv(ebi),
-       sub:'margen ' + (mg != null ? mg.toFixed(1).replace('.', ',') + '%' : '—') +
-           (prev.length ? delta(ebi, ebiP) : '')}
-    ];
+    function s(arr, c){ return arr.reduce(function(t, d){ return t + (d[c] || 0); }, 0); }
+    var c = {
+      anio: anio, meses: ms, per: etiqueta(anio, ms), nMeses: ms.length,
+      hayAnt: ant.length > 0, perAnt: anio - 1,
+      ing: s(act,'ing'), cost: s(act,'cost'), ub: s(act,'ub'), ga: s(act,'ga'),
+      un: s(act,'un'), ebitda: s(act,'ebitda'), uo: s(act,'uo'),
+      ingAnt: s(ant,'ing'), costAnt: s(ant,'cost'), ubAnt: s(ant,'ub'),
+      gaAnt: s(ant,'ga'), unAnt: s(ant,'un'), ebitdaAnt: s(ant,'ebitda'),
+      cir: sumaSerie('mes', anio, ms),
+      cirAnt: msAnt.length ? sumaSerie('mes', anio - 1, msAnt) : null,
+      fact: sumaSerie('ing_m', anio, ms),
+      lioCir: sumaSerie('lio_cir_m', anio, ms),
+      lioUni: sumaSerie('lio_uni_m', anio, ms),
+      hon: sumaSerie('hon', anio, ms)
+    };
+    // Los dos umbrales que gobiernan el negocio, escalados al período filtrado.
+    c.equilibrio = 385 * c.nMeses;
+    c.llenado = 511 * c.nMeses;
+    return c;
   }
 
-  // ── las dos de la sección: se LEEN de sus propias tarjetas ───────────────
-  // Nunca se recalculan aparte. Si la franja dijera una cifra y la tarjeta de abajo
-  // otra, el tablero se estaría contradiciendo solo — y eso cuesta más que no tener
-  // franja. Al leerlas, siempre coinciden por construcción.
-  function deLaSeccion(){
-    var sec = document.querySelector('.sec.active');
-    if(!sec) return [];
-    var caja = sec.querySelector('.kpis');
-    if(!caja) return [];
-    var todas = [].slice.call(caja.querySelectorAll('.kpi'));
-    if(!todas.length) return [];
+  // ── el catálogo: qué gobierna cada módulo ────────────────────────────────
+  function M(lbl, val, sub){ return {lbl: lbl, val: val, sub: sub || ''}; }
 
-    var suben = todas.slice(0, 2), out = [];
-    suben.forEach(function(k){
-      var l = k.querySelector('.kpi-lbl'), v = k.querySelector('.kpi-val'),
-          s = k.querySelector('.kpi-sub');
-      out.push({
-        lbl: l ? l.textContent.trim() : '',
-        val: v ? v.innerHTML : '',
-        sub: s ? s.innerHTML : ''
-      });
-      k.classList.add('promovido');
-    });
+  var ING = function(c){
+    return M('Ingreso ' + c.per, fv(c.ing),
+      c.hayAnt ? 'vs ' + c.perAnt + delta(c.ing, c.ingAnt) : 'acumulado del período');
+  };
+  var EBITDA = function(c){
+    return M('EBITDA ' + c.per, fv(c.ebitda),
+      'margen ' + pct(c.ing ? c.ebitda / c.ing * 100 : 0) +
+      (c.hayAnt ? delta(c.ebitda, c.ebitdaAnt) : ''));
+  };
+  var NETA = function(c){
+    return M('Utilidad neta ' + c.per, fv(c.un),
+      'margen ' + pct(c.ing ? c.un / c.ing * 100 : 0) +
+      (c.hayAnt ? delta(c.un, c.unAnt) : ''));
+  };
+  // La fuga documentada del año: el gasto de estructura creció 58,4% contra un ingreso
+  // que creció 38,8%. Verlo como % del ingreso es lo que hace evidente el problema.
+  var ESTRUCTURA = function(c){
+    return M('Gasto de estructura', pct(c.ing ? c.ga / c.ing * 100 : 0),
+      fv(c.ga) + (c.hayAnt ? delta(c.ga, c.gaAnt, true) : ''));
+  };
+  // Cirugías contra el punto de equilibrio, escalado a los meses filtrados: una cifra
+  // de volumen sin su umbral no dice si el mes fue bueno o malo.
+  var CIRUGIAS = function(c){
+    if(c.cir == null) return null;
+    var d = c.cir - c.equilibrio;
+    // Va sobre meses CERRADOS, que es lo que permite cruzarlas con costo y margen. Las
+    // tarjetas comerciales de abajo van sobre el año corrido e incluyen el mes abierto,
+    // así que dan un número mayor: ambas son correctas y por eso cada una dice su
+    // período. Sin decirlo, dos cifras distintas de «cirugías 2026» en la misma pantalla
+    // se leen como un error del tablero.
+    return M('Cirugías ' + c.per + ' (cierre)', esp(c.cir),
+      'equilibrio ' + esp(c.equilibrio) + ' · ' +
+      (d >= 0 ? '<span class="p">+' + esp(d) + '</span>'
+              : '<span class="n">' + esp(d) + '</span>') +
+      (c.cirAnt ? delta(c.cir, c.cirAnt) : ''));
+  };
+  // La palanca que nadie está gobernando: en 2026 el ingreso creció casi lo mismo que
+  // las cirugías, o sea que todo el crecimiento fue volumen y nada fue precio.
+  var TICKET = function(c){
+    if(!c.cir) return null;
+    var t = c.ing / c.cir, tAnt = (c.cirAnt && c.ingAnt) ? c.ingAnt / c.cirAnt : null;
+    return M('Ticket por cirugía', mil(t),
+      'ingreso contable ÷ cirugías' + (tAnt ? delta(t, tAnt) : ''));
+  };
+  var COSTO_CIR = function(c){
+    if(!c.cir) return null;
+    var v = c.cost / c.cir, vAnt = (c.cirAnt && c.costAnt) ? c.costAnt / c.cirAnt : null;
+    return M('Costo por cirugía', mil(v),
+      'costo directo ÷ cirugías' + (vAnt ? delta(v, vAnt, true) : ''));
+  };
+  var MARGEN_CIR = function(c){
+    if(!c.cir) return null;
+    var v = (c.ing - c.cost) / c.cir;
+    var vAnt = (c.cirAnt && c.ingAnt) ? (c.ingAnt - c.costAnt) / c.cirAnt : null;
+    return M('Margen por cirugía', mil(v),
+      'lo que deja cada una' + (vAnt ? delta(v, vAnt) : ''));
+  };
+  var FACTURACION = function(c){
+    if(c.fact == null) return ING(c);
+    return M('Facturación comercial ' + c.per, fv(c.fact), 'antes de glosas y ajustes');
+  };
+  var HONORARIOS_M = function(c){
+    if(c.hon == null) return ESTRUCTURA(c);
+    return M('Honorarios médicos', pct(c.ing ? c.hon / c.ing * 100 : 0), fv(c.hon));
+  };
+  var MG_BRUTO = function(c){
+    return M('Margen bruto', pct(c.ing ? c.ub / c.ing * 100 : 0),
+      fv(c.ub) + (c.hayAnt ? delta(c.ub, c.ubAnt) : ''));
+  };
+  var LENTES = function(c){
+    if(c.lioUni == null) return null;
+    return M('Lentes implantados ' + c.per, esp(c.lioUni),
+      c.lioCir ? esp(c.lioCir) + ' cirugías con lente' : '');
+  };
+  var PENETRACION_LIO = function(c){
+    if(c.lioCir == null || !c.cir) return null;
+    return M('Cirugías con lente', pct(c.lioCir / c.cir * 100),
+      esp(c.lioCir) + ' de ' + esp(c.cir) + ' cirugías');
+  };
 
-    // Recomponer la grilla con las que quedan visibles. Es idempotente: volver a
-    // entrar a la sección da el mismo resultado.
-    var quedan = todas.length - suben.length;
-    caja.classList.remove('k1','k2','k3','k4','k5','k6','vacia');
-    if(quedan <= 0) caja.classList.add('vacia');
-    else caja.classList.add('k' + Math.min(quedan, 6));
-    return out;
-  }
-
-  // Dos de cada tres secciones traen tarjetas; las que no (Por Servicio, Resumen Anual)
-  // dejaban media franja con un cartel de «no hay nada», que se ve pobre y no ayuda.
-  // Se rellenan con dos cifras más del negocio: cirugías del mes cerrado contra su punto
-  // de equilibrio, y la utilidad neta. Siempre útil, nunca un hueco.
-  function respaldo(){
-    var L = (typeof META !== 'undefined' && META.last) ? META.last : null;
-    if(!L) return [];
-    var out = [];
-    try{
-      var arr = (L.y === 2026) ? CIR.mes_26 : (L.y === 2025 ? CIR.mes_25 : CIR.mes_24);
-      var c = arr && arr[L.m - 1];
-      if(c) out.push({lbl:'Cirugías ' + L.p, val:String(c),
-        sub:'equilibrio 385 · ' + (c >= 385
-          ? '<span class="p">+' + (c - 385) + ' por encima</span>'
-          : '<span class="n">' + (385 - c) + ' por debajo</span>')});
-    }catch(e){}
-    if(L.un != null) out.push({lbl:'Utilidad neta ' + L.p, val: fv(L.un),
-      sub:'margen ' + (L.mnp != null ? L.mnp.toFixed(1).replace('.', ',') + '%' : '—')});
-    return out.slice(0, 2);
-  }
+  // Cuatro por módulo. El orden importa: se lee de izquierda a derecha como una frase.
+  var CATALOGO = {
+    // «Facturamos X, de eso queda Y de EBITDA y Z de utilidad, y la estructura se lleva W»
+    fin: [ING, EBITDA, NETA, ESTRUCTURA],
+    // «Operamos N cirugías contra el equilibrio, a este precio, con este costo, dejando esto»
+    com: [CIRUGIAS, TICKET, COSTO_CIR, MARGEN_CIR],
+    mkt: [FACTURACION, CIRUGIAS, TICKET, HONORARIOS_M],
+    eps: [ING, CIRUGIAS, TICKET, MG_BRUTO],
+    far: [LENTES, PENETRACION_LIO, CIRUGIAS, ING],
+    acc: [ING, EBITDA, NETA, CIRUGIAS]
+  };
 
   function pinta(m, extra){
     return '<div class="fm ' + (extra || '') + '">' +
@@ -9738,16 +9838,25 @@ switchTab('fin'); // Start on Financiero
   window.pintarFranja = function(){
     var f = document.getElementById('franja');
     if(!f) return;
-    var a = fijas(), b = deLaSeccion();
-    if(!b.length) b = respaldo();
-    var html = a.map(function(m){ return pinta(m, 'fm-negocio'); }).join('');
-    // La separadora es la primera de la sección: ahí cambia la naturaleza de la cifra.
-    html += b.map(function(m, i){ return pinta(m, i === 0 && a.length ? 'sep' : ''); }).join('');
-    if(!a.length && !b.length) html = pinta({lbl:'', val:'', sub:''}, 'vacia');
-    f.innerHTML = html;
-    // Columnas iguales para cuantas métricas haya: nunca sobra ni falta una.
-    var n = Math.max(1, a.length + b.length);
-    f.style.gridTemplateColumns = 'repeat(' + n + ',minmax(0,1fr))';
+    var c = contexto();
+    if(!c){ f.innerHTML = ''; f.style.display = 'none'; return; }
+    f.style.display = '';
+
+    var defs = CATALOGO[activeTab] || CATALOGO.fin;
+    var ms = defs.map(function(fn){ try{ return fn(c); }catch(e){ return null; } })
+                 .filter(Boolean);
+    // Si alguna no se pudo calcular (una serie que ese año no existe), se completa con
+    // las del P&L antes que dejar un hueco: la franja nunca debe verse rota.
+    var relleno = [ING, EBITDA, NETA, MG_BRUTO];
+    for(var i = 0; ms.length < 4 && i < relleno.length; i++){
+      var extra = null;
+      try{ extra = relleno[i](c); }catch(e){}
+      if(extra && !ms.some(function(x){ return x.lbl === extra.lbl; })) ms.push(extra);
+    }
+    ms = ms.slice(0, 4);
+
+    f.innerHTML = ms.map(function(m, i){ return pinta(m, i === 2 ? 'sep' : ''); }).join('');
+    f.style.gridTemplateColumns = 'repeat(' + Math.max(1, ms.length) + ',minmax(0,1fr))';
   };
 
   function montar(){
@@ -9757,18 +9866,16 @@ switchTab('fin'); // Start on Financiero
     f.id = 'franja';
     cont.insertBefore(f, cont.firstChild);
 
-    // La franja se repinta después de cada navegación. Se envuelve `navigate` en vez
-    // de tocar su cuerpo: así sobrevive a cualquier cambio futuro de esa función.
+    // Se envuelve `navigate` en vez de tocar su cuerpo: así sobrevive a cualquier
+    // cambio futuro de esa función.
     var navOriginal = window.navigate;
     window.navigate = function(secId){
       var r = navOriginal.apply(this, arguments);
       try{ pintarFranja(); }catch(e){}
       return r;
     };
-    // Los filtros cambian las cifras de las tarjetas sin navegar: hay que releerlas.
-    // Los filtros cambian TANTO las cifras de las tarjetas como el período de las
-    // fijas. Se repinta dos veces —pronto y tarde— porque algunas secciones se
-    // reconstruyen de forma diferida y una sola pasada leería las tarjetas viejas.
+    // Los filtros cambian el período: se repinta dos veces —pronto y tarde— porque
+    // algunas secciones se reconstruyen de forma diferida.
     document.addEventListener('click', function(e){
       var t = e.target;
       if(t && t.closest && t.closest('#sb-fbody')){
