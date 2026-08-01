@@ -938,17 +938,22 @@ a{text-decoration:none;color:inherit;}
   position:sticky;top:var(--hdr-h);z-index:140;
   background:var(--white);border-bottom:1px solid #e2ebe8;
   box-shadow:0 1px 8px rgba(12,48,40,.05);
-  display:flex;align-items:stretch;gap:0;
-  padding:0 22px;min-height:60px;
+  /* REJILLA, no flex. Con flex las dos del negocio iban a ancho natural (139 y 117 px)
+     y las de la sección se estiraban con flex:1 (414 y 414): cuatro cifras del mismo
+     rango visual con anchos que no se parecían en nada. En rejilla todas miden igual y
+     el ojo las lee como una serie. El número de columnas lo pone el JS según cuántas
+     métricas haya, para que nunca sobre ni falte una. */
+  display:grid;gap:12px;                 /* el mismo gap que la grilla .kpis */
+  align-items:center;
+  padding:9px 22px;                      /* el mismo margen lateral que .sec */
+  min-height:60px;
 }
-#franja .fz{display:flex;align-items:center;gap:26px;padding:9px 0;min-width:0;}
-#franja .fz-negocio{padding-right:26px;}
-/* La línea separa dos naturalezas distintas de cifra: la del negocio y la de la
-   sección. Sin ella parecerían cuatro métricas del mismo tipo. */
-#franja .fz-sec{
-  border-left:1px solid #e2ebe8;padding-left:26px;flex:1;overflow:hidden;
-}
-#franja .fm{min-width:0;}
+/* 16px de interior es lo que tiene .kpi: así el rótulo de la franja cae exactamente en
+   la misma vertical que el rótulo de la tarjeta de abajo. Antes iban 16px desfasados. */
+#franja .fm{min-width:0;padding:0 16px;}
+/* La línea marca dónde terminan las cifras del negocio y empiezan las de la sección:
+   son dos naturalezas distintas y sin ella parecerían cuatro métricas iguales. */
+#franja .fm.sep{border-left:1px solid #e2ebe8;}
 #franja .fm-lbl{
   font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:#7b9089;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;
@@ -965,11 +970,8 @@ a{text-decoration:none;color:inherit;}
 #franja .fm-sub .p,#franja .fm-sub .up{color:var(--pos);font-weight:600;}
 #franja .fm-sub .n,#franja .fm-sub .down{color:var(--neg);font-weight:600;}
 #franja .fm-negocio .fm-val{color:var(--oet-teal2);}
-#franja .fz-sec .fm{flex:1;}
 
-/* Cuando una sección no tiene tarjetas propias, la zona derecha no queda como un hueco
-   raro: se explica. */
-#franja .fz-sec.vacia{color:#9aada7;font-size:11.5px;align-items:center;}
+#franja .fm.vacia{color:#9aada7;font-size:11.5px;}
 
 /* Las tarjetas que subieron a la franja no se repiten abajo. */
 .kpi.promovido{display:none!important;}
@@ -981,10 +983,8 @@ a{text-decoration:none;color:inherit;}
 .kpis.vacia{display:none!important;}
 
 @media(max-width:980px){
-  #franja{padding:0 14px;}
-  #franja .fz{gap:18px;}
-  #franja .fz-negocio{padding-right:16px;}
-  #franja .fz-sec{padding-left:16px;}
+  #franja{padding:9px 14px;gap:8px;}
+  #franja .fm{padding:0 10px;}
   #franja .fm-val{font-size:16px;}
 }
 /* En el teléfono aparece el sub-nav de secciones, fijo justo debajo del encabezado.
@@ -998,12 +998,14 @@ a{text-decoration:none;color:inherit;}
   /* En el teléfono no caben cuatro: la franja se vuelve una tira que se desliza, con
      las dos del negocio primero. Sigue pegada arriba, que es su razón de ser. */
   #franja{
-    flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:0;min-height:54px;
-    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:0;
+    min-height:54px;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    grid-template-columns:none!important;
   }
   #franja::-webkit-scrollbar{display:none;}
-  #franja .fz{gap:16px;flex-shrink:0;padding:7px 0;}
-  #franja .fz-sec{flex:0 0 auto;}
+  /* En la tira horizontal cada métrica lleva su propio ancho mínimo para que ninguna
+     quede espachurrada y todas se lean igual de bien al deslizar. */
+  #franja .fm{flex:0 0 auto;min-width:132px;padding:0 12px;}
   #franja .fm-lbl{font-size:9px;}
   #franja .fm-val{font-size:15px;}
   #franja .fm-sub{font-size:9.5px;}
@@ -9591,27 +9593,84 @@ switchTab('fin'); // Start on Financiero
 // ══════════════════════════════════════════════════════════════════════════
 (function(){
 
-  // ── las dos fijas: el pulso del negocio, del último mes CERRADO ──────────
-  // Se usa META.last (el último con EEFF completo) y no el último registro a secas:
-  // un mes sin cierre contable no puede presentarse como resultado. Es la misma regla
-  // que sigue el asistente del chat.
+  // ── las dos fijas: el pulso del negocio, AJUSTADO AL FILTRO ──────────────
+  // Daniel: «mantener la métrica, pero ajustada al filtro». O sea que Ingreso y EBITDA
+  // siguen siendo Ingreso y EBITDA, pero calculados sobre el período que esté filtrado.
+  // Una cifra sin su período es una trampa, así que el rótulo SIEMPRE dice cuál es.
+  //
+  // Cada módulo tiene su propio estado de filtro (FF financiero, CF comercial, EF
+  // pagadores). Se lee el del módulo activo y se agrega sobre `D`, que es la serie de
+  // EEFF — la misma de la que salen las tarjetas, así que no puede contradecirlas.
+  function estadoFiltro(){
+    try{
+      if(activeTab === 'fin' && typeof FF !== 'undefined') return FF;
+      if((activeTab === 'com' || activeTab === 'mkt') && typeof CF !== 'undefined') return CF;
+      if(activeTab === 'eps' && typeof EF !== 'undefined') return EF;
+    }catch(e){}
+    return null;
+  }
+
+  function mesesSeguidos(ms){
+    for(var i = 1; i < ms.length; i++) if(ms[i] !== ms[i-1] + 1) return false;
+    return true;
+  }
+  function etiquetaPeriodo(anio, ms){
+    var yy = String(anio).slice(2);
+    if(!ms.length) return yy;
+    if(ms.length === 1) return _MN_SHORT[ms[0]] + '-' + yy;
+    if(ms.length === 12) return 'año ' + anio;
+    if(mesesSeguidos(ms)) return _MN_SHORT[ms[0]] + '–' + _MN_SHORT[ms[ms.length-1]] + ' ' + yy;
+    return ms.length + ' meses ' + yy;
+  }
+
   function fijas(){
-    var L = (typeof META !== 'undefined' && META.last) ? META.last : null;
-    if(!L) return [];
-    var vIng = (typeof YTD_VAR !== 'undefined' && YTD_VAR.ing != null) ? YTD_VAR.ing : null;
-    var vEbi = (typeof YTD_VAR !== 'undefined' && YTD_VAR.ebitda != null) ? YTD_VAR.ebitda : null;
-    function delta(v){
-      if(v == null) return '';
-      var c = v >= 0 ? 'p' : 'n';
+    if(typeof D === 'undefined' || !D.length) return [];
+    var F = estadoFiltro();
+    var anios = (F && F.years && F.years.size) ? F.years : null;
+    var meses = (F && F.months && F.months.size) ? F.months : null;
+
+    // El año de referencia es el MÁS RECIENTE de los seleccionados que tenga cierres.
+    // Sumar 2024+2025+2026 daría un total de tres años, que como pulso del negocio no
+    // dice nada; lo útil es el año en curso y su comparación contra el anterior.
+    var cerrados = D.filter(function(d){ return !d.eeffPending; });
+    if(!cerrados.length) return [];
+    var candidatos = cerrados.filter(function(d){ return !anios || anios.has(d.y); });
+    if(!candidatos.length) candidatos = cerrados;
+    var anio = Math.max.apply(null, candidatos.map(function(d){ return d.y; }));
+
+    function filas(y){
+      return cerrados.filter(function(d){
+        return d.y === y && (!meses || meses.has(d.m));
+      });
+    }
+    var act = filas(anio);
+    if(!act.length) return [];
+    var ms = act.map(function(d){ return d.m; }).sort(function(a,b){ return a-b; });
+    // La comparación se hace contra los MISMOS meses del año anterior. Comparar seis
+    // meses contra doce es el error que más rápido desprestifica una cifra en junta.
+    var prev = filas(anio - 1).filter(function(d){ return ms.indexOf(d.m) >= 0; });
+
+    function suma(arr, campo){
+      return arr.reduce(function(s, d){ return s + (d[campo] || 0); }, 0);
+    }
+    function delta(a, b){
+      if(!b) return '';
+      var v = (a - b) / Math.abs(b) * 100, c = v >= 0 ? 'p' : 'n';
       return ' <span class="' + c + '">' + (v >= 0 ? '▲' : '▼') + ' ' +
              Math.abs(v).toFixed(1).replace('.', ',') + '%</span>';
     }
+
+    var per = etiquetaPeriodo(anio, ms);
+    var ing = suma(act, 'ing'), ebi = suma(act, 'ebitda');
+    var ingP = suma(prev, 'ing'), ebiP = suma(prev, 'ebitda');
+    var mg = ing ? (ebi / ing * 100) : null;
+
     return [
-      {lbl:'Ingreso ' + L.p, val: fv(L.ing),
-       sub:'semestre vs 2025' + delta(vIng)},
-      {lbl:'EBITDA ' + L.p, val: fv(L.ebitda),
-       sub:'margen ' + (L.mep != null ? L.mep.toFixed(1).replace('.', ',') + '%' : '—') +
-           delta(vEbi)}
+      {lbl:'Ingreso ' + per, val: fv(ing),
+       sub: (prev.length ? 'vs ' + (anio-1) + delta(ing, ingP) : 'acumulado del período')},
+      {lbl:'EBITDA ' + per, val: fv(ebi),
+       sub:'margen ' + (mg != null ? mg.toFixed(1).replace('.', ',') + '%' : '—') +
+           (prev.length ? delta(ebi, ebiP) : '')}
     ];
   }
 
@@ -9681,14 +9740,14 @@ switchTab('fin'); // Start on Financiero
     if(!f) return;
     var a = fijas(), b = deLaSeccion();
     if(!b.length) b = respaldo();
-    f.innerHTML =
-      '<div class="fz fz-negocio">' +
-        a.map(function(m){ return pinta(m, 'fm-negocio'); }).join('') +
-      '</div>' +
-      '<div class="fz fz-sec' + (b.length ? '' : ' vacia') + '">' +
-        (b.length ? b.map(function(m){ return pinta(m); }).join('')
-                  : 'Sin indicadores destacados en esta sección.') +
-      '</div>';
+    var html = a.map(function(m){ return pinta(m, 'fm-negocio'); }).join('');
+    // La separadora es la primera de la sección: ahí cambia la naturaleza de la cifra.
+    html += b.map(function(m, i){ return pinta(m, i === 0 && a.length ? 'sep' : ''); }).join('');
+    if(!a.length && !b.length) html = pinta({lbl:'', val:'', sub:''}, 'vacia');
+    f.innerHTML = html;
+    // Columnas iguales para cuantas métricas haya: nunca sobra ni falta una.
+    var n = Math.max(1, a.length + b.length);
+    f.style.gridTemplateColumns = 'repeat(' + n + ',minmax(0,1fr))';
   };
 
   function montar(){
@@ -9707,9 +9766,15 @@ switchTab('fin'); // Start on Financiero
       return r;
     };
     // Los filtros cambian las cifras de las tarjetas sin navegar: hay que releerlas.
+    // Los filtros cambian TANTO las cifras de las tarjetas como el período de las
+    // fijas. Se repinta dos veces —pronto y tarde— porque algunas secciones se
+    // reconstruyen de forma diferida y una sola pasada leería las tarjetas viejas.
     document.addEventListener('click', function(e){
       var t = e.target;
-      if(t && t.closest && t.closest('#sb-fbody')) setTimeout(pintarFranja, 250);
+      if(t && t.closest && t.closest('#sb-fbody')){
+        setTimeout(pintarFranja, 120);
+        setTimeout(pintarFranja, 600);
+      }
     });
     pintarFranja();
   }
