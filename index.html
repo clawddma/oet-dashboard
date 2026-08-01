@@ -920,6 +920,97 @@ a{text-decoration:none;color:inherit;}
 @media print{#sidebar,#hdr,#cms-velo,#hamburger,#bottom-nav{display:none!important;}
   #content{margin-left:0!important;padding-top:0!important;}}
 /*CMS-CSS:FIN*/
+
+/*FRANJA-CSS:INI*/
+/* Paleta y componentes: los del tablero. Aquí solo hay disposición. */
+
+/* Sin esto la franja NO se pega, y el motivo no es evidente: `#content` tenía
+   `overflow:auto`, y un ancestro con overflow scrollable se convierte en el contenedor
+   de referencia de `position:sticky`. Como quien hace scroll de verdad es el documento
+   —`#content` nunca desborda—, la franja quedaba pegada a un contenedor que no se mueve
+   y se iba con la página. Se pasa a `visible`: las tablas y gráficos anchos ya manejan
+   su propio desbordamiento adentro (`.tb-box`, `.chart-box`), así que nada se derrama. */
+#content{overflow:visible;}
+#franja{
+  /* `top` es la altura del encabezado, no 0: quien hace scroll es el documento, así que
+     con top:0 la franja se pegaba al borde de la ventana y quedaba DEBAJO del encabezado
+     fijo — visible a medias y tapada. */
+  position:sticky;top:var(--hdr-h);z-index:140;
+  background:var(--white);border-bottom:1px solid #e2ebe8;
+  box-shadow:0 1px 8px rgba(12,48,40,.05);
+  display:flex;align-items:stretch;gap:0;
+  padding:0 22px;min-height:60px;
+}
+#franja .fz{display:flex;align-items:center;gap:26px;padding:9px 0;min-width:0;}
+#franja .fz-negocio{padding-right:26px;}
+/* La línea separa dos naturalezas distintas de cifra: la del negocio y la de la
+   sección. Sin ella parecerían cuatro métricas del mismo tipo. */
+#franja .fz-sec{
+  border-left:1px solid #e2ebe8;padding-left:26px;flex:1;overflow:hidden;
+}
+#franja .fm{min-width:0;}
+#franja .fm-lbl{
+  font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:#7b9089;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;
+}
+#franja .fm-val{
+  font-size:18px;font-weight:800;color:var(--oet-dark);line-height:1.15;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#franja .fm-sub{
+  font-size:10.5px;color:#607d76;margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+/* Los mismos verde/rojo que ya usan las tarjetas KPI del tablero. */
+#franja .fm-sub .p,#franja .fm-sub .up{color:var(--pos);font-weight:600;}
+#franja .fm-sub .n,#franja .fm-sub .down{color:var(--neg);font-weight:600;}
+#franja .fm-negocio .fm-val{color:var(--oet-teal2);}
+#franja .fz-sec .fm{flex:1;}
+
+/* Cuando una sección no tiene tarjetas propias, la zona derecha no queda como un hueco
+   raro: se explica. */
+#franja .fz-sec.vacia{color:#9aada7;font-size:11.5px;align-items:center;}
+
+/* Las tarjetas que subieron a la franja no se repiten abajo. */
+.kpi.promovido{display:none!important;}
+/* Faltaban estos anchos de grilla: al quitar dos tarjetas de una fila de cuatro, sin
+   k2 las dos restantes dejaban un hueco a la derecha. */
+.kpis.k1{grid-template-columns:minmax(0,1fr);}
+.kpis.k2{grid-template-columns:repeat(2,minmax(0,1fr));}
+.kpis.k5{grid-template-columns:repeat(5,minmax(0,1fr));}
+.kpis.vacia{display:none!important;}
+
+@media(max-width:980px){
+  #franja{padding:0 14px;}
+  #franja .fz{gap:18px;}
+  #franja .fz-negocio{padding-right:16px;}
+  #franja .fz-sec{padding-left:16px;}
+  #franja .fm-val{font-size:16px;}
+}
+/* En el teléfono aparece el sub-nav de secciones, fijo justo debajo del encabezado.
+   La franja tiene que pegarse DEBAJO de él o queda tapada a medias — que es como se
+   veía: se leía «semestre vs 2025» cortado por las pestañas. */
+@media(max-width:980px){
+  #franja{top:calc(var(--hdr-h) + var(--snav-h));}
+  #content{padding-top:calc(var(--hdr-h) + var(--snav-h));}
+}
+@media(max-width:640px){
+  /* En el teléfono no caben cuatro: la franja se vuelve una tira que se desliza, con
+     las dos del negocio primero. Sigue pegada arriba, que es su razón de ser. */
+  #franja{
+    flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:0;min-height:54px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  #franja::-webkit-scrollbar{display:none;}
+  #franja .fz{gap:16px;flex-shrink:0;padding:7px 0;}
+  #franja .fz-sec{flex:0 0 auto;}
+  #franja .fm-lbl{font-size:9px;}
+  #franja .fm-val{font-size:15px;}
+  #franja .fm-sub{font-size:9.5px;}
+  .kpis.k2,.kpis.k5{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media print{#franja{position:static;box-shadow:none;}}
+/*FRANJA-CSS:FIN*/
 </style>
 </head>
 <body>
@@ -9492,6 +9583,143 @@ switchTab('fin'); // Start on Financiero
   } else { montar(); }
 })();
 /*CMS-JS:FIN*/
+</script>
+<script>
+/*FRANJA-JS:INI*/
+// ══════════════════════════════════════════════════════════════════════════
+//  FRANJA DE MÉTRICAS — dos del negocio + dos de la sección
+// ══════════════════════════════════════════════════════════════════════════
+(function(){
+
+  // ── las dos fijas: el pulso del negocio, del último mes CERRADO ──────────
+  // Se usa META.last (el último con EEFF completo) y no el último registro a secas:
+  // un mes sin cierre contable no puede presentarse como resultado. Es la misma regla
+  // que sigue el asistente del chat.
+  function fijas(){
+    var L = (typeof META !== 'undefined' && META.last) ? META.last : null;
+    if(!L) return [];
+    var vIng = (typeof YTD_VAR !== 'undefined' && YTD_VAR.ing != null) ? YTD_VAR.ing : null;
+    var vEbi = (typeof YTD_VAR !== 'undefined' && YTD_VAR.ebitda != null) ? YTD_VAR.ebitda : null;
+    function delta(v){
+      if(v == null) return '';
+      var c = v >= 0 ? 'p' : 'n';
+      return ' <span class="' + c + '">' + (v >= 0 ? '▲' : '▼') + ' ' +
+             Math.abs(v).toFixed(1).replace('.', ',') + '%</span>';
+    }
+    return [
+      {lbl:'Ingreso ' + L.p, val: fv(L.ing),
+       sub:'semestre vs 2025' + delta(vIng)},
+      {lbl:'EBITDA ' + L.p, val: fv(L.ebitda),
+       sub:'margen ' + (L.mep != null ? L.mep.toFixed(1).replace('.', ',') + '%' : '—') +
+           delta(vEbi)}
+    ];
+  }
+
+  // ── las dos de la sección: se LEEN de sus propias tarjetas ───────────────
+  // Nunca se recalculan aparte. Si la franja dijera una cifra y la tarjeta de abajo
+  // otra, el tablero se estaría contradiciendo solo — y eso cuesta más que no tener
+  // franja. Al leerlas, siempre coinciden por construcción.
+  function deLaSeccion(){
+    var sec = document.querySelector('.sec.active');
+    if(!sec) return [];
+    var caja = sec.querySelector('.kpis');
+    if(!caja) return [];
+    var todas = [].slice.call(caja.querySelectorAll('.kpi'));
+    if(!todas.length) return [];
+
+    var suben = todas.slice(0, 2), out = [];
+    suben.forEach(function(k){
+      var l = k.querySelector('.kpi-lbl'), v = k.querySelector('.kpi-val'),
+          s = k.querySelector('.kpi-sub');
+      out.push({
+        lbl: l ? l.textContent.trim() : '',
+        val: v ? v.innerHTML : '',
+        sub: s ? s.innerHTML : ''
+      });
+      k.classList.add('promovido');
+    });
+
+    // Recomponer la grilla con las que quedan visibles. Es idempotente: volver a
+    // entrar a la sección da el mismo resultado.
+    var quedan = todas.length - suben.length;
+    caja.classList.remove('k1','k2','k3','k4','k5','k6','vacia');
+    if(quedan <= 0) caja.classList.add('vacia');
+    else caja.classList.add('k' + Math.min(quedan, 6));
+    return out;
+  }
+
+  // Dos de cada tres secciones traen tarjetas; las que no (Por Servicio, Resumen Anual)
+  // dejaban media franja con un cartel de «no hay nada», que se ve pobre y no ayuda.
+  // Se rellenan con dos cifras más del negocio: cirugías del mes cerrado contra su punto
+  // de equilibrio, y la utilidad neta. Siempre útil, nunca un hueco.
+  function respaldo(){
+    var L = (typeof META !== 'undefined' && META.last) ? META.last : null;
+    if(!L) return [];
+    var out = [];
+    try{
+      var arr = (L.y === 2026) ? CIR.mes_26 : (L.y === 2025 ? CIR.mes_25 : CIR.mes_24);
+      var c = arr && arr[L.m - 1];
+      if(c) out.push({lbl:'Cirugías ' + L.p, val:String(c),
+        sub:'equilibrio 385 · ' + (c >= 385
+          ? '<span class="p">+' + (c - 385) + ' por encima</span>'
+          : '<span class="n">' + (385 - c) + ' por debajo</span>')});
+    }catch(e){}
+    if(L.un != null) out.push({lbl:'Utilidad neta ' + L.p, val: fv(L.un),
+      sub:'margen ' + (L.mnp != null ? L.mnp.toFixed(1).replace('.', ',') + '%' : '—')});
+    return out.slice(0, 2);
+  }
+
+  function pinta(m, extra){
+    return '<div class="fm ' + (extra || '') + '">' +
+           '<div class="fm-lbl">' + m.lbl + '</div>' +
+           '<div class="fm-val">' + m.val + '</div>' +
+           (m.sub ? '<div class="fm-sub">' + m.sub + '</div>' : '') + '</div>';
+  }
+
+  window.pintarFranja = function(){
+    var f = document.getElementById('franja');
+    if(!f) return;
+    var a = fijas(), b = deLaSeccion();
+    if(!b.length) b = respaldo();
+    f.innerHTML =
+      '<div class="fz fz-negocio">' +
+        a.map(function(m){ return pinta(m, 'fm-negocio'); }).join('') +
+      '</div>' +
+      '<div class="fz fz-sec' + (b.length ? '' : ' vacia') + '">' +
+        (b.length ? b.map(function(m){ return pinta(m); }).join('')
+                  : 'Sin indicadores destacados en esta sección.') +
+      '</div>';
+  };
+
+  function montar(){
+    var cont = document.getElementById('content');
+    if(!cont || document.getElementById('franja')) return;
+    var f = document.createElement('div');
+    f.id = 'franja';
+    cont.insertBefore(f, cont.firstChild);
+
+    // La franja se repinta después de cada navegación. Se envuelve `navigate` en vez
+    // de tocar su cuerpo: así sobrevive a cualquier cambio futuro de esa función.
+    var navOriginal = window.navigate;
+    window.navigate = function(secId){
+      var r = navOriginal.apply(this, arguments);
+      try{ pintarFranja(); }catch(e){}
+      return r;
+    };
+    // Los filtros cambian las cifras de las tarjetas sin navegar: hay que releerlas.
+    document.addEventListener('click', function(e){
+      var t = e.target;
+      if(t && t.closest && t.closest('#sb-fbody')) setTimeout(pintarFranja, 250);
+    });
+    pintarFranja();
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', montar);
+  } else { montar(); }
+})();
+/*FRANJA-JS:FIN*/
+
 </script>
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
