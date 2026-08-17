@@ -1011,6 +1011,41 @@ a{text-decoration:none;color:inherit;}
 }
 @media print{#franja{position:static;box-shadow:none;}}
 /*FRANJA-CSS:FIN*/
+/* La insignia del encabezado de tarjeta empujaba fuera de la caja cuando el título
+   es largo: que ceda ella, no la tarjeta. */
+.card-hdr{flex-wrap:wrap;gap:6px}
+.card-hdr .badge{max-width:100%;white-space:normal;word-break:break-word}
+/* ══ RESPONSIVE — verificado a 390px y 1440px ══════════════════════════════
+   Diagnóstico: la página no scrolleaba de lado (hay overflow-x:hidden), así que el
+   contenido que se salía quedaba RECORTADO, que es peor: 53 elementos invisibles en
+   Financiero. Tres focos, cada uno con su tratamiento. */
+@media(max-width:900px){
+  /* 1 · la tira de KPI de arriba: se salía el tercero. Que envuelva. */
+  .kpis,.kpi-row,.fm-row{flex-wrap:wrap!important}
+  .kpis>*,.kpi-row>*,.fm>*{min-width:0}
+  /* 2 · navegación: es un menú, ahí SÍ se permite deslizar, con el gesto nativo */
+  #snav,.snav,.tabs,.top-tabs{overflow-x:auto!important;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none}
+  #snav::-webkit-scrollbar,.snav::-webkit-scrollbar,.tabs::-webkit-scrollbar{display:none}
+  .snav-btn,.tab{flex:0 0 auto!important}
+  /* 3 · toda tabla scrollea dentro de su caja, nunca estira la página */
+  table{min-width:0}
+  .tbl-wrap,.card-body>div[style*="overflow"]{overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+@media(max-width:520px){
+  /* la barra inferior con 6 destinos: rótulos cortos y sin recorte */
+  /* Seis destinos en 390px. `flex:1 0 auto` los dejaba sin encoger y el sexto
+     quedaba fuera de pantalla (contenido 414px en una caja de 390). Con `1 1 0`
+     reparten el ancho por igual y `min-width:0` les permite ceder. */
+  #bottom-nav,.bnav{overflow:hidden}
+  .bnav-btn{flex:1 1 0!important;min-width:0!important;
+    padding-left:1px!important;padding-right:1px!important}
+  .bnav-lbl{font-size:7.5px!important;letter-spacing:0!important;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .bnav-icon{font-size:16px!important}
+  /* KPI a una columna: dos no caben sin cortar la cifra */
+  .kpis{grid-template-columns:1fr!important}
+  .card{padding-left:12px;padding-right:12px}
 </style>
 </head>
 <body>
@@ -1960,6 +1995,18 @@ function fvFull(v){
 function fp(v){ return (v>=0?'+':'')+v.toFixed(1)+'%'; }
 function clr(v){ return v>=0 ? '#2dc5ab' : '#ef5350'; }
 function tdCls(v){ return v>=0?'pos':'neg'; }
+/* El color tiene que decir si CONVIENE al negocio, no hacia dónde apunta la flecha.
+   La tabla marcaba «Costo Total +44,5%» en verde: crecer el costo salía como logro.
+   En los rubros donde subir es malo —costo, gasto— se invierte el color. */
+const RUBRO_INVERSO = {cost:1, ga:1, go:1, oGas:1, da:1,
+                       'Costo Total':1, 'Costo de Ventas':1,
+                       'Gastos Administrativos':1, 'Gasto Administrativo':1,
+                       'Gasto de Operación':1, 'Otros Gastos':1};
+function tdClsR(v, rubro){
+  if(v===null||v===undefined||isNaN(v)) return '';
+  const inv = RUBRO_INVERSO[rubro] ? -1 : 1;
+  return (v*inv)>=0 ? 'pos' : 'neg';
+}
 function pctVar(a,b){ return b ? ((a-b)/Math.abs(b)*100) : 0; }
 
 // Anual aggregates
@@ -3656,9 +3703,9 @@ function buildFinInicio(){
         <td>${lbl}${pendNote}</td>
         <td>${fv(v24)}</td>
         <td>${fv(v25)}</td>
-        <td class="${tdCls(d2524)}">${fp(d2524)}</td>
+        <td class="${tdClsR(d2524,f)}">${fp(d2524)}</td>
         <td>${fv(v26)}</td>
-        <td class="${tdCls(d26)}">${fp(d26)}</td>
+        <td class="${tdClsR(d26,f)}">${fp(d26)}</td>
       </tr>`;
     }).join('')}
     </tbody>
@@ -4987,7 +5034,9 @@ function buildAccTareas(){
     .kanban-card.dragging { opacity:.4; cursor:grabbing; }
     @media(max-width:1024px){ #kanban-grid { grid-template-columns:repeat(2,1fr) !important; } }
     @media(max-width:600px){ #kanban-grid { grid-template-columns:1fr !important; } }
-  </style>`;
+  
+}
+</style>`;
   requestAnimationFrame(()=>{ if(el) el.dispatchEvent(new Event('resize')); });
 }
 
