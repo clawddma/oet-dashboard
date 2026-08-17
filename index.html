@@ -1043,9 +1043,98 @@ a{text-decoration:none;color:inherit;}
   .bnav-lbl{font-size:7.5px!important;letter-spacing:0!important;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .bnav-icon{font-size:16px!important}
-  /* KPI a una columna: dos no caben sin cortar la cifra */
-  .kpis{grid-template-columns:1fr!important}
+  /* KPI en dos columnas. Estaban a una porque «dos no caben sin cortar la cifra»,
+     y con la tipografía de entonces era cierto; con la de ahora (rótulo 9px, cifra
+     16px) el valor más largo del tablero mide 78px en una celda de 150. A una
+     columna, cuatro tarjetas se comían 600px de scroll para mostrar cuatro números.
+     Debajo de 360px sí vuelve a una: ahí el rótulo empieza a partirse. */
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .kpi-val{white-space:nowrap}
   .card{padding-left:12px;padding-right:12px}
+}
+
+@media(max-width:359px){
+  .kpis{grid-template-columns:1fr!important}
+}
+
+/* ══ RESPONSIVE · segunda pasada ═══════════════════════════════════════════
+   Verificado a 390px y 1440px sobre las nueve vistas. Tres defectos, uno de
+   ellos la causa de que el escritorio tampoco fuera responsive. */
+
+/* 1 · LA RAÍZ DEL PROBLEMA EN MAC.
+   `#content` es un ítem flex (`#app{display:flex}` · `#content{flex:1}`), y un ítem
+   flex trae `min-width:auto`: no puede encogerse por debajo del contenido. La tabla
+   mensual de P&G mide 2.071px, así que estiraba `#content` a 2.365 y el documento a
+   2.633 dentro de una ventana de 1.440. Antes no se notaba porque `#content` tenía
+   `overflow:auto` y recortaba; al pasarlo a `visible` —necesario para que la franja
+   se pegue— el desbordamiento salió a la luz. `min-width:0` deja que el carril ceda
+   y que cada tabla haga su propio scroll adentro, que es lo que se buscaba. */
+#content{min-width:0;}
+
+/* 2 · EL TÍTULO DE TARJETA APLASTADO.
+   En el encabezado conviven el título, la insignia y los dos botones (? y ⤢). En el
+   teléfono la insignia se quedaba con 248 de los 268px disponibles y al título le
+   dejaba DOS: «EBITDA Mensual — Verde = gana. Rojo = pierde» salía una palabra por
+   renglón, 155px de alto, con la insignia encima. Que el título ocupe la fila
+   completa y lo demás baje: es un encabezado, no una competencia por el ancho. */
+/* El `!important` es necesario, no cómodo: el encabezado trae `style="flex:1;
+   min-width:0"` escrito en la propia etiqueta, y un estilo en línea gana sobre
+   cualquier hoja. El `min-width:0` de ahí es justamente el permiso que el título
+   necesitaba para desaparecer. */
+.card-hdr h3{min-width:min(100%,150px) !important;}
+@media(max-width:767px){
+  .card-hdr{align-items:flex-start;padding-right:70px !important;}
+  /* En el teléfono el título se queda con la fila entera y la insignia baja. Antes
+     competían por 268px y la insignia se llevaba 238: el título quedaba en 20 y
+     salía una palabra por renglón, 155px de alto. */
+  .card-hdr h3{flex:1 1 100% !important;}
+  .card-hdr .badge{flex:0 1 auto;font-size:9.5px;}
+}
+
+/* 3 · LOS CARRILES QUE SE DESLIZAN NO LO PARECÍAN.
+   La franja de métricas y las tablas anchas sí se arrastran, pero se veían
+   «cortadas»: una cifra partida a la mitad en el borde derecho se lee como un
+   defecto, no como una invitación a deslizar. El degradado de la derecha dice que
+   hay más, sin ocupar espacio ni añadir un control. */
+/* La sombra de scroll: cuatro fondos superpuestos, dos anclados al contenido
+   (`local`) y dos a la caja (`scroll`). Los primeros tapan a los segundos cuando el
+   carril está en un extremo, así que la sombra aparece SOLO del lado por donde
+   queda contenido. Sin JavaScript y sin ocupar espacio.
+   Un `::after` no servía: dentro de un contenedor flex que se desliza, el pseudo se
+   convierte en un ítem más y viaja con el contenido en vez de quedarse en el borde. */
+/* 5 · QUE HAYA QUE DESLIZAR MENOS.
+   La sombra avisa que el carril se mueve, pero deslizar siempre es peor que no tener
+   que hacerlo. En el teléfono la columna de concepto se lleva casi la mitad del ancho
+   por el `nowrap` del encabezado: dejándola envolver y apretando el interior, la
+   tabla del acumulado pasa de 530 a caber casi entera. */
+@media(max-width:767px){
+  .tbl{font-size:10.5px;}
+  .tbl th,.tbl td{padding:5px 6px;}
+  .tbl th:first-child,.tbl td:first-child{white-space:normal;}
+}
+
+#franja,.tbl-wrap,.card-body > div[style*="overflow"]{
+  background-image:
+    linear-gradient(to right,  var(--white) 30%, rgba(255,255,255,0)),
+    linear-gradient(to left,   var(--white) 30%, rgba(255,255,255,0)),
+    linear-gradient(to right,  rgba(12,48,40,.16), rgba(12,48,40,0)),
+    linear-gradient(to left,   rgba(12,48,40,.16), rgba(12,48,40,0));
+  background-position:left center,right center,left center,right center;
+  background-repeat:no-repeat;
+  background-size:26px 100%,26px 100%,13px 100%,13px 100%;
+  background-attachment:local,local,scroll,scroll;
+}
+
+/* 4 · TABLAS SIN ENVOLTORIO.
+   Las que el JS pinta dentro de un div propio no siempre traen `.tbl-wrap`. En vez
+   de perseguir cada punto de inyección, cualquier tabla que quede suelta dentro del
+   cuerpo de una tarjeta se desliza en su contenedor. */
+.card-body > div > table,
+.card-body > table{max-width:100%;}
+.card-body{max-width:100%;}
+@media(max-width:767px){
+  .card-body > div:has(> table){overflow-x:auto;-webkit-overflow-scrolling:touch;}
+}
 </style>
 </head>
 <body>
