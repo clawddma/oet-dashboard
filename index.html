@@ -1329,7 +1329,7 @@ const D = [
   {p:'Mar-26',f:'2026-03',y:2026,m:3,ing:1622729.33,cost:1117130.15,ub:505599.19,mbp:31.2,ga:631743.3,go:407597.02,da:73206.06,uo:-126144.11,mop:-7.8,oInc:16814.8,oGas:40506.05,un:-149835.36,mnp:-9.2,ebitda:-76629.3,mep:-4.7},
   {p:'Abr-26',f:'2026-04',y:2026,m:4,ing:1476758.25,cost:922756.79,ub:554001.46,mbp:37.5,ga:511262.73,go:284454.79,da:73562.29,uo:42738.73,mop:2.9,oInc:21290.8,oGas:42971.54,un:21057.99,mnp:1.4,ebitda:94620.29,mep:6.4},
   {p:'May-26',f:'2026-05',y:2026,m:5,ing:1564868.07,cost:969009.49,ub:595858.58,mbp:38.1,ga:544606.09,go:299583.02,da:73831.51,uo:51252.49,mop:3.3,oInc:26607.8,oGas:26909.22,un:50951.07,mnp:3.3,ebitda:124782.58,mep:8},
-  {p:'Jun-26',f:'2026-06',y:2026,m:6,ing:1552740.36,cost:921579.32,ub:631161.05,mbp:40.6,ga:491570.09,go:257200.22,da:74099.31,uo:139590.96,mop:9,oInc:16563.85,oGas:45944.13,un:72430.83,mnp:4.7,ebitda:184309.99,mep:11.9}
+  {p:'Jun-26',f:'2026-06',y:2026,m:6,ing:1552740.36,cost:921579.32,ub:631161.05,mbp:40.6,ga:491570.09,go:257200.22,da:74099.31,uo:139590.96,mop:9,oInc:16563.85,oGas:45944.13,un:72430.83,mnp:4.7,ebitda:184309.99,mep:11.9},{p:'Jul-26',f:'2026-07',y:2026,m:7,ing:1672431.07,cost:1071645.70,ub:600785.37,mbp:35.9,ga:511129.98,go:278201.09,da:74411.55,uo:89655.38,mop:5.4,oInc:24540.64,oGas:39578.10,un:67248.68,mnp:4,ebitda:149029.48,mep:8.9}
 ];
 
 // ════════════════════════════════════════
@@ -1672,6 +1672,14 @@ const REPORTES_ESTRATEGICOS = [
 
 const COMENTARIOS_MENSUALES = [
   {
+    periodo:'Jul-26',
+    archivo:'EEFF-OET-2026-07-Julio.xlsx',
+    archivo_periodo:'Jul-26 · Acumulado Ene-Jul 2026',
+    archivo_fecha:'Agosto 2026',
+    archivo_autora:'Estados financieros oficiales entregados por la contadora · conciliados contra el Estado de Resultados Integral y el ESF al 31-jul-2026',
+    comentarios:[]
+  },
+  {
     periodo:'Jun-26',
     archivo:'EEFF-OET-2026-06-Junio.xlsx',
     archivo_periodo:'Jun-26 · Acumulado Ene-Jun 2026 (primer semestre)',
@@ -1902,6 +1910,7 @@ const BSS = {
     {periodo:'Abr-26', f:'2026-04', y:2026, m:4,  cash:-45707, cxc:2458000, actCorr:2981000, actTotal:13419000, deudaBco:684000, cxpProv:323000, pasCorr:5151000, pasNoCorr:2115000, pasTotal:7266000,  patrimonio:6153000},
     {periodo:'May-26', f:'2026-05', y:2026, m:5,  cash:905064, cxc:1647000, actCorr:3121000, actTotal:13511000, deudaBco:643000, cxpProv:327000, pasCorr:5289000, pasNoCorr:2036000, pasTotal:7326000,  patrimonio:6185000},
     {periodo:'Jun-26', f:'2026-06', y:2026, m:6, cash:-167597, cxc:2841000, actCorr:3242000, actTotal:13618000, deudaBco:604000, cxpProv:349000, pasCorr:5397000, pasNoCorr:1961000, pasTotal:7358000, patrimonio:6260000},
+  {periodo:'Jul-26', f:'2026-07', y:2026, m:7, cash:-4215, cxc:2774000, actCorr:3338000, actTotal:13657000, deudaBco:569000, cxpProv:391000, pasCorr:5377000, pasNoCorr:1953000, pasTotal:7330000, patrimonio:6327000},
   ],
   // Compatibilidad: arrays paralelos derivados (NO editar — se generan automáticamente)
   get labels()    {return this.snapshots.map(s=>s.periodo);},
