@@ -4,3 +4,6 @@ sala-estrategia*
 
 # Ruido del sistema operativo
 .DS_Store
+
+# Documentos internos: nunca en un repo con Pages público
+*.docx
