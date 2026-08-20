@@ -54,6 +54,26 @@ a{text-decoration:none;color:inherit;}
 .ttab .ti{font-size:16px;}
 .hdr-meta{margin-left:auto;padding-right:16px;font-size:11px;color:var(--gray-md);white-space:nowrap;}
 
+/* ── Estado de sincronización en el encabezado ───────────────────
+   El botón es la única señal que tiene el cliente de que el dato está vivo.
+   Por eso va en el encabezado global y NO se esconde en móvil: en el celular
+   es justo donde más se duda de si lo que se está viendo es de hoy. */
+#hdr-sync{
+  display:flex; align-items:center; gap:8px; flex:none;
+  margin-left:12px; padding-right:4px;
+}
+#hdr .hdr-meta{margin-left:auto;}
+#hdr-sync .cfb-refresh-btn{height:30px; font-size:11px; padding:4px 13px;}
+@media(max-width:1100px){
+  #hdr-sync{margin-left:auto;}
+}
+@media(max-width:760px){
+  /* el rótulo del estado se abrevia, pero el botón se queda */
+  #hdr-sync{margin-left:auto; gap:6px;}
+  #hdr-sync .cfb-sync-pill{padding:3px 8px; font-size:10px;}
+  #hdr-sync .cfb-refresh-btn{height:28px; font-size:10.5px; padding:3px 10px;}
+}
+
 /* ═══ LAYOUT ═══ */
 #app{display:flex;padding-top:var(--hdr-h);min-height:100vh;}
 #sidebar{
@@ -760,6 +780,7 @@ a{text-decoration:none;color:inherit;}
   z-index:150;gap:12px;padding:0 20px;
 }
 #hdr .hdr-brand,#hdr .top-tabs{display:none;}
+#hdr #hdr-sync{display:flex;}
 #hdr .hdr-meta{margin-left:auto;padding-right:0;}
 #cms-titulo{display:flex;align-items:baseline;gap:9px;min-width:0;}
 #cms-titulo .ct-mod{
@@ -1174,6 +1195,18 @@ a{text-decoration:none;color:inherit;}
     <div class="ttab" data-tab="acc"><span class="ti">✅</span> Acciones 2026</div>
   </nav>
   <div class="hdr-meta" id="hdr-meta">Datos: <span id="hdr-range">—</span></div>
+  <!-- Estado de sincronización + botón manual. VIVE EN EL ENCABEZADO, no en la barra
+       de filtros de Administrativo: ahí solo se veía en una de las seis pestañas, y
+       el cliente entra por Financiero. Saber que el dato está fresco —y poder
+       refrescarlo— es lo que sostiene la confianza en el tablero. Un solo juego de
+       IDs: duplicarlos rompería refreshSyncStatus(), que usa getElementById. -->
+  <div class="cfb-sync-wrap" id="hdr-sync">
+    <div id="cfb-sync-status" class="cfb-sync-pill" onclick="manualRefresh()" title="Clic para actualizar ahora">
+      <span class="cfb-sync-icon" id="cfb-sync-icon">⟳</span>
+      <span id="cfb-sync-label">--</span>
+    </div>
+    <button class="cfb-refresh-btn" id="cfb-refresh-btn" onclick="manualRefresh()" title="Traer los datos más recientes de Google Sheets">↻ Actualizar</button>
+  </div>
 </header>
 <button id="hamburger" onclick="toggleSidebar()">☰</button>
 <nav id="bottom-nav">
@@ -1301,13 +1334,6 @@ a{text-decoration:none;color:inherit;}
     </div>
     <button class="cfb-clear" onclick="clearComFilters()">✕ Limpiar</button>
     <div id="cfb-hint" class="cfb-active-hint" style="display:none"></div>
-    <div class="cfb-sync-wrap">
-      <div id="cfb-sync-status" class="cfb-sync-pill" onclick="manualRefresh()" title="Click para actualizar manualmente">
-        <span class="cfb-sync-icon" id="cfb-sync-icon">⟳</span>
-        <span id="cfb-sync-label">--</span>
-      </div>
-      <button class="cfb-refresh-btn" id="cfb-refresh-btn" onclick="manualRefresh()" title="Forzar sincronización con Google Sheets">↻ Actualizar</button>
-    </div>
   </div>
   <div id="fin-filter-bar">
     <div class="cfb-group">

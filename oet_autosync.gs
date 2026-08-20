@@ -28,7 +28,12 @@
 
 // ── Configuración ──────────────────────────────────────────────────────
 var CFG = {
-  sheetName:  'Hoja1',
+  // La pestaña se renombró de «Hoja1» a «FACTURACION» y el sync quedó caído nueve
+  // días: el script lanzaba «Hoja "Hoja1" no encontrada» cada 30 minutos. Para que
+  // un renombre no vuelva a tumbarlo, abajo hay una búsqueda por respaldo que
+  // encuentra la hoja por sus ENCABEZADOS y no solo por su nombre.
+  sheetName:  'FACTURACION',
+  sheetAlias: ['FACTURACION', 'Hoja1', 'Sheet1', 'FACTURACIÓN'],
   ghOwner:    'clawddma',
   ghRepo:     'oet-dashboard',
   ghFile:     'index.html',
@@ -41,7 +46,10 @@ var CFG = {
 
 // Índices de columna (0-based, A=0 … W=22)
 var COL = {
-  FECHA:    0,   // ← Columna A: fecha del servicio (Date object)
+  FECHA:    1,   // ← Columna B «Fecha Factura» (Date object). Estaba en 0 (columna A),
+                 //   que hoy trae «Id Unico» — un texto. No rompía nada de forma
+                 //   visible: simplemente dejaba DAILY_RAW vacío y los filtros
+                 //   «Hoy» y «Esta Semana» sin datos, en silencio.
                  //   Si la fecha está en otra columna, cambia este índice.
                  //   Ej: columna B = 1, columna E = 4
   MES:      2,
@@ -85,8 +93,15 @@ function syncDashboard() {
     // 2. Leer Hoja1 completa
     llog('📖 Leyendo ' + CFG.sheetName + '…');
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(CFG.sheetName);
-    if (!sheet) throw new Error('Hoja "' + CFG.sheetName + '" no encontrada.');
+    var sheet = _hallarHoja(ss);
+    if (!sheet) {
+      throw new Error('No encontré la hoja de facturación. Probé por nombre (' +
+        CFG.sheetAlias.join(', ') + ') y por encabezados. Pestañas disponibles: ' +
+        ss.getSheets().map(function(h){return h.getName();}).join(' · '));
+    }
+    if (sheet.getName() !== CFG.sheetName) {
+      llog('ℹ️  La hoja se llama ahora "' + sheet.getName() + '" — detectada por encabezados.');
+    }
 
     var lastRow = sheet.getLastRow();
     // Leer hasta columna 23 (W=22 en 0-based) — suficiente para todos los campos
@@ -139,12 +154,29 @@ function syncDashboard() {
     // 3c. Acumuladores DAILY (últimos 45 días para cubrir "esta semana" y comparaciones)
     var cutoffDate = new Date(now.getTime() - 45 * 24 * 3600 * 1000);
     var dailyAgg = {}; // { 'YYYY-MM-DD': {f,y,m,w,d,ing,cir} }
+    var derivadas = 0;  // filas cuyo mes hubo que sacar de la fecha
 
     // 4. Iterar filas
     for (var i = 0; i < data.length; i++) {
       var row    = data[i];
+      /* MES Y AÑO SE DERIVAN DE LA FECHA cuando las columnas auxiliares vienen
+         vacías. Del 10 al 15 de agosto de 2026 entraron 1.227 filas sin `Mes` ni
+         `Año` diligenciados —$442,9 millones— y el script las descartaba en
+         silencio: no fallaba, simplemente no las contaba. El tablero mostró agosto
+         en $294 MM cuando el real era $737 MM.
+         Es seguro: en las 73.652 filas que sí traen las dos columnas, coinciden con
+         `Fecha Factura` en el 100% de los casos. Son redundantes, así que la fecha
+         manda y las auxiliares quedan de respaldo. */
+      var fRow   = _aFecha(row[COL.FECHA]);
       var anoRaw = row[COL.ANO];
       var mes    = row[COL.MES];
+      if ((anoRaw === '' || anoRaw === null || anoRaw === undefined) && fRow) {
+        anoRaw = fRow.getFullYear();
+      }
+      if ((mes === '' || mes === null || mes === undefined) && fRow) {
+        mes = fRow.getMonth() + 1;
+        derivadas++;
+      }
       var tipo   = (row[COL.TIPO]   || '').toString().trim().toUpperCase();
       var valor  = Number(row[COL.VALOR]) || 0;
       var medico = (row[COL.MEDICO] || '').toString().trim().toUpperCase();
@@ -200,17 +232,7 @@ function syncDashboard() {
       }
 
       // ── DAILY: últimos 45 días (requiere columna fecha COL.FECHA) ──
-      var fechaRaw = row[COL.FECHA];
-      var fechaDate = null;
-      if (fechaRaw instanceof Date && !isNaN(fechaRaw.getTime())) {
-        fechaDate = fechaRaw;
-      } else if (typeof fechaRaw === 'string' && fechaRaw.length >= 8) {
-        var parsed = new Date(fechaRaw);
-        if (!isNaN(parsed.getTime())) fechaDate = parsed;
-      } else if (typeof fechaRaw === 'number' && fechaRaw > 40000) {
-        // Google Sheets serial date (days since Dec 30, 1899)
-        fechaDate = new Date((fechaRaw - 25569) * 86400 * 1000);
-      }
+      var fechaDate = fRow;
 
       if (fechaDate && fechaDate >= cutoffDate) {
         var fStr = Utilities.formatDate(fechaDate, CFG.timezone, 'yyyy-MM-dd');
@@ -228,7 +250,8 @@ function syncDashboard() {
         if (tipo === 'DERECHOS SALA') dailyAgg[fStr].cir++;
       }
     }
-    llog('✅ Agregación lista: ' + (Date.now()-t0) + 'ms');
+    llog('✅ Agregación lista: ' + (Date.now()-t0) + 'ms' +
+         (derivadas ? ' · ' + derivadas + ' filas con mes derivado de la fecha' : ''));
 
     // 5. Convertir y armar arrays COM/CIR (igual que v4)
     function toMiles(arr) { return arr.map(function(v){ return Math.round(v/1000); }); }
@@ -521,6 +544,13 @@ function syncDashboard() {
       'MTD='+Math.round(mtd.ing/1000)+'K cir'+mtd.cir+' | cir26='+cir26+' | daily='+dailyKeys.length+'d | '+elapsed+'s');
 
   } catch(e) {
+    /* RELANZA. Antes este catch se comía la excepción y `syncDashboard()` terminaba
+       como si todo hubiera salido bien. El endpoint del botón «↻ Actualizar» la
+       envuelve en su propio try/catch, así que respondía {"ok":true} sobre un sync
+       que había fallado — y el cliente veía «Sincronizando… → recargar» sin que nada
+       cambiara, nueve días seguidos, sin un solo mensaje de error.
+       El correo y el SyncLog se mandan igual; lo que cambia es que ahora el fallo
+       también SALE por la respuesta del webhook. */
     llog('❌ ERROR: ' + e.message);
     _writeLog(SpreadsheetApp.getActiveSpreadsheet(), ts, '❌ ERROR', e.message);
     try {
@@ -537,10 +567,86 @@ function syncDashboard() {
     } catch(mailErr) {
       llog('⚠️  No se pudo enviar correo de alerta: '+mailErr.message);
     }
+    throw e;   // ← DENTRO del catch: relanzar para que el webhook vea el fallo
   }
 }
 
 // ── Número de semana ISO (lunes como primer día) ───────────────────────
+/**
+ * Encuentra la hoja de facturación aunque la hayan renombrado.
+ *
+ * POR QUÉ EXISTE. El 11 de agosto de 2026 alguien renombró «Hoja1» a «FACTURACION»
+ * y el sync se cayó nueve días sin que nadie lo notara: el tablero siguió mostrando
+ * agosto congelado en $294 MM cuando el real era $737 MM. Un nombre de pestaña es
+ * lo más fácil de cambiar de un Sheet y lo más frágil sobre lo que anclar un
+ * proceso. Por eso: primero por nombre, y si falla, por los ENCABEZADOS, que solo
+ * cambian si cambia de verdad la estructura del archivo.
+ */
+/** Normaliza a Date lo que traiga la celda: Date, texto o serial de Sheets. */
+function _aFecha(v) {
+  if (v instanceof Date && !isNaN(v.getTime())) return v;
+  if (typeof v === 'string' && v.length >= 8) {
+    var p = new Date(v);
+    if (!isNaN(p.getTime())) return p;
+  }
+  if (typeof v === 'number' && v > 40000) {
+    return new Date((v - 25569) * 86400 * 1000);   // serial de Google Sheets
+  }
+  return null;
+}
+
+function _hallarHoja(ss) {
+  for (var i = 0; i < CFG.sheetAlias.length; i++) {
+    var h = ss.getSheetByName(CFG.sheetAlias[i]);
+    if (h) return h;
+  }
+  // respaldo: la que tenga los encabezados que este script necesita
+  var CLAVES = ['mes', 'ano', 'tipo producto', 'valor total', 'medico'];
+  var hojas = ss.getSheets();
+  for (var j = 0; j < hojas.length; j++) {
+    var h2 = hojas[j];
+    if (h2.getName() === CFG.logSheet) continue;
+    if (h2.getLastRow() < 2 || h2.getLastColumn() < 23) continue;
+    var enc = h2.getRange(1, 1, 1, Math.min(h2.getLastColumn(), 30)).getValues()[0]
+      .map(function(v) {
+        return (v || '').toString().toLowerCase()
+          .replace(/[áàä]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i')
+          .replace(/[óò]/g,'o').replace(/[úù]/g,'u').replace(/\s+/g,' ').trim();
+      });
+    var faltan = CLAVES.filter(function(k) {
+      return enc.indexOf(k) < 0;
+    });
+    if (!faltan.length) return h2;
+  }
+  return null;
+}
+
+/**
+ * Verifica que la hoja y las columnas sigan donde el script cree.
+ * Ejecútala después de cualquier cambio de estructura en el Sheet.
+ */
+function checkHoja() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var h = _hallarHoja(ss);
+  if (!h) {
+    Logger.log('❌ No encontré la hoja de facturación.');
+    Logger.log('   Pestañas: ' + ss.getSheets().map(function(x){return x.getName();}).join(' · '));
+    return;
+  }
+  Logger.log('✅ Hoja: "' + h.getName() + '" · ' + h.getLastRow() + ' filas');
+  var enc = h.getRange(1, 1, 1, 23).getValues()[0];
+  var esperado = {FECHA:'fecha', MES:'mes', ANO:'ano', TIPO:'tipo producto',
+                  CANTIDAD:'cant', VALOR:'valor total', MEDICO:'medico'};
+  Object.keys(esperado).forEach(function(k) {
+    var real = (enc[COL[k]] || '(vacío)').toString();
+    var ok = real.toLowerCase().indexOf(esperado[k].substring(0, 4)) >= 0;
+    Logger.log((ok ? '  ✅ ' : '  ❌ ') + k + ' → columna ' +
+               String.fromCharCode(65 + COL[k]) + ' = "' + real + '"');
+  });
+  var f = h.getRange(2, COL.FECHA + 1, 3, 1).getValues();
+  Logger.log('  Fechas de muestra: ' + f.map(function(r){return r[0];}).join(' | '));
+}
+
 function _isoWeek(date) {
   var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
