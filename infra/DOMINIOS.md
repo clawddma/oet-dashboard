@@ -142,3 +142,78 @@ Todo debe quedar en 200/301.
    sin depender del Mac ni de tu internet. Es el cambio de mayor impacto.
 4. **Monitoreo externo** (UptimeRobot / Cloudflare Health Checks) que avise por
    Telegram. Hoy te enteras cuando un cliente te escribe.
+
+---
+
+## 6. Entregables — LaunchAgents y Cloudflare Pages
+
+Ambos hay que ejecutarlos **en el Mac mini**. Nadie puede hacerlo remotamente:
+las sesiones de Claude Code en la web corren en contenedores Linux aislados en
+la nube, sin ruta de red ni credenciales hacia tu máquina.
+
+### 6.1 LaunchAgents — que los servicios revivan solos
+
+```bash
+bash infra/instalar-launchagents.sh              # simulación, no escribe nada
+bash infra/instalar-launchagents.sh --aplicar    # instala de verdad
+sudo cloudflared service install                 # el túnel, aparte (pide sudo)
+```
+
+Busca los repos en el disco, genera un `.plist` por servicio con
+`RunAtLoad` + `KeepAlive` y los carga. A partir de ahí arrancan al bootear y
+se reinician solos si se caen. Cerrar la terminal deja de tumbarlos.
+
+Logs en `~/Library/Logs/bellapop/`. Para quitar uno:
+```bash
+launchctl bootout gui/$UID/<label> && rm ~/Library/LaunchAgents/<label>.plist
+```
+
+Si no encuentra alguna ruta:
+```bash
+OPENCLAW_DIR=~/ruta/openclaw ASTER_DIR=~/ruta/aster-bot \
+  bash infra/instalar-launchagents.sh --aplicar
+```
+
+### 6.2 TORQ a Cloudflare Pages — quitarle la dependencia del Mac
+
+`torque.themesa.co` es HTML estático: no necesita un Node vivo en tu casa.
+
+**El detalle que no se puede pasar por alto:** `vitrina.js` no sirve el repo,
+sirve una **lista blanca** de 11 archivos + `img/`. El repo contiene además
+`admin.js` (que enumera los catorce módulos privados), `CONTEXTO.md`,
+`LEADS.md`, `PAUTA.md`, `crm.html`, `inventario.json`… Un `pages deploy` del
+repo entero **publicaría todo eso**.
+
+Por eso el build replica la lista blanca y las cuatro transformaciones de
+`vitrina.js`, y **falla con exit 1 si detecta una fuga**:
+
+| Transformación | Por qué |
+|---|---|
+| Quita `<script src="admin.js">` | revela los módulos privados |
+| `torq.bellapop.co` → `torque.themesa.co` | el canonical apuntaba al dominio con login: Google seguía un 401 y la vista previa de WhatsApp salía vacía |
+| `torq.css?v=<hash>` | cache-bust por contenido (en CI el mtime no significa nada) |
+| `<meta robots noindex>` | si la página no trae el suyo |
+
+Probar el build localmente:
+```bash
+bash infra/construir-torq-publico.sh <ruta>/torque-preview ./_publico
+```
+
+Para el despliegue automático, copiar al repo **torque-preview**:
+```
+infra/torque-preview-workflow/publicar-pages.yml
+        → torque-preview/.github/workflows/publicar-pages.yml
+infra/torque-preview-workflow/construir-torq-publico.sh
+        → torque-preview/.github/workflows/construir-torq-publico.sh
+```
+
+Y en Cloudflare:
+1. Crear proyecto de Pages llamado `torq`.
+2. Secrets en torque-preview → Settings → Secrets → Actions:
+   `CLOUDFLARE_API_TOKEN` (permiso *Cloudflare Pages: Edit*) y
+   `CLOUDFLARE_ACCOUNT_ID`.
+3. En el proyecto de Pages, *Custom domains* → `torque.themesa.co`.
+   Cloudflare reemplaza el registro del túnel por el de Pages.
+4. Ya se puede apagar el LaunchAgent `co.bellapop.torq.vitrina`.
+
+Desde ahí, cada push a `main` republica el sitio. Sin Mac, sin túnel.

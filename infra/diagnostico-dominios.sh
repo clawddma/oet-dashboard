@@ -32,6 +32,17 @@ SERVICIOS=(
   "www.bellapop.co|||Raiz bellapop.co (www)"
 )
 
+# ── Preflight: decir con claridad qué falta, en vez de reventar ──────────
+FALTA=""
+for t in curl pgrep; do command -v "$t" >/dev/null 2>&1 || FALTA="$FALTA $t"; done
+if [ -n "$FALTA" ]; then
+  echo "${R}Faltan herramientas requeridas:$FALTA${N}"; exit 1
+fi
+command -v lsof >/dev/null 2>&1 || echo "${A}!${N} Sin 'lsof': se omite el chequeo de puertos locales."
+command -v dig  >/dev/null 2>&1 || echo "${G}(sin 'dig': se usa python3 para la DNS)${N}"
+command -v python3 >/dev/null 2>&1 || command -v dig >/dev/null 2>&1 || {
+  echo "${R}Se necesita 'dig' o 'python3' para resolver DNS.${N}"; exit 1; }
+
 echo
 echo "${B}════════ DIAGNOSTICO DE DOMINIOS · $(date '+%Y-%m-%d %H:%M:%S') ════════${N}"
 
@@ -57,6 +68,7 @@ echo "${B}2) PROCESOS / PUERTOS LOCALES${N}"
 for row in "${SERVICIOS[@]}"; do
   IFS='|' read -r host puerto proc desc <<<"$row"
   [ -z "$puerto" ] && continue
+  command -v lsof >/dev/null 2>&1 || continue
   if lsof -nP -iTCP:"$puerto" -sTCP:LISTEN >/dev/null 2>&1; then
     echo "   ${V}●${N} :$puerto  escuchando   ${G}($proc — $desc)${N}"
   else

@@ -1,0 +1,42 @@
+# ==========================================================================
+# Despliegue de torque.themesa.co a Cloudflare Pages.
+#
+# DESTINO: este archivo va en el repo torque-preview, en la ruta
+#          .github/workflows/publicar-pages.yml
+#
+# Cada push a main reconstruye el sitio público (solo la lista blanca de
+# vitrina.js) y lo publica. Deja de depender del Mac mini.
+#
+# Secrets que hay que crear en torque-preview
+# (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   — token con permiso "Cloudflare Pages: Edit"
+#   CLOUDFLARE_ACCOUNT_ID  — visible en el dashboard de Cloudflare
+# ==========================================================================
+name: Publicar sitio público
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir el sitio público
+        env:
+          TORQ_HOST: torque.themesa.co
+        run: bash .github/workflows/construir-torq-publico.sh . ./_publico
+
+      # El build falla con exit 1 si detecta una fuga, así que si llegamos
+      # aquí es que solo hay lista blanca. No desplegar sin esa verificación.
+      - name: Desplegar a Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ./_publico --project-name=torq --branch=main
