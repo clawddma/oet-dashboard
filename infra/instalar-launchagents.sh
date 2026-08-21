@@ -55,7 +55,12 @@ TUNNEL_UUID="${TUNNEL_UUID:-75836e06-bcb3-4f73-85ab-5b339aba38de}"
 
 # etiqueta|ejecutable|argumento|directorio_de_trabajo|descripcion
 SERVICIOS=()
-if [ -x "$CFD" ] || command -v cloudflared >/dev/null 2>&1; then
+# El tunel solo se toca si NO hay uno vivo. Instalar un segundo conector
+# sobre uno que ya funciona no arregla nada y complica el diagnostico.
+CFD_YA=0
+if pgrep -f "cloudflared" >/dev/null 2>&1; then
+  CFD_YA=1
+elif [ -x "$CFD" ] || command -v cloudflared >/dev/null 2>&1; then
   SERVICIOS+=("co.bellapop.cloudflared|$CFD|TUNEL|$HOME|tunel named $TUNNEL_UUID")
 fi
 [ -n "$TORQ" ] && [ -d "$TORQ" ] && SERVICIOS+=(
@@ -124,7 +129,11 @@ done
 
 echo
 echo "${B}cloudflared${N}"
-if [ -f "$CFG_CFD" ]; then
+if [ $CFD_YA -eq 1 ]; then
+  echo "   ${V}●${N} Ya hay un cloudflared corriendo (pid: $(pgrep -f cloudflared | tr '\n' ' '))."
+  echo "   ${G}Se deja INTACTO. Este script no lo toca ni instala otro encima.${N}"
+  echo "   ${G}Para ver quien lo administra:  launchctl list | grep -i cloudflare${N}"
+elif [ -f "$CFG_CFD" ]; then
   echo "   ${V}●${N} config encontrado: ${G}$CFG_CFD${N}"
   echo "   ${G}Se instala como LaunchAgent de usuario (arriba). NO uses${N}"
   echo "   ${G}'sudo cloudflared service install': tu tunel es named (cert.pem +${N}"
