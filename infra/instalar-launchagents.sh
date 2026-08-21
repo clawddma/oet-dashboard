@@ -84,6 +84,16 @@ for row in "${SERVICIOS[@]}"; do
   IFS='|' read -r label bin arg wd desc <<<"$row"
   plist="$DEST/$label.plist"
 
+  # NUNCA instalar encima de un puerto que ya esta escuchando: el proceso
+  # nuevo no puede tomarlo, muere, y KeepAlive lo revive en bucle sobre un
+  # servicio sano. Se respeta lo que ya funciona.
+  PUERTO_SVC=$(echo "$desc" | grep -oE '^:[0-9]+' | tr -d ':')
+  if [ -n "$PUERTO_SVC" ] && command -v lsof >/dev/null 2>&1 \
+     && lsof -nP -iTCP:"$PUERTO_SVC" -sTCP:LISTEN >/dev/null 2>&1 \
+     && ! launchctl list 2>/dev/null | grep -q "$label"; then
+    echo "   ${V}○${N} $label ${G}— :$PUERTO_SVC ya escucha, se deja intacto${N}"; continue
+  fi
+
   if [ "$arg" = "TUNEL" ]; then
     if [ ! -f "$CFG_CFD" ]; then
       echo "   ${R}●${N} $label ${G}— falta $CFG_CFD, el tunel no puede arrancar${N}"; continue
