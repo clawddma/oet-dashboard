@@ -27,43 +27,61 @@ Está escrito en la cabecera del propio archivo: `Correr: node servidor/vitrina.
 
 ---
 
-## 2. Inventario de dominios (DNS verificada 2026-08-21)
+## 2. Inventario real — desde `~/.cloudflared/config.yml`
 
-### themesa.co
-| Dominio | Origen | Puerto | Depende del Mac |
-|---|---|---|---|
-| `themesa.co` · `www.themesa.co` | raíz | — | por confirmar |
-| `torque.themesa.co` | `torque-preview/servidor/vitrina.js` | 8795 | **Sí** |
-| `btc.themesa.co` | `workspace-aster/dashboard/dashboard_server.py` | 8092 | **Sí** |
-| `oet.themesa.co` | Panel 360 OET | — | por confirmar |
+Fuente autoritativa (leída en el Mac mini el 2026-08-21). Reemplaza el mapa
+anterior, que se dedujo de comentarios del código y tenía errores.
 
-### bellapop.co
-| Dominio | Origen | Puerto | Depende del Mac |
-|---|---|---|---|
-| `bellapop.co` · `www.bellapop.co` | raíz | — | por confirmar |
-| `torq.bellapop.co` | `torque-preview/servidor/sala.js` (con llave) | 8790 | **Sí** |
-| `torque.bellapop.co` | alias de lo anterior | 8790 | **Sí** |
-| `api.bellapop.co` | `torque-preview/servidor/servidor.js` (webhook WhatsApp) | 8787 | **Sí** |
-| `aster.bellapop.co` | webhook TradingView → Aster DEX | 8081 | **Sí** |
-| `bots.bellapop.co` | `dashboard_server.py` (privado) | 8092 | **Sí** |
-| `mc.bellapop.co` | `canvas/log_server.py` — Mission Control | 18795 | **Sí** |
-| `guapa.bellapop.co` | Guapa · dashboard B2B (FastAPI) | — | probable |
-| `fp.bellapop.co` | Finanzas personales | — | por confirmar |
-| `oet.bellapop.co` | Panel 360 OET | — | por confirmar |
-| `mi.bellapop.co` | Mesa Infantino · familiar | — | **No** (Pages/Workers) |
-| `jerseys.bellapop.co` | Jerseys | — | **No** (Pages/Workers) |
+Túnel: `75836e06-bcb3-4f73-85ab-5b339aba38de`
 
-`mi` y `jerseys` resuelven al pool `172.66.x` de Cloudflare (Pages/Workers):
-son serverless, siguen arriba aunque el Mac esté apagado.
+| Hostname | Puerto | Proceso |
+|---|---|---|
+| `torque.themesa.co` | 8795 | `torque-preview/servidor/vitrina.js` |
+| `showroom.bellapop.co` | 8795 | idem (alias) |
+| `torq.bellapop.co` | 8790 | `torque-preview/servidor/sala.js` |
+| `torque.bellapop.co` | 8790 | idem (alias) |
+| `mc.bellapop.co` | 18795 | `canvas/log_server.py` |
+| `api.bellapop.co` | 18795 | idem — **no es `servidor.js`** |
+| `bots.bellapop.co` | 8092 | `dashboard_server.py` ⚠️ trading en vivo |
+| `btc.themesa.co` | 8092 | idem (vista pública) |
+| `guapa.bellapop.co` | 8000 | Guapa · FastAPI |
+| `themesa.co` · `www.themesa.co` | 8002 | sitio raíz |
+| `themesa-origin.bellapop.co` | 8002 | idem |
+| `oet.themesa.co` | 8131 | Panel 360 OET |
+| `oet.bellapop.co` | 8094 | — |
+| `lx.bellapop.co` | 3456 | — |
+| `planner.bellapop.co` | 8090 | — |
+| `plan.bellapop.co` · `ay.themesa.co` | 7893 | — |
+| `mj.themesa.co` | 7900 | — |
+| `dni.themesa.co` | 8093 | — |
+| `mindtech.themesa.co` | 8130 | — |
+| `mindtech-lab.themesa.co` | 8132 | — |
+| `mi-chat.bellapop.co` | 8134 | — |
+| *(catch-all)* | — | `http_status:404` |
 
-### Registros que NO existen
-`fiscal.bellapop.co` · `declara.bellapop.co` · `qlub.bellapop.co` ·
-`bizacq.bellapop.co` · `us.bellapop.co` · `torq.themesa.co`
+**Fuera del túnel** (Cloudflare Pages/Workers, no dependen del Mac):
+`mi.bellapop.co` · `jerseys.bellapop.co` · `fp.bellapop.co`
 
-⚠️ **`fiscal.bellapop.co` no tiene registro DNS** pese a estar documentado como
-la URL de producción de Declará. O nunca se creó, o se borró.
+### Correcciones respecto al mapa anterior
+- `api.bellapop.co` va a **:18795** (Mission Control), no a `servidor.js` en :8787.
+  Por eso responde 200 con :8787 muerto.
+- `servidor.js` (:8787) **no está expuesto** por ningún hostname.
+- Existían 12 hostnames que la exploración por DNS no encontró, porque se
+  adivinaron nombres en vez de leer el ingress.
 
----
+### Problemas abiertos
+1. **`aster.bellapop.co` no tiene regla de ingress.** No aparece en el
+   `config.yml`, así que cae al catch-all y devuelve 404. El webhook de
+   TradingView apunta ahí: las señales no llegan. Además :8081 está muerto.
+   Son dos fallas apiladas — levantar el bot no basta, falta la regla.
+2. **El túnel no está supervisado.** `launchctl list` muestra
+   `homebrew.mxcl.cloudflared` con PID `-` y último exit `1`: el servicio de
+   brew falló. El pid 734 corre por fuera de launchd. Funciona hoy, pero no
+   sobrevive un reinicio ni un crash.
+3. **`oet.bellapop.co` → :8094 devuelve 404.** La regla existe, así que el 404
+   lo emite el origen, no el túnel. Revisar qué corre en :8094.
+4. **`bellapop.co` y `www.bellapop.co` → 403.** Sin regla de ingress; el 403 no
+   es del catch-all (sería 404), así que viene de Cloudflare — WAF o Access.
 
 ## 3. Estado de GitHub Pages
 
