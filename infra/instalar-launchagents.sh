@@ -140,6 +140,11 @@ PLIST
   fi
 done
 
+# Dar tiempo a que los procesos tomen su puerto antes de que el usuario
+# corra el diagnostico: si no, la seccion de puertos los reporta MUERTOS
+# aunque esten arrancando bien, y parece que fallo.
+if [ $APLICAR -eq 1 ]; then sleep 3; fi
+
 echo
 echo "${B}cloudflared${N}"
 if [ $CFD_YA -eq 1 ]; then
