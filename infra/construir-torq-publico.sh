@@ -3,7 +3,7 @@
 # construir-torq-publico.sh — Genera el sitio estático público de TORQ,
 # listo para Cloudflare Pages, replicando la lista blanca de vitrina.js.
 #
-#   bash infra/construir-torq-publico.sh <ruta-torque-preview> [destino]
+#   bash infra/construir-torq-publico.sh RUTA_TORQUE_PREVIEW [destino]
 #
 # La regla es la de vitrina.js y no se relaja: se COPIA lo permitido, no se
 # excluye lo privado. Un archivo nuevo en el repo nace fuera del sitio
@@ -17,7 +17,7 @@ HOST="${TORQ_HOST:-torque.themesa.co}"
 
 V=$'\e[32m'; R=$'\e[31m'; G=$'\e[90m'; N=$'\e[0m'; B=$'\e[1m'
 
-[ -n "$SRC" ] || { echo "uso: $0 <ruta-torque-preview> [destino]"; exit 1; }
+[ -n "$SRC" ] || { echo "uso: $0 RUTA_TORQUE_PREVIEW [destino]"; exit 1; }
 [ -f "$SRC/index.html" ] || { echo "${R}No parece torque-preview: falta index.html en $SRC${N}"; exit 1; }
 
 # ── Lista blanca — espejo exacto de vitrina.js ────────────────────────────

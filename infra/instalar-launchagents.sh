@@ -49,9 +49,15 @@ echo
 
 NODE=$(command -v node || echo "/usr/local/bin/node")
 PY=$(command -v python3 || echo "/usr/bin/python3")
+CFD=$(command -v cloudflared || echo "/opt/homebrew/bin/cloudflared")
+CFG_CFD="$HOME/.cloudflared/config.yml"
+TUNNEL_UUID="${TUNNEL_UUID:-75836e06-bcb3-4f73-85ab-5b339aba38de}"
 
 # etiqueta|ejecutable|argumento|directorio_de_trabajo|descripcion
 SERVICIOS=()
+if [ -x "$CFD" ] || command -v cloudflared >/dev/null 2>&1; then
+  SERVICIOS+=("co.bellapop.cloudflared|$CFD|TUNEL|$HOME|tunel named $TUNNEL_UUID")
+fi
 [ -n "$TORQ" ] && [ -d "$TORQ" ] && SERVICIOS+=(
   "co.bellapop.torq.vitrina|$NODE|$TORQ/servidor/vitrina.js|$TORQ|:8795 torque.themesa.co"
   "co.bellapop.torq.sala|$NODE|$TORQ/servidor/sala.js|$TORQ|:8790 torq.bellapop.co"
@@ -73,8 +79,15 @@ for row in "${SERVICIOS[@]}"; do
   IFS='|' read -r label bin arg wd desc <<<"$row"
   plist="$DEST/$label.plist"
 
-  if [ ! -f "$arg" ]; then
+  if [ "$arg" = "TUNEL" ]; then
+    if [ ! -f "$CFG_CFD" ]; then
+      echo "   ${R}●${N} $label ${G}— falta $CFG_CFD, el tunel no puede arrancar${N}"; continue
+    fi
+    ARGS="<string>tunnel</string><string>--config</string><string>$CFG_CFD</string><string>run</string><string>$TUNNEL_UUID</string>"
+  elif [ ! -f "$arg" ]; then
     echo "   ${A}○${N} $label ${G}— omitido, no existe $arg${N}"; continue
+  else
+    ARGS="<string>$arg</string>"
   fi
 
   if [ $APLICAR -eq 0 ]; then
@@ -88,7 +101,7 @@ for row in "${SERVICIOS[@]}"; do
 <dict>
   <key>Label</key><string>$label</string>
   <key>ProgramArguments</key>
-  <array><string>$bin</string><string>$arg</string></array>
+  <array><string>$bin</string>$ARGS</array>
   <key>WorkingDirectory</key><string>$wd</string>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
@@ -111,13 +124,15 @@ done
 
 echo
 echo "${B}cloudflared${N}"
-if [ $APLICAR -eq 1 ]; then
-  echo "   ${A}!${N} El túnel se instala aparte, requiere sudo:"
+if [ -f "$CFG_CFD" ]; then
+  echo "   ${V}●${N} config encontrado: ${G}$CFG_CFD${N}"
+  echo "   ${G}Se instala como LaunchAgent de usuario (arriba). NO uses${N}"
+  echo "   ${G}'sudo cloudflared service install': tu tunel es named (cert.pem +${N}"
+  echo "   ${G}config.yml en tu home) y ese comando pide un TOKEN, no un UUID.${N}"
 else
-  echo "   ${G}El túnel se instala aparte, requiere sudo:${N}"
+  echo "   ${R}●${N} NO existe $CFG_CFD"
+  echo "   ${G}Sin el, el tunel no arranca. Revisa: cloudflared tunnel list${N}"
 fi
-echo "   ${G}sudo cloudflared service install${N}"
-echo "   ${G}(deja el túnel como servicio del sistema, sobrevive a reinicios)${N}"
 
 echo
 if [ $APLICAR -eq 0 ]; then
@@ -125,6 +140,6 @@ if [ $APLICAR -eq 0 ]; then
 else
   echo "${V}Listo.${N} Verifica con:  ${G}bash infra/diagnostico-dominios.sh${N}"
   echo "Logs en: ${G}$LOGS/${N}"
-  echo "Quitar uno: ${G}launchctl bootout gui/\$UID/<label> && rm $DEST/<label>.plist${N}"
+  echo "Quitar uno: ${G}launchctl bootout gui/\$UID/LABEL \&\& rm $DEST/LABEL.plist${N}"
 fi
 echo

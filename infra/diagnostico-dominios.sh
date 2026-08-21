@@ -56,7 +56,7 @@ if pgrep -f "cloudflared" >/dev/null 2>&1; then
   fi
 else
   echo "   ${R}●${N} cloudflared NO ESTA CORRIENDO  ${R}<-- todo lo tunelizado esta caido${N}"
-  echo "   ${G}arreglo: cloudflared tunnel run <nombre>   (o: launchctl kickstart -k gui/\$UID/<label>)${N}"
+  echo "   ${G}arreglo: bash infra/instalar-launchagents.sh --aplicar${N}"
 fi
 [ -f "$HOME/.cloudflared/config.yml" ] \
   && echo "   ${G}config: ~/.cloudflared/config.yml${N}" \

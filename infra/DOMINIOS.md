@@ -88,43 +88,57 @@ Con solo el paso 2, GitHub responde 404.
 
 ## 4. Runbook de recuperación (en el Mac mini)
 
+### Paso 0 — pararse en el repo (esto es lo que falló la primera vez)
+
+```bash
+cd /Users/braindma/braindma/proyectos/oet/oet-dashboard
+git fetch origin
+git checkout claude/domain-projects-diagnostic-3pi7id
+git pull origin claude/domain-projects-diagnostic-3pi7id
+```
+
+⚠️ **Los comandos de abajo no llevan placeholders.** Se pegan tal cual. Nunca
+escribas algo como `tunnel run NOMBRE` entre paréntesis angulares: zsh lee `<`
+como redirección de archivo y responde `parse error near '\n'`.
+
 ### Paso 1 — diagnosticar
+
 ```bash
 bash infra/diagnostico-dominios.sh
 ```
 
-### Paso 2 — levantar el túnel
+### Paso 2 — levantar todo (túnel + servicios)
+
 ```bash
-pgrep -f cloudflared || cloudflared tunnel run <nombre-del-tunel>
-cloudflared tunnel list          # ver los túneles configurados
-cat ~/.cloudflared/config.yml    # ver el mapeo hostname → puerto
+bash infra/instalar-launchagents.sh            # simulación
+bash infra/instalar-launchagents.sh --aplicar  # aplica
 ```
 
-Si están como LaunchAgent (lo recomendable, arranca solo al bootear):
+Instala también el túnel como LaunchAgent de usuario.
+
+**NO uses `sudo cloudflared service install`.** Tu túnel es *named*
+(UUID `75836e06-bcb3-4f73-85ab-5b339aba38de`, con `cert.pem` y
+`config.yml` en `~/.cloudflared/`). Ese comando espera un **token** y bajo
+`sudo` busca en el home de root, no en el tuyo: falla con
+`Provided tunnel token is not valid (illegal base64 data at input byte 0)`.
+
+Si ese comando alcanzó a dejar un daemon a medias:
 ```bash
-launchctl list | grep -i cloudflared
-launchctl kickstart -k gui/$UID/<label>
+ls -la /Library/LaunchDaemons/com.cloudflare.cloudflared.plist
+sudo cloudflared service uninstall
 ```
 
-### Paso 3 — levantar los orígenes
+Arranque manual del túnel, si lo necesitas suelto:
 ```bash
-# TORQ
-cd <ruta>/torque-preview
-node servidor/vitrina.js &     # :8795  → torque.themesa.co
-node servidor/sala.js &        # :8790  → torq.bellapop.co
-node servidor/servidor.js &    # :8787  → api.bellapop.co
-
-# Trading / Mission Control
-bash ~/.aster-bot/scripts/restart_aster.sh     # :8081 + túnel
-python3 ~/.openclaw/workspace-aster/dashboard/dashboard_server.py &   # :8092
-python3 ~/.openclaw/canvas/log_server.py &                           # :18795
+cloudflared tunnel run 75836e06-bcb3-4f73-85ab-5b339aba38de
 ```
-(Ajusta las rutas a las reales de tu máquina.)
 
-### Paso 4 — verificar
+### Paso 3 — verificar
+
 ```bash
 bash infra/diagnostico-dominios.sh
 ```
+
 Todo debe quedar en 200/301.
 
 ---
@@ -155,8 +169,7 @@ la nube, sin ruta de red ni credenciales hacia tu máquina.
 
 ```bash
 bash infra/instalar-launchagents.sh              # simulación, no escribe nada
-bash infra/instalar-launchagents.sh --aplicar    # instala de verdad
-sudo cloudflared service install                 # el túnel, aparte (pide sudo)
+bash infra/instalar-launchagents.sh --aplicar    # instala de verdad (incluye el túnel)
 ```
 
 Busca los repos en el disco, genera un `.plist` por servicio con
@@ -165,7 +178,8 @@ se reinician solos si se caen. Cerrar la terminal deja de tumbarlos.
 
 Logs en `~/Library/Logs/bellapop/`. Para quitar uno:
 ```bash
-launchctl bootout gui/$UID/<label> && rm ~/Library/LaunchAgents/<label>.plist
+launchctl bootout gui/$UID/co.bellapop.torq.vitrina
+rm ~/Library/LaunchAgents/co.bellapop.torq.vitrina.plist
 ```
 
 Si no encuentra alguna ruta:
@@ -191,12 +205,12 @@ Por eso el build replica la lista blanca y las cuatro transformaciones de
 |---|---|
 | Quita `<script src="admin.js">` | revela los módulos privados |
 | `torq.bellapop.co` → `torque.themesa.co` | el canonical apuntaba al dominio con login: Google seguía un 401 y la vista previa de WhatsApp salía vacía |
-| `torq.css?v=<hash>` | cache-bust por contenido (en CI el mtime no significa nada) |
+| `torq.css?v=HASH` | cache-bust por contenido (en CI el mtime no significa nada) |
 | `<meta robots noindex>` | si la página no trae el suyo |
 
 Probar el build localmente:
 ```bash
-bash infra/construir-torq-publico.sh <ruta>/torque-preview ./_publico
+bash infra/construir-torq-publico.sh ~/braindma/proyectos/torque-preview ./_publico
 ```
 
 Para el despliegue automático, copiar al repo **torque-preview**:
