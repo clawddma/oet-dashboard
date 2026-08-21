@@ -64,15 +64,18 @@ elif [ -x "$CFD" ] || command -v cloudflared >/dev/null 2>&1; then
   SERVICIOS+=("co.bellapop.cloudflared|$CFD|TUNEL|$HOME|tunel named $TUNNEL_UUID")
 fi
 [ -n "$TORQ" ] && [ -d "$TORQ" ] && SERVICIOS+=(
-  "co.bellapop.torq.vitrina|$NODE|$TORQ/servidor/vitrina.js|$TORQ|:8795 torque.themesa.co"
-  "co.bellapop.torq.sala|$NODE|$TORQ/servidor/sala.js|$TORQ|:8790 torq.bellapop.co"
-  "co.bellapop.torq.webhook|$NODE|$TORQ/servidor/servidor.js|$TORQ|:8787 api.bellapop.co"
+  "co.bellapop.torq.vitrina|$NODE|$TORQ/servidor/vitrina.js|$TORQ|:8795 torque.themesa.co + showroom.bellapop.co"
+  "co.bellapop.torq.sala|$NODE|$TORQ/servidor/sala.js|$TORQ|:8790 torq.bellapop.co + torque.bellapop.co"
 )
+# servidor.js (:8787) NO se instala a proposito: el ingress del tunel no lo
+# expone por ningun hostname, y arranca con WA_TOKEN/WA_APP_SECRET vacios
+# —un webhook que no puede validar firmas de Meta—. Si algun dia se expone,
+# primero hay que darle sus variables de entorno.
 [ -d "$OPENCLAW/workspace-aster/dashboard" ] && SERVICIOS+=(
-  "co.bellapop.aster.dashboard|$PY|$OPENCLAW/workspace-aster/dashboard/dashboard_server.py|$OPENCLAW|:8092 bots.bellapop.co + btc.themesa.co"
+  "co.bellapop.aster.dashboard|$PY|$OPENCLAW/workspace-aster/dashboard/dashboard_server.py|$OPENCLAW|:8092 bots.bellapop.co + btc.themesa.co (TRADING EN VIVO)"
 )
 [ -d "$OPENCLAW/canvas" ] && SERVICIOS+=(
-  "co.bellapop.missioncontrol|$PY|$OPENCLAW/canvas/log_server.py|$OPENCLAW|:18795 mc.bellapop.co"
+  "co.bellapop.missioncontrol|$PY|$OPENCLAW/canvas/log_server.py|$OPENCLAW|:18795 mc.bellapop.co + api.bellapop.co"
 )
 
 [ ${#SERVICIOS[@]} -eq 0 ] && { echo "${R}No se encontró ningún servicio. Exporta OPENCLAW_DIR / ASTER_DIR y reintenta.${N}"; exit 1; }
