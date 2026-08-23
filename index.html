@@ -5637,7 +5637,7 @@ function buildComInicio(){
     })()}
   </div>
   <div style="background:#f0faf7;border-left:3px solid #2dc5ab;padding:8px 12px;border-radius:4px;margin-bottom:10px;font-size:11px;color:#607d76">
-    ℹ️ <strong>Esta sección muestra ingresos por servicio (facturación real del Google Sheet).</strong>
+    ℹ️ <strong>Esta sección muestra ingresos por servicio. El total del mes es facturación real del Sheet; su reparto entre servicios es una estimación por participación anual.</strong>
     El análisis de costos (CMV, G&A) y márgenes está disponible en la pestaña <strong>EEFF</strong>.
     ${(()=>{const _pend=D.filter(d=>d.y===2026&&d.eeffPending).map(d=>d.p);return CF.years.has(2026)&&_pend.length?'<br>⚠️ Datos de P&amp;L pendientes de estados financieros de cierre: '+_pend.join(', ')+'.':'';})()}
   </div>`:''}
@@ -5882,8 +5882,15 @@ function buildComInicio(){
     </tr></tfoot>
   </table></div>
   <div class="insight">
-    ⭐ <strong>LIOs Premium</strong> — motor de mayor margen: ${fv(li26[2])} en Ene–${MN[META.lastM]} 2026.
-    <strong>Derechos de Sala</strong> lidera en volumen: ${pct26[0].toFixed(0)}% del mix YTD 2026.<br>
+    ${/* Antes decía siempre «LIOs Premium» y «Derechos de Sala lidera» leyendo las
+          posiciones 2 y 0, que el filtro de líneas desplaza: con una línea sola
+          reventaba la sección. Ahora se nombra la línea que de verdad manda en el
+          mix seleccionado, y la de LIOs solo aparece si está elegida. */''}
+    ${_lnHas('LIOs ★')?`⭐ <strong>LIOs Premium</strong> — motor de mayor margen: ${fv(_lnV(li26,'LIOs ★'))} en Ene–${MN[META.lastM]} 2026.`:''}
+    ${(()=>{ const _i = pct26.reduce((mj,v,ix)=>v>pct26[mj]?ix:mj, 0);
+             const _n = liLabels[_i];
+             return (_n==null||pct26[_i]==null) ? '' :
+               `<strong>${_n}</strong> lidera en volumen: ${pct26[_i].toFixed(0)}% del mix YTD 2026.`; })()}<br>
     ${hasFilters
       ? '📅 Período: '+_badge+'. Los valores por línea son proporcionales a la facturación mensual total — <em>no incluyen costos ni gastos</em>.'
       : '📈 Al ritmo actual, 2026 supera el promedio trimestral 2024. Para análisis de rentabilidad por línea, ver pestaña <strong>EEFF</strong>.'}
