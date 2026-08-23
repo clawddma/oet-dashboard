@@ -385,6 +385,10 @@ a{text-decoration:none;color:inherit;}
   z-index:95;
 }
 #com-filter-bar.visible{ display:flex; }
+/* Barra de filtros atenuada en vistas que no consumen los filtros (ver SECS_SIN_FILTRO) */
+.cfb-inerte{ opacity:.45; filter:saturate(.4); }
+.aviso-sin-filtro{ padding:9px 14px;margin:0 0 12px;background:rgba(96,125,118,.10);
+  border-left:4px solid #607d76;border-radius:6px;font-size:11.5px;color:#3f5a53; }
 /* Offset content when filter bar is visible */
 #content.has-filter-bar{ padding-top:90px; }
 @media(max-width:1023px){ #com-filter-bar{ left:170px; } }
@@ -1379,8 +1383,15 @@ a{text-decoration:none;color:inherit;}
         data-cmp="full" onclick="setFinCompareMode('full',this)"
         title="Año Completo: muestra los 12 meses; 2026 aparece solo donde hay EEFF cerrado">Año completo</button>
     </div>
-    <div class="cfb-div"></div>
-    <div class="cfb-group">
+    <!-- OCULTO 2026-08-23 — control muerto: FF.vista se escribía pero NINGÚN builder lo
+         leía (solo aparecía en el texto de ayuda). Los 3 botones se iluminaban, se
+         reconstruían las ~30 gráficas y salía exactamente el mismo contenido.
+         Para activarlos de verdad haría falta que cada builder consulte FF.vista:
+         los `rowDefs` ya traen la marca `pct:true` y `aggP()` ya calcula los márgenes,
+         así que 'pct' es viable; 'var' exige además el año anterior en cada fila.
+         Mientras eso no exista, el control se oculta en vez de mentir. -->
+    <div class="cfb-div" style="display:none"></div>
+    <div class="cfb-group" style="display:none">
       <span class="cfb-lbl">Vista</span>
       <button class="cfb-pill on" id="ffb-vista-abs" onclick="setFinVista('abs',this)">Absolutos</button>
       <button class="cfb-pill" id="ffb-vista-pct" onclick="setFinVista('pct',this)">% Márgenes</button>
@@ -2276,6 +2287,25 @@ function cfYtdMonths(){
   return { months: info.months, partial: info.partial };
 }
 
+// ── Doble descuento del mes en curso ─────────────────────────────────────
+// El mes en curso del AÑO en curso ya viene parcial en la fuente: COM.ing_m26[m-1]
+// es exactamente MTD_RAW.ing (facturación al día d), y LMON/TMON/DMON se derivan de
+// esa cifra. Multiplicarla además por el factor d/díasDelMes la descontaría dos veces
+// y hundía el crecimiento de 2026. El factor solo aplica a los años cerrados, cuyo
+// mes equivalente sí trae los 30/31 días completos.
+// Devuelve el factor a usar para el año `y`, o null si NO se debe recortar.
+function cfPartialFactorFor(y, partial){
+  if(!partial) return null;
+  const cur = (typeof MTD_RAW!=='undefined' && MTD_RAW) ? MTD_RAW : null;
+  if(cur && y===cur.y && partial.month===cur.m) return null; // ya viene parcial
+  return partial.factor;
+}
+// Suma el aporte del mes parcial respetando la regla de arriba.
+function cfPartialAdd(y, partial, valor){
+  const f = cfPartialFactorFor(y, partial);
+  return f==null ? valor : Math.round(valor*f);
+}
+
 // Texto del badge para mostrar el corte activo en chart titles.
 // - Selección manual → null (el filtro ya muestra su propio chip)
 // - Modo 'full'      → "Año completo" (o null si no se quiere mostrar)
@@ -2311,7 +2341,7 @@ function cfLineYear(y){
   const result=new Array(COM.lineas.length).fill(0);
   months.forEach(m=>{ if(LMON[y][m]) LMON[y][m].forEach((v,i)=>result[i]+=v); });
   if(partial && LMON[y][partial.month]){
-    LMON[y][partial.month].forEach((v,i)=>result[i]+=Math.round(v*partial.factor));
+    LMON[y][partial.month].forEach((v,i)=>result[i]+=cfPartialAdd(y,partial,v));
   }
   if(CF.doctors.size>0){const f=drBillFraction(y);return result.map(v=>Math.round(v*f));}
   return result;
@@ -2322,7 +2352,7 @@ function cfTipoYear(y){
   const result=new Array(CIR.tipos.length).fill(0);
   months.forEach(m=>{ if(TMON[y][m]) TMON[y][m].forEach((v,i)=>result[i]+=v); });
   if(partial && TMON[y][partial.month]){
-    TMON[y][partial.month].forEach((v,i)=>result[i]+=Math.round(v*partial.factor));
+    TMON[y][partial.month].forEach((v,i)=>result[i]+=cfPartialAdd(y,partial,v));
   }
   if(CF.doctors.size>0){const f=drBillFraction(y);return result.map(v=>Math.round(v*f));}
   return result;
@@ -2340,7 +2370,7 @@ function drBillFraction(y){
   });
   if(partial && DMON[y][partial.month]){
     DMON[y][partial.month].forEach(d=>{
-      const v=Math.round(d.bill*partial.factor);
+      const v=cfPartialAdd(y,partial,d.bill);
       allBill+=v;
       if(CF.doctors.has(d.name)) selBill+=v;
     });
@@ -2363,8 +2393,8 @@ function cfDoctorYear(y){
   // Añadir aporte del mes parcial (factor < 1) para mantener el corte YTD alineado
   if(partial && DMON[y][partial.month]){
     DMON[y][partial.month].forEach(d=>{
-      agg[d.name].bill+=Math.round(d.bill*partial.factor);
-      agg[d.name].cir +=Math.round(d.cir *partial.factor);
+      agg[d.name].bill+=cfPartialAdd(y,partial,d.bill);
+      agg[d.name].cir +=cfPartialAdd(y,partial,d.cir);
     });
   }
   let arr=Object.values(agg);
@@ -3711,9 +3741,11 @@ function buildFinInicio(){
   const el=document.getElementById('fin-inicio');
   const lastEEFF = D.filter(hasEEFF).at(-1) || D[D.length-2]; // último mes con EEFF oficial
   const last = D[D.length-1]; // último mes calendario (puede estar pendiente)
-  const a25=ffAnn(2025)||ANN[2025]; const a24=ffAnn(2024)||ANN[2024];
-  const var25_24_ing = pctVar(a25.ing,a24.ing);
-  const var25_24_ebitda = pctVar(a25.ebitda,a24.ebitda);
+  // ffAnn(y) devuelve null cuando el año NO está seleccionado en el filtro.
+  // Caer a ANN[y] (año completo, sin filtrar) pintaba una cifra que el filtro dice
+  // no estar mostrando: se prefiere NO pintar la tarjeta.
+  const a25=ffAnn(2025); const a24=ffAnn(2024); const a26=ffAnn(2026);
+  const var25_24_ing = (a25&&a24)?pctVar(a25.ing,a24.ing):null;
   const ytdIng26 = sum(ffYtd26(),'ing'); // solo ingresos de meses con EEFF oficial (filtrado FF)
   const ytdEbitda26 = sum(ffYtd26(),'ebitda'); // solo EEFF confirmados (filtrado FF)
 
@@ -3721,10 +3753,11 @@ function buildFinInicio(){
   <div class="sec-title">Vista General — Estados Financieros Oficiales
     <span class="st-badge">EEFF: Ene 2024 – ${lastEEFF.p} · Facturación hasta ${last.p}</span>
   </div>
-  <div class="kpis k4">
-    ${kpiCard('Facturación 2025', fv(a25.ing), fp(var25_24_ing)+' vs 2024')}
-    ${kpiCard('EBITDA 2025', fv(a25.ebitda), 'Margen: '+a25.mep.toFixed(1)+'%', a25.ebitda>=0?'':'red')}
-    ${kpiCard('Ganancia Neta 2025', fv(a25.un), 'Margen neto: '+a25.mnp.toFixed(1)+'%', a25.un>=0?'':'red')}
+  <div class="kpis k5">
+    ${a25?kpiCard('Facturación '+_ffYearLabel(2025), fv(a25.ing), var25_24_ing!==null?fp(var25_24_ing)+' vs '+_ffYearLabel(2024):'2024 fuera del filtro'):''}
+    ${a26?kpiCard('Facturación '+ffYtd26Label(), fv(a26.ing), a25?fp(pctVar(a26.ing,sum(ffYtd25cmp(),'ing')))+' vs 2025 mismo período':'EEFF oficiales del año en curso'):''}
+    ${a25?kpiCard('EBITDA '+_ffYearLabel(2025), fv(a25.ebitda), 'Margen: '+a25.mep.toFixed(1)+'%', a25.ebitda>=0?'':'red'):''}
+    ${a25?kpiCard('Ganancia Neta '+_ffYearLabel(2025), fv(a25.un), 'Margen neto: '+a25.mnp.toFixed(1)+'%', a25.un>=0?'':'red'):''}
     ${kpiCard('Último EEFF ('+lastEEFF.p+')', fv(lastEEFF.ing), 'EBITDA: '+fv(lastEEFF.ebitda||0))}
   </div>
   <div class="g6040">
@@ -3846,23 +3879,28 @@ function buildFinInicio(){
   document.getElementById('ini-resumen-body').innerHTML=`
   <div style="overflow-x:auto">
   <table class="tbl">
-    <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th>
+    <thead><tr><th>Indicador</th><th>${_ffYearLabel(2024)}</th><th>${_ffYearLabel(2025)}</th><th>Δ 2025/24</th>
       <th>2026 (${_eeffLabel || 'Sin EEFF oficial'})</th><th>Δ vs 2025 igual período</th></tr></thead>
     <tbody>
-    ${rows.map(([lbl,f])=>{
-      const v24=ANN[2024][f], v25=ANN[2025][f];
-      const v26=sum(ffYtd26(),f);
-      const d2524=pctVar(v25,v24), d26=parseFloat(ytdVar(f));
-      const pendNote=_lem26<3?' *':'';
-      return `<tr>
-        <td>${lbl}${pendNote}</td>
-        <td>${fv(v24)}</td>
-        <td>${fv(v25)}</td>
-        <td class="${tdClsR(d2524,f)}">${fp(d2524)}</td>
-        <td>${fv(v26)}</td>
-        <td class="${tdClsR(d26,f)}">${fp(d26)}</td>
-      </tr>`;
-    }).join('')}
+    ${(()=>{
+      // Antes leía ANN[2024]/ANN[2025] crudos (año completo) bajo un rótulo filtrado:
+      // la misma fila salía distinta aquí y en «Resumen Anual». Ahora ambos usan ffAnn().
+      const _t24=ffAnn(2024), _t25=ffAnn(2025);
+      return rows.map(([lbl,f])=>{
+        const v24=_t24?_t24[f]:null, v25=_t25?_t25[f]:null;
+        const v26=sum(ffYtd26(),f);
+        const d2524=(v24!==null&&v25!==null)?pctVar(v25,v24):null, d26=parseFloat(ytdVar(f));
+        const pendNote=_lem26<3?' *':'';
+        return `<tr>
+          <td>${lbl}${pendNote}</td>
+          <td>${v24===null?'<span style="color:#9bb0aa">Sin datos</span>':fv(v24)}</td>
+          <td>${v25===null?'<span style="color:#9bb0aa">Sin datos</span>':fv(v25)}</td>
+          <td class="${d2524===null?'':tdClsR(d2524,f)}">${d2524===null?'—':fp(d2524)}</td>
+          <td>${fv(v26)}</td>
+          <td class="${tdClsR(d26,f)}">${fp(d26)}</td>
+        </tr>`;
+      }).join('');
+    })()}
     </tbody>
   </table></div>
   <div class="insight">
@@ -4146,9 +4184,10 @@ function buildFinEbitda(){
   const el=document.getElementById('fin-ebitda');
   el.innerHTML=`
   <div class="sec-title">EBITDA — Generación de Caja Operativa <span class="st-badge">Por encima de $0 = la clínica genera caja</span></div>
-  <div class="kpis k4">
-    ${(()=>{const _a24=ffAnn(2024)||ANN[2024]; return kpiCard('EBITDA '+_ffYearLabel(2024), fv(_a24.ebitda), 'Margen: '+_a24.mep.toFixed(1)+'%', _a24.ebitda>=0?'':'red');})()}
-    ${(()=>{const _a25=ffAnn(2025)||ANN[2025],_a24=ffAnn(2024)||ANN[2024]; return kpiCard('EBITDA '+_ffYearLabel(2025), fv(_a25.ebitda), fp(pctVar(_a25.ebitda,_a24.ebitda))+' vs '+_ffYearLabel(2024).split(' ')[0], _a25.ebitda>=0?'':'red');})()}
+  <div class="kpis k5">
+    ${(()=>{const a=ffAnn(2024); return a?kpiCard('EBITDA '+_ffYearLabel(2024), fv(a.ebitda), 'Margen: '+a.mep.toFixed(1)+'%', a.ebitda>=0?'':'red'):'';})()}
+    ${(()=>{const a=ffAnn(2025),b=ffAnn(2024); return a?kpiCard('EBITDA '+_ffYearLabel(2025), fv(a.ebitda), b?fp(pctVar(a.ebitda,b.ebitda))+' vs '+_ffYearLabel(2024).split(' ')[0]:'Margen: '+a.mep.toFixed(1)+'%', a.ebitda>=0?'':'red'):'';})()}
+    ${(()=>{const a=ffAnn(2026); return a?kpiCard('EBITDA '+ffYtd26Label(), fv(a.ebitda), 'Margen: '+a.mep.toFixed(1)+'%', a.ebitda>=0?'':'red'):'';})()}
     ${kpiCard('Mejor mes', 'Ago-25', fv(478516.17))}
     ${kpiCard('Peor mes', 'Sep-25', fv(-447648.26), 'red')}
   </div>
@@ -4259,12 +4298,29 @@ function buildFinMargen(){
   el.innerHTML=`
   <div class="sec-title">Evolución de Márgenes (%) <span class="st-badge">Por encima de 0% = rentable</span></div>
   <div class="kpis k4">
-    ${(()=>{const a25=ffAnn(2025)||ANN[2025],a24=ffAnn(2024)||ANN[2024];return[
-      kpiCard('Mg Bruto 2025',    a25.mbp.toFixed(1)+'%','vs 2024: '+a24.mbp.toFixed(1)+'%'),
-      kpiCard('Mg Operativo 2025',a25.mop.toFixed(1)+'%','vs 2024: '+a24.mop.toFixed(1)+'%',a25.mop>=0?'':'red'),
-      kpiCard('Mg EBITDA 2025',   a25.mep.toFixed(1)+'%','vs 2024: '+a24.mep.toFixed(1)+'%',a25.mep>=0?'':'red'),
-      kpiCard('Mg Neto 2025',     a25.mnp.toFixed(1)+'%','vs 2024: '+a24.mnp.toFixed(1)+'%',a25.mnp>=0?'':'red')
-    ].join('');})()}
+    ${(()=>{
+      // Sin fallback a ANN[] (año completo sin filtrar): si el año no está
+      // seleccionado, la tarjeta no se pinta y el comparativo dice "—".
+      const a25=ffAnn(2025), a24=ffAnn(2024), a26=ffAnn(2026);
+      if(!a25) return a26?[
+        kpiCard('Mg Bruto '+ffYtd26Label(),    a26.mbp.toFixed(1)+'%','2026 · EEFF oficiales'),
+        kpiCard('Mg Operativo '+ffYtd26Label(),a26.mop.toFixed(1)+'%','2026 · EEFF oficiales',a26.mop>=0?'':'red'),
+        kpiCard('Mg EBITDA '+ffYtd26Label(),   a26.mep.toFixed(1)+'%','2026 · EEFF oficiales',a26.mep>=0?'':'red'),
+        kpiCard('Mg Neto '+ffYtd26Label(),     a26.mnp.toFixed(1)+'%','2026 · EEFF oficiales',a26.mnp>=0?'':'red')
+      ].join('') : '<div class="kpi"><div class="kpi-sub">Ningún año seleccionado</div></div>';
+      const cmp=k=>{
+        const p=[];
+        if(a24) p.push('vs '+_ffYearLabel(2024).split(' ')[0]+': '+a24[k].toFixed(1)+'%');
+        if(a26) p.push(ffYtd26Label()+': '+a26[k].toFixed(1)+'%');
+        return p.length?p.join(' · '):'2024 fuera del filtro';
+      };
+      const L=_ffYearLabel(2025);
+      return[
+        kpiCard('Mg Bruto '+L,    a25.mbp.toFixed(1)+'%',cmp('mbp')),
+        kpiCard('Mg Operativo '+L,a25.mop.toFixed(1)+'%',cmp('mop'),a25.mop>=0?'':'red'),
+        kpiCard('Mg EBITDA '+L,   a25.mep.toFixed(1)+'%',cmp('mep'),a25.mep>=0?'':'red'),
+        kpiCard('Mg Neto '+L,     a25.mnp.toFixed(1)+'%',cmp('mnp'),a25.mnp>=0?'':'red')
+      ].join('');})()}
   </div>
   <div class="gfull">${chartCard('ch-mg-all','Mg EBITDA% y Mg Neto% — Histórico mensual (encima de 0% = rentable)','',270,'',false,'Los cuatro márgenes en una vista: bruto, operativo, EBITDA y neto. Un negocio saludable tiene márgenes estables o crecientes. Caídas sostenidas son señal de alerta.')}</div>
   <div class="g2">
@@ -4483,8 +4539,8 @@ function buildFinFlujo(){
   el.innerHTML=`
   <div class="sec-title">Flujo de Caja <span class="st-badge">EBITDA como proxy de generación operativa</span></div>
   <div class="kpis k3">
-    ${(()=>{const _a24=ffAnn(2024)||ANN[2024];return kpiCard('FCO Estimado '+_ffYearLabel(2024), fv(_a24.ebitda), 'EBITDA del período', _a24.ebitda>=0?'':'red');})()}
-    ${(()=>{const _a25=ffAnn(2025)||ANN[2025];return kpiCard('FCO Estimado '+_ffYearLabel(2025), fv(_a25.ebitda), 'EBITDA del período', _a25.ebitda>=0?'':'red');})()}
+    ${(()=>{const a=ffAnn(2024);return a?kpiCard('FCO Estimado '+_ffYearLabel(2024), fv(a.ebitda), 'EBITDA del período', a.ebitda>=0?'':'red'):'';})()}
+    ${(()=>{const a=ffAnn(2025);return a?kpiCard('FCO Estimado '+_ffYearLabel(2025), fv(a.ebitda), 'EBITDA del período', a.ebitda>=0?'':'red'):'';})()}
     ${kpiCard('FCO YTD 2026 (EEFF)', fv(sum(ffYtd26(),'ebitda')), ffYtd26Label()+' · cierre oficial', sum(ffYtd26(),'ebitda')>=0?'':'red')}
   </div>
   <div class="g6040">
@@ -4571,22 +4627,24 @@ function buildFinFlujo(){
     <div style="display:flex;justify-content:space-between;align-items:center;padding:7px ${indent?'8px 7px 24px':'8px 7px 8px'};border-bottom:1px solid #eef2f1;font-size:12px;">
       <span style="color:#1a2e28;${indent?'padding-left:14px;color:#607d76':'font-weight:600'}">${lbl}</span>
       <div style="display:flex;gap:20px">
-        <span style="min-width:76px;text-align:right" class="${tdCls(v24)}">${fv(v24)}</span>
-        <span style="min-width:76px;text-align:right" class="${tdCls(v25)}">${fv(v25)}</span>
-        <span style="min-width:76px;text-align:right;color:#b8860b;font-weight:500" class="${tdCls(v26)}">${fv(v26)}</span>
+        <span style="min-width:76px;text-align:right" class="${v24==null?'':tdCls(v24)}">${v24==null?'<span style="color:#9bb0aa">Sin datos</span>':fv(v24)}</span>
+        <span style="min-width:76px;text-align:right" class="${v25==null?'':tdCls(v25)}">${v25==null?'<span style="color:#9bb0aa">Sin datos</span>':fv(v25)}</span>
+        <span style="min-width:76px;text-align:right;color:#b8860b;font-weight:500" class="${v26==null?'':tdCls(v26)}">${v26==null?'<span style="color:#9bb0aa">Sin datos</span>':fv(v26)}</span>
       </div>
     </div>`;
   document.getElementById('flujo-tabla').innerHTML=`
     <div style="display:flex;justify-content:flex-end;gap:20px;padding:6px 8px;background:#0c3028;border-radius:4px 4px 0 0">
-      <span style="color:#fff;font-size:11px;min-width:76px;text-align:right">2024</span>
-      <span style="color:#fff;font-size:11px;min-width:76px;text-align:right">2025</span>
-      <span style="color:#ffc107;font-size:11px;min-width:76px;text-align:right">2026 YTD</span>
+      <span style="color:#fff;font-size:11px;min-width:76px;text-align:right">${_ffYearLabel(2024)}</span>
+      <span style="color:#fff;font-size:11px;min-width:76px;text-align:right">${_ffYearLabel(2025)}</span>
+      <span style="color:#ffc107;font-size:11px;min-width:76px;text-align:right">2026 ${ffYtd26Label()}</span>
     </div>
-    ${(()=>{const fa24=ffAnn(2024)||ANN[2024],fa25=ffAnn(2025)||ANN[2025];return[
+    ${(()=>{const _z={ebitda:null,da:null,uo:null,oInc:null,oGas:null,un:null};
+      const _ng=v=>v==null?null:-v, _dif=(a,b)=>(a==null||b==null)?null:a-b;
+      const fa24=ffAnn(2024)||_z, fa25=ffAnn(2025)||_z;return[
       mkW('EBITDA (generación operativa)',fa24.ebitda,fa25.ebitda,_v26f('ebitda')),
-      mkW('(-) Depreciación/Amort.',-fa24.da,-fa25.da,-_v26f('da'),true),
+      mkW('(-) Depreciación/Amort.',_ng(fa24.da),_ng(fa25.da),-_v26f('da'),true),
       mkW('= Ganancia Operativa',fa24.uo,fa25.uo,_v26f('uo')),
-      mkW('(+) Otros Ingresos netos',fa24.oInc-fa24.oGas,fa25.oInc-fa25.oGas,_v26f('oInc')-_v26f('oGas'),true),
+      mkW('(+) Otros Ingresos netos',_dif(fa24.oInc,fa24.oGas),_dif(fa25.oInc,fa25.oGas),_v26f('oInc')-_v26f('oGas'),true),
       mkW('= Ganancia Neta',fa24.un,fa25.un,_v26f('un'))
     ].join('');})()}
     <div class="insight" style="margin-top:10px;font-size:11px">* Excluye CapEx, Δ Capital de Trabajo, Δ Deuda · 2026 YTD = Ene+Feb EEFF oficial</div>`;
@@ -4598,7 +4656,12 @@ function buildFinFlujo(){
 function buildFinAnual(){
   const el=document.getElementById('fin-anual');
   const _nEEFF=ffYtd26().length; // meses EEFF activos con filtro FF
-  const _eLabel=`2026 YTD (${_nEEFF}m EEFF)`;
+  const _has26=_nEEFF>0;          // ¿hay cierre contable en el período elegido?
+  const _eLabel=_has26?`2026 YTD (${_nEEFF}m EEFF)`:'2026 (sin cierre contable)';
+  // ffAnn(y) es null si el año no está en el filtro (o el período no trae meses):
+  // en ese caso NO se pinta la cifra — antes caía a ANN[y], el año completo sin filtrar.
+  const _t24=ffAnn(2024), _t25=ffAnn(2025);
+  const _SD='<span style="color:#9bb0aa">Sin datos</span>';
   const ytdVar=(f)=>{
     const v26=sum(ffYtd26(),f),v25c=sum(ffYtd25cmp(),f);
     return v25c?pctVar(v26,v25c):0;
@@ -4625,41 +4688,39 @@ function buildFinAnual(){
       <div class="card-body">
         <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>Indicador</th><th>2024 (12m)</th><th>2025 (12m)</th><th>Δ 2025/24</th><th>${_eLabel}</th><th>Δ vs igual período 2025</th></tr></thead>
+          <thead><tr><th>Indicador</th><th>${_ffYearLabel(2024)}</th><th>${_ffYearLabel(2025)}</th><th>Δ 2025/24</th><th>${_eLabel}</th><th>Δ vs igual período 2025</th></tr></thead>
           <tbody>
           ${rows.map(r=>{
+            const _pp=v=>(v>=0?'+':'')+v.toFixed(1)+' pp';
             if(r.pct){
-              const v24=ANN[2024][r.f],v25=ANN[2025][r.f],v26=ytd26.reduce((a,d)=>{
-                // recalculate pct for YTD
-                const mn=r.f.replace('p','');return a;},0);
-              // Calculate YTD pct correctly
-              const fmap={mbp:['ub','ing'],mop:['uo','ing'],mnp:['un','ing'],mep:['ebitda','ing'],
-                mop:['uo','ing'],mop:['uo','ing'],mep:['ebitda','ing'],mnp:['un','ing']};
-              let v26pct=v25,v25cPct=v24;
+              // Antes: ANN[2024]/ANN[2025] crudos → «% Mg Neto +2,0%» junto a
+              // «Ganancia Neta -$96M». Ahora los % salen del MISMO período filtrado.
+              const v24=_t24?_t24[r.f]:null, v25=_t25?_t25[r.f]:null;
+              const _num={mbp:'ub',mop:'uo',mep:'ebitda',mnp:'un'}[r.f];
               const _i26=sum(ffYtd26(),'ing'), _i25=sum(ffYtd25cmp(),'ing');
-              if(r.f==='mbp'){v26pct=_i26?sum(ffYtd26(),'ub')/_i26*100:0;v25cPct=_i25?sum(ffYtd25cmp(),'ub')/_i25*100:0;}
-              else if(r.f==='mop'){v26pct=_i26?sum(ffYtd26(),'uo')/_i26*100:0;v25cPct=_i25?sum(ffYtd25cmp(),'uo')/_i25*100:0;}
-              else if(r.f==='mep'){v26pct=_i26?sum(ffYtd26(),'ebitda')/_i26*100:0;v25cPct=_i25?sum(ffYtd25cmp(),'ebitda')/_i25*100:0;}
-              else if(r.f==='mnp'){v26pct=_i26?sum(ffYtd26(),'un')/_i26*100:0;v25cPct=_i25?sum(ffYtd25cmp(),'un')/_i25*100:0;}
-              const ppDelta=(v26pct-v25cPct).toFixed(1);
+              const v26pct=(_has26&&_i26)?sum(ffYtd26(),_num)/_i26*100:null;
+              const v25cPct=_i25?sum(ffYtd25cmp(),_num)/_i25*100:null;
+              const ppDelta=(v26pct!==null&&v25cPct!==null)?(v26pct-v25cPct):null;
+              const dpp=(v24!==null&&v25!==null)?(v25-v24):null;
               return `<tr><td>${r.lbl}</td>
-                <td class="${tdCls(v24)}">${v24.toFixed(1)}%</td>
-                <td class="${tdCls(v25)}">${v25.toFixed(1)}%</td>
-                <td class="${tdCls(v25-v24)}">${v25>v24?'+':''}${(v25-v24).toFixed(1)} pp</td>
-                <td class="${tdCls(v26pct)}">${v26pct.toFixed(1)}%</td>
-                <td class="${tdCls(parseFloat(ppDelta))}">${parseFloat(ppDelta)>=0?'+':''}${ppDelta} pp</td>
+                <td class="${v24===null?'':tdCls(v24)}">${v24===null?_SD:v24.toFixed(1)+'%'}</td>
+                <td class="${v25===null?'':tdCls(v25)}">${v25===null?_SD:v25.toFixed(1)+'%'}</td>
+                <td class="${dpp===null?'':tdCls(dpp)}">${dpp===null?'—':_pp(dpp)}</td>
+                <td class="${v26pct===null?'':tdCls(v26pct)}">${v26pct===null?_SD:v26pct.toFixed(1)+'%'}</td>
+                <td class="${ppDelta===null?'':tdCls(ppDelta)}">${ppDelta===null?'—':_pp(ppDelta)}</td>
               </tr>`;
             }
-            const v24=(ffAnn(2024)||ANN[2024])[r.f],v25=(ffAnn(2025)||ANN[2025])[r.f],v26s=sum(ffYtd26(),r.f);
-            const d2524=pctVar(v25,v24);
-            const d26ytd=ytdVar(r.f);
+            const v24=_t24?_t24[r.f]:null, v25=_t25?_t25[r.f]:null;
+            const v26s=_has26?sum(ffYtd26(),r.f):null;
+            const d2524=(v24!==null&&v25!==null)?pctVar(v25,v24):null;
+            const d26ytd=_has26?ytdVar(r.f):null;
             return `<tr class="${r.cls||''}">
               <td style="font-weight:${r.bold?700:400}">${r.lbl}</td>
-              <td>${fv(v24)}</td>
-              <td>${fv(v25)}</td>
-              <td class="${tdCls(d2524)}">${fp(d2524)}</td>
-              <td>${fv(v26s)}</td>
-              <td class="${tdCls(d26ytd)}">${fp(d26ytd)}</td>
+              <td>${v24===null?_SD:fv(v24)}</td>
+              <td>${v25===null?_SD:fv(v25)}</td>
+              <td class="${d2524===null?'':tdCls(d2524)}">${d2524===null?'—':fp(d2524)}</td>
+              <td>${v26s===null?_SD:fv(v26s)}</td>
+              <td class="${d26ytd===null?'':tdCls(d26ytd)}">${d26ytd===null?'—':fp(d26ytd)}</td>
             </tr>`;
           }).join('')}
           </tbody>
@@ -4675,10 +4736,11 @@ function buildFinAnual(){
 
   // Datos 2026 EEFF (solo meses confirmados)
   const _fa26e=ffAnn(2026)||{ing:0,cost:0,ebitda:0,ub:0,uo:0,un:0,mbp:0,mop:0,mep:0,mnp:0};
-  const _fa24e=ffAnn(2024)||ANN[2024], _fa25e=ffAnn(2025)||ANN[2025];
+  const _faZero={ing:0,cost:0,ebitda:0,ub:0,uo:0,un:0,ga:0,da:0,mbp:0,mop:0,mep:0,mnp:0};
+  const _fa24e=_t24||_faZero, _fa25e=_t25||_faZero;
   const _ing26e=_fa26e.ing,_cost26e=_fa26e.cost,_eb26e=_fa26e.ebitda;
   const _mbp26e=_fa26e.mbp,_mop26e=_fa26e.mop,_mep26e=_fa26e.mep,_mnp26e=_fa26e.mnp;
-  const _annYrs=[[2024,_fa24e],[2025,_fa25e],[2026,_fa26e,ffYtd26().length>0]].filter(x=>FF.years.has(x[0])&&(x[2]!==false));
+  const _annYrs=[[2024,_t24],[2025,_t25],[2026,_fa26e,_has26]].filter(x=>FF.years.has(x[0])&&x[1]&&(x[2]!==false));
   mkChart('ch-ann-bar',{type:'bar',data:{
     labels:_annYrs.map(x=>x[0]===2026?_eLabel:x[0]+''),
     datasets:[
@@ -4692,8 +4754,8 @@ function buildFinAnual(){
   mkChart('ch-ann-mg',{type:'bar',data:{
     labels:['Mg Bruto','Mg Operativo','Mg EBITDA','Mg Neto'],
     datasets:[
-      ...(FF.years.has(2024)?[{label:'2024',data:[_fa24e.mbp,_fa24e.mop,_fa24e.mep,_fa24e.mnp].map(v=>+v.toFixed(1)),backgroundColor:'rgba(68,108,179,0.5)'}]:[]),
-      ...(FF.years.has(2025)?[{label:'2025',data:[_fa25e.mbp,_fa25e.mop,_fa25e.mep,_fa25e.mnp].map(v=>+v.toFixed(1)),backgroundColor:'rgba(45,197,171,0.85)'}]:[]),
+      ...(_t24?[{label:_ffYearLabel(2024),data:[_fa24e.mbp,_fa24e.mop,_fa24e.mep,_fa24e.mnp].map(v=>+v.toFixed(1)),backgroundColor:'rgba(68,108,179,0.5)'}]:[]),
+      ...(_t25?[{label:_ffYearLabel(2025),data:[_fa25e.mbp,_fa25e.mop,_fa25e.mep,_fa25e.mnp].map(v=>+v.toFixed(1)),backgroundColor:'rgba(45,197,171,0.85)'}]:[]),
       ...(FF.years.has(2026)&&ffYtd26().length?[{label:'2026 YTD',data:[_mbp26e,_mop26e,_mep26e,_mnp26e].map(v=>+v.toFixed(1)),backgroundColor:'rgba(255,152,0,0.82)'}]:[])
     ]
   },options:{scales:{y:{ticks:{callback:v=>v+'%'}}}}});
@@ -5527,6 +5589,10 @@ function buildComInicio(){
   // ── Datos para gráficas de líneas (filtrados por mes) ─────────────────────
   const liIdx=cfLineasIdx();
   const liLabels=liIdx.map(i=>COM.lineas[i]);
+  // cfLineasIdx() COMPACTA el arreglo al filtrar → resolver por NOMBRE, no por posición.
+  const _lnIx  = nom => liLabels.indexOf(nom);
+  const _lnHas = nom => _lnIx(nom) >= 0;
+  const _lnV   = (arr,nom) => { const i=_lnIx(nom); return i<0?null:arr[i]; };
   const _cl24=cfLineYear(2024), _cl25=cfLineYear(2025), _cl26=cfLineYear(2026);
   const li24=liIdx.map(i=>_cl24[i]);
   const li25=liIdx.map(i=>_cl25[i]);
@@ -5598,12 +5664,21 @@ function buildComInicio(){
     // Corte YTD: mes actual + día actual (según MTD_RAW)
     const _mtdCut=(typeof MTD_RAW!=='undefined'&&MTD_RAW)?MTD_RAW:null;
     const _lm=_mtdCut?_mtdCut.m:COM.ing_m26.reduce((a,v,i)=>v>0?i+1:a,0);
-    const _ytdLbl=ytdBadgeText()||('Ene–'+MN[_lm]);  // ej: "YTD Ene–20 Abr"
+    // Modo "Año completo": 2024/2025 traen 12 meses y 2026 solo los transcurridos.
+    // La etiqueta tiene que decirlo y la variación 2026 vs 2025 NO es comparable.
+    const _isFull = cfCompareInfo().mode === 'full';
+    const _m26disp = COM.ing_m26.reduce((a,v,i)=>v>0?i+1:a,0); // último mes de 2026 con datos
+    const _ytdLbl=ytdBadgeText()||(_isFull?'año completo':('Ene–'+MN[_lm]));
     const _mLbl='Ene–'+MN[_lm]; // ej: "Ene–Abr" (para etiquetas cortas)
+    // Sufijo de cada tarjeta según el modo activo
+    const _sfxY = y => _isFull
+      ? (y===2026 ? ' ('+('Ene–'+MN[_m26disp])+', año en curso)' : ' (año completo)')
+      : ' YTD';
     // Totales YTD (usando cfLineYear que ya aplica factor parcial al mes en curso)
     const _ytd24=vTotal24, _ytd25=vTotal25, _ytd26=vTotal26;
-    // Cirugías YTD mismo corte (proporcional al mes parcial)
+    // Cirugías: mismo corte que la facturación (en modo 'full' el año entero)
     function _cirYtd(arr){
+      if(_isFull) return arr.reduce((s,v)=>s+(v||0),0);
       let s=0;
       for(let i=0;i<_lm-1;i++) s+=arr[i]||0;
       if(_mtdCut){
@@ -5614,6 +5689,10 @@ function buildComInicio(){
       }
       return s;
     }
+    // Pie de una tarjeta de 2026: en modo 'full' no se compara contra 12 meses de 2025.
+    const _cmp26 = (txt) => _isFull
+      ? '2025 completo: no comparable con '+_m26disp+' meses'
+      : txt;
     const _cir24y=_cirYtd(CIR.mes_24), _cir25y=_cirYtd(CIR.mes_25);
     const _cir26y=COM.cirugias.v26; // YTD real
     // Ticket promedio YTD
@@ -5622,18 +5701,20 @@ function buildComInicio(){
     const _tk26=_cir26y>0?_ytd26/_cir26y:0;
     return `
     <div class="kpis k4">
-      ${kpiCard('Facturación 2024 YTD', fv(_ytd24), _ytdLbl+' · año base')}
-      ${kpiCard('Facturación 2025 YTD', fv(_ytd25), fp(pctVar(_ytd25,_ytd24))+' vs 2024 YTD')}
-      ${kpiCard('Facturación 2026 YTD', fv(_ytd26), fp(pctVar(_ytd26,_ytd25))+' vs 2025 YTD')}
-      ${kpiCard('Cirugías 2026 YTD', _cir26y.toLocaleString(), fp(pctVar(_cir26y,_cir25y))+' vs 2025 YTD ('+_cir25y.toLocaleString()+')')}
+      ${kpiCard('Facturación 2024'+_sfxY(2024), fv(_ytd24), _ytdLbl+' · año base')}
+      ${kpiCard('Facturación 2025'+_sfxY(2025), fv(_ytd25), fp(pctVar(_ytd25,_ytd24))+' vs 2024'+(_isFull?' (12m)':' YTD'))}
+      ${kpiCard('Facturación 2026'+_sfxY(2026), fv(_ytd26), _cmp26(fp(pctVar(_ytd26,_ytd25))+' vs 2025 YTD'))}
+      ${kpiCard('Cirugías 2026'+_sfxY(2026), _cir26y.toLocaleString(), _cmp26(fp(pctVar(_cir26y,_cir25y))+' vs 2025 YTD ('+_cir25y.toLocaleString()+')'))}
     </div>
     <div class="kpis k3" style="margin-bottom:16px">
-      ${kpiCard('Ticket $/Cirugía — 2026 YTD', fv(Math.round(_tk26)), fp(pctVar(_tk26,_tk25))+' vs 2025 YTD · Ticket 2024 YTD: '+fv(Math.round(_tk24)))}
-      ${kpiCard('LIOs — motor premium YTD', fv(li26[2]), fp(pctVar(li26[2],li25[2]))+' vs 2025 YTD ('+fv(li25[2])+')')}
-      ${kpiCard('Consultas Médicas YTD', fv(li26[3]), fp(pctVar(li26[3],li25[3]))+' vs 2025 YTD ('+fv(li25[3])+')', li26[3]>=li25[3]?'':'warn')}
+      ${kpiCard('Ticket $/Cirugía — 2026'+_sfxY(2026), fv(Math.round(_tk26)), fp(pctVar(_tk26,_tk25))+' vs 2025'+(_isFull?' (12m)':' YTD')+' · Ticket 2024: '+fv(Math.round(_tk24)))}
+      ${_lnHas('LIOs ★')?kpiCard('LIOs — motor premium'+_sfxY(2026), fv(_lnV(li26,'LIOs ★')), _cmp26(fp(pctVar(_lnV(li26,'LIOs ★'),_lnV(li25,'LIOs ★')))+' vs 2025 YTD ('+fv(_lnV(li25,'LIOs ★'))+')')):''}
+      ${_lnHas('Consultas Médicas')?kpiCard('Consultas Médicas'+_sfxY(2026), fv(_lnV(li26,'Consultas Médicas')), _cmp26(fp(pctVar(_lnV(li26,'Consultas Médicas'),_lnV(li25,'Consultas Médicas')))+' vs 2025 YTD ('+fv(_lnV(li25,'Consultas Médicas'))+')'), (_isFull||_lnV(li26,'Consultas Médicas')>=_lnV(li25,'Consultas Médicas'))?'':'warn'):''}
     </div>
-    <div style="background:#f0faf7;border-left:3px solid #2dc5ab;padding:8px 12px;border-radius:4px;margin:4px 0 10px;font-size:11px;color:#607d76">
-      ℹ️ <strong>Todos los KPIs y gráficas se cortan al mismo día (${_ytdLbl})</strong> para asegurar comparabilidad entre años. El mes en curso se incluye proporcionalmente (${_mtdCut?(_mtdCut.d+'/'+_mtdCut.daysInMonth+' días'):'mes completo'}).
+    <div style="background:#f0faf7;border-left:3px solid ${_isFull?'#ff9800':'#2dc5ab'};padding:8px 12px;border-radius:4px;margin:4px 0 10px;font-size:11px;color:#607d76">
+      ${_isFull
+        ? '⚠️ <strong>Modo «Año completo».</strong> 2024 y 2025 traen los 12 meses; 2026 solo Ene–'+MN[_m26disp]+'. Los niveles no son comparables entre sí — para comparar años use el modo «YTD comparable».'
+        : 'ℹ️ <strong>Todos los KPIs y gráficas se cortan al mismo día ('+_ytdLbl+')</strong> para asegurar comparabilidad entre años. El mes en curso se incluye proporcionalmente ('+(_mtdCut?(_mtdCut.d+'/'+_mtdCut.daysInMonth+' días'):'mes completo')+').'}
     </div>`;
   })()}`}
 
@@ -6080,6 +6161,11 @@ function buildComLineas(){
   // ── Data prep (filtrado por mes) ──────────────────────────────────────────
   const liIdx=cfLineasIdx();
   const liLabels=liIdx.map(i=>COM.lineas[i]);
+  // cfLineasIdx() COMPACTA el arreglo al filtrar: con 2 líneas seleccionadas los
+  // arreglos li24/li25/li26 tienen largo 2. Resolver por NOMBRE, nunca por posición fija.
+  const _lnIx  = nom => liLabels.indexOf(nom);
+  const _lnHas = nom => _lnIx(nom) >= 0;
+  const _lnV   = (arr,nom) => { const i=_lnIx(nom); return i<0?null:arr[i]; };
   const _cl24b=cfLineYear(2024), _cl25b=cfLineYear(2025), _cl26b=cfLineYear(2026);
   const li24=liIdx.map(i=>_cl24b[i]);
   const li25=liIdx.map(i=>_cl25b[i]);
@@ -6170,10 +6256,16 @@ function buildComLineas(){
     </div>
     <div class="insight">
       📅 <strong>Período: ${mLbl}.</strong>
-      ${liTotal26>0?'Líderes en '+mLbl+'-2026: <strong>'+liLabels[liT26.indexOf(Math.max(...liT26))]+'</strong> ('
-        +fv(Math.max(...liT26))+') · <strong>'+liLabels.sort((a,b)=>liT26[liLabels.indexOf(b)]-liT26[liLabels.indexOf(a)])[1]+'</strong> ('
-        +fv(liT26.slice().sort((a,b)=>b-a)[1])+').':''}
-      <br><span style="font-size:10px;color:#607d76">ℹ️ Fuente: facturación real del Google Sheet. El análisis de costos y márgenes se incorpora cuando se comparten los estados financieros del mes.</span>
+      ${(()=>{
+        // Ranking por valor SIN mutar liLabels (los charts de abajo lo reusan) y sin
+        // asumir que hay 2 líneas: con una sola seleccionada solo se nombra la primera.
+        if(!(liTotal26>0)) return '';
+        const rk=liLabels.map((l,i)=>({l,v:liT26[i]})).sort((a,b)=>b.v-a.v);
+        let s='Líderes en '+mLbl+'-2026: <strong>'+rk[0].l+'</strong> ('+fv(rk[0].v)+')';
+        if(rk.length>1) s+=' · <strong>'+rk[1].l+'</strong> ('+fv(rk[1].v)+')';
+        return s+'.';
+      })()}
+      <br><span style="font-size:10px;color:#607d76">ℹ️ Distribución estimada por participación anual — el detalle mensual por servicio aún no llega del Sheet. El total del mes sí es facturación real; el reparto entre servicios usa la participación del año. El análisis de costos y márgenes se incorpora cuando se comparten los estados financieros del mes.</span>
     </div>
     </div>
     <div id="lineas-view-proc" style="display:none">
@@ -6295,10 +6387,10 @@ function buildComLineas(){
       ${chartCard('ch-lnl-pct','% Crecimiento por Servicio','Azul=24→25 YTD · Dorado=26 vs 25 YTD',270,'',false,'Crecimiento de cada línea de servicio año a año. Verde = creció, rojo = cayó. Identifica qué servicios impulsan o frenan el crecimiento.')}
     </div>
     <div class="insight">
-      ⭐ <strong>LIOs Premium YTD:</strong> ${fv(li25[2])} en 2025 YTD (+${fp(growth2526[2]).replace('+','')} vs 2024 YTD) · 2026 YTD: ${fv(li26[2])}.
-      Con el mayor margen, es la línea estratégica #1.<br><br>
-      <strong>D.Sala (Cirugías)</strong> lidera el volumen YTD 2026: ${fv(li26[0])}.
-      <strong>Oportunidad consultas:</strong> Consultas médicas YTD 2026 son ${fv(li26[3])} — hay potencial de convertir más en cirugías.
+      ${_lnHas('LIOs ★')?`⭐ <strong>LIOs Premium YTD:</strong> ${fv(_lnV(li25,'LIOs ★'))} en 2025 YTD (${fp(_lnV(growth2526,'LIOs ★'))} vs 2024 YTD) · 2026 YTD: ${fv(_lnV(li26,'LIOs ★'))}.
+      Con el mayor margen, es la línea estratégica #1.<br><br>`:''}
+      ${_lnHas('D.Sala (Cirugías)')?`<strong>D.Sala (Cirugías)</strong> lidera el volumen YTD 2026: ${fv(_lnV(li26,'D.Sala (Cirugías)'))}. `:''}
+      ${_lnHas('Consultas Médicas')?`<strong>Oportunidad consultas:</strong> Consultas médicas YTD 2026 son ${fv(_lnV(li26,'Consultas Médicas'))} — hay potencial de convertir más en cirugías.`:''}
       <br><span style="font-size:10px;color:#607d76">ℹ️ Todos los años se cortan al mismo día (${_ytdBadge||'YTD'}) para asegurar comparabilidad.</span>
     </div>`;
 
@@ -6918,7 +7010,7 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
     const {months,partial}=cfYtdMonths();
     let v=0;
     months.forEach(m=>{if(LMON[y]&&LMON[y][m]) v+=LMON[y][m][0]||0;});
-    if(partial&&LMON[y]&&LMON[y][partial.month]) v+=Math.round((LMON[y][partial.month][0]||0)*partial.factor);
+    if(partial&&LMON[y]&&LMON[y][partial.month]) v+=cfPartialAdd(y,partial,LMON[y][partial.month][0]||0);
     return v;
   };
   const _toDSala=(drList,y)=>{
@@ -7066,7 +7158,7 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
     const {months,partial}=cfYtdMonths();
     const r=new Array(CIR.tipos.length).fill(0);
     months.forEach(m=>{if(TMON[y][m]) TMON[y][m].forEach((v,i)=>r[i]+=v);});
-    if(partial&&TMON[y][partial.month]) TMON[y][partial.month].forEach((v,i)=>r[i]+=Math.round(v*partial.factor));
+    if(partial&&TMON[y][partial.month]) TMON[y][partial.month].forEach((v,i)=>r[i]+=cfPartialAdd(y,partial,v));
     return r;
   };
   // Individual billing fraction for one doctor (ignores CF.doctors)
@@ -7075,7 +7167,7 @@ ${chartCard('ch-cir-evol','📈 Evolución mensual de facturación — por ciruj
     const {months,partial}=cfYtdMonths();
     let all=0,dr=0;
     months.forEach(m=>{if(DMON[y][m]) DMON[y][m].forEach(d=>{all+=d.bill;if(d.name===name)dr+=d.bill;});});
-    if(partial&&DMON[y][partial.month]) DMON[y][partial.month].forEach(d=>{const v=Math.round(d.bill*partial.factor);all+=v;if(d.name===name)dr+=v;});
+    if(partial&&DMON[y][partial.month]) DMON[y][partial.month].forEach(d=>{const v=cfPartialAdd(y,partial,d.bill);all+=v;if(d.name===name)dr+=v;});
     return all>0?dr/all:0;
   };
   const _ct24=cfTipoYear(2024), _ct25=cfTipoYear(2025), _ct26=cfTipoYear(2026);
@@ -8828,15 +8920,52 @@ function applyMktFilter(){
   navigate(activeSection);
   if(_ct) requestAnimationFrame(()=>{_ct.scrollTop=_sy;});
 }
+// ── Vistas que NO consumen los filtros ───────────────────────────────────
+// buildFinBalance / buildFinEeff / buildFinReportes y los cinco buildMkt* no
+// referencian FF ni CF una sola vez (se alimentan de BSS y de constantes propias).
+// Dejar la barra de filtros activa encima de ellas hacía creer que el contenido
+// respondía al período elegido. Se atenúa la barra y se avisa en la sección.
+const SECS_SIN_FILTRO = new Set([
+  'fin-balance','fin-eeff','fin-reportes',
+  'mkt-inicio','mkt-lentes','mkt-growth','mkt-cirujanos','mkt-roi'
+]);
+function marcarVistaSinFiltro(secId){
+  const sinF = SECS_SIN_FILTRO.has(secId);
+  ['com-filter-bar','fin-filter-bar','eps-filter-bar'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b) b.classList.toggle('cfb-inerte', sinF);
+  });
+  if(!sinF) return;
+  const sec=document.getElementById(secId);
+  if(!sec || (sec.querySelector && sec.querySelector('.aviso-sin-filtro'))) return;
+  if(sec.insertAdjacentHTML) sec.insertAdjacentHTML('afterbegin',
+    '<div class="aviso-sin-filtro">ℹ️ <strong>Esta vista no depende del período.</strong> '
+    +'Los filtros de la barra superior no la modifican: se alimenta de su propia fuente.</div>');
+}
+
 function navigate(secId){
   // Hide all
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   // Build on demand
   if(!built.has(secId) && BUILDERS[secId]){
-    BUILDERS[secId]();
-    built.add(secId);
+    // Un builder que lanza NO puede volver a matar la navegación: se registra el error,
+    // se muestra un aviso dentro de la sección y el resto del tablero sigue vivo.
+    try{
+      BUILDERS[secId]();
+      built.add(secId);
+    }catch(err){
+      console.error('[OET] Error al construir la sección "'+secId+'":', err);
+      const _sec=document.getElementById(secId);
+      if(_sec) _sec.innerHTML=
+        '<div class="insight" style="border-left:3px solid #dc3545;background:#fdf2f3">'
+        +'⚠️ <strong>Esta sección no se pudo mostrar con el filtro actual.</strong><br>'
+        +'Amplíe o limpie los filtros para volver a verla. El resto del tablero sigue disponible.'
+        +'<br><span style="font-size:10px;color:#607d76">Detalle técnico: '
+        +String(err&&err.message||err).replace(/[<>&]/g,'')+'</span></div>';
+    }
   }
   document.getElementById(secId).classList.add('active');
+  marcarVistaSinFiltro(secId);
   activeSection=secId;
   buildSidebar(activeTab);
   // Close sidebar on mobile
@@ -8912,7 +9041,7 @@ function buildComLentes(){
   const _lioY=(y,which)=>{
     const arr=_lioMonthArr(y,which);
     let v=0; _ms.forEach(m=>v+=arr[m-1]||0);
-    if(_pt) v+=Math.round((arr[_pt.month-1]||0)*_pt.factor);
+    if(_pt) v+=cfPartialAdd(y,_pt,arr[_pt.month-1]||0);
     return v;
   };
   // Totales por médico (anual completo — no hay monthly per-doctor)
@@ -8955,7 +9084,7 @@ function buildComLentes(){
     if(!TMON[y]) return 0;
     let v=0;
     _ms.forEach(m=>{if(TMON[y][m]) window._ltTipos.forEach(i=>v+=TMON[y][m][i]||0);});
-    if(_pt&&TMON[y][_pt.month]) window._ltTipos.forEach(i=>v+=Math.round((TMON[y][_pt.month][i]||0)*_pt.factor));
+    if(_pt&&TMON[y][_pt.month]) window._ltTipos.forEach(i=>v+=cfPartialAdd(y,_pt,TMON[y][_pt.month][i]||0));
     return v;
   };
   const tot24=_tipoTotalY(2024), tot25=_tipoTotalY(2025), tot26=_tipoTotalY(2026);
@@ -8969,12 +9098,12 @@ function buildComLentes(){
       const arr=y===2024?CIR.mes_24:y===2025?CIR.mes_25:CIR.mes_26;
       let v=0;
       _ms.forEach(m=>v+=arr[m-1]||0);
-      if(_pt) v+=Math.round((arr[_pt.month-1]||0)*_pt.factor);
+      if(_pt) v+=cfPartialAdd(y,_pt,arr[_pt.month-1]||0);
       return Math.round(v);
     } else {
       let v=0;
       _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>{if(CF.doctors.has(d.name))v+=d.cir;});});
-      if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>{if(CF.doctors.has(d.name))v+=Math.round(d.cir*_pt.factor);});
+      if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>{if(CF.doctors.has(d.name))v+=cfPartialAdd(y,_pt,d.cir);});
       return Math.round(v);
     }
   };
@@ -9113,11 +9242,11 @@ function buildComLentes(){
       const tipoTotal=y===2024?tot24:y===2025?tot25:tot26;
       let allBill_=0;
       _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>allBill_+=d.bill);});
-      if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>allBill_+=Math.round(d.bill*_pt.factor));
+      if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>allBill_+=cfPartialAdd(y,_pt,d.bill));
       const data=_cirSorted.map(c=>{
         let drBill_=0;
         _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]) DMON[y][m].forEach(d=>{if(d.name===c.name)drBill_+=d.bill;});});
-        if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>{if(d.name===c.name)drBill_+=Math.round(d.bill*_pt.factor);});
+        if(_pt&&DMON[y]&&DMON[y][_pt.month]) DMON[y][_pt.month].forEach(d=>{if(d.name===c.name)drBill_+=cfPartialAdd(y,_pt,d.bill);});
         const bf=allBill_>0?drBill_/allBill_:0;
         return Math.round(tipoTotal*bf)||null;
       });
@@ -9172,7 +9301,7 @@ function buildComLentes(){
       const data=_cirSortedC.map(c=>{
         let v=0;
         _ms.forEach(m=>{if(DMON[y]&&DMON[y][m]){const d=DMON[y][m].find(d=>d.name===c.name);if(d)v+=d.cir;}});
-        if(_pt&&DMON[y]&&DMON[y][_pt.month]){const d=DMON[y][_pt.month].find(d=>d.name===c.name);if(d)v+=Math.round(d.cir*_pt.factor);}
+        if(_pt&&DMON[y]&&DMON[y][_pt.month]){const d=DMON[y][_pt.month].find(d=>d.name===c.name);if(d)v+=cfPartialAdd(y,_pt,d.cir);}
         return Math.round(v)||null;
       });
       _drCirDs.push({label:String(y),data,backgroundColor:bg,borderColor:bc,borderWidth:1,borderRadius:3});
