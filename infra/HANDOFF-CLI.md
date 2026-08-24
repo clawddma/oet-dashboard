@@ -87,10 +87,16 @@ detecte un cloudflared vivo: hay que parar el actual primero, con aviso.
 
 ## Tarea 4 — cerrar
 
-Verificar con `bash infra/diagnostico-dominios.sh` y devolver el checkout a
-`main`, que es donde el auto-sync del panel OET hace sus commits cada 30 min:
+Verificar con `bash infra/diagnostico-dominios.sh`.
+
+⚠️ **NO hagas `git checkout main` en este repo.** La carpeta `infra/` existe
+solo en la rama `claude/domain-projects-diagnostic-3pi7id` y no está mergeada:
+cambiar a `main` la borra del disco, incluidos este handoff y los scripts.
+
+Si necesitas estos archivos fuera de la rama, cópialos primero a un lugar
+estable y luego cambia de rama:
 
 ```
-git checkout main
-git pull --rebase origin main
+mkdir -p ~/arquitectura
+cp -r infra ~/arquitectura/
 ```
