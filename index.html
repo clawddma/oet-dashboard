@@ -11133,6 +11133,9 @@ switchTab('fin'); // Start on Financiero
 /*FRANJA-JS:FIN*/
 
 </script>
+
+
+
 <!-- OET-CHAT:INICIO -->
 <!-- ═══════════════════════════════════════════════════════════════════════
      CHAT PRIVADO — se inyecta al final de <body> del tablero.
@@ -11160,7 +11163,16 @@ switchTab('fin'); // Start on Financiero
   // un despliegue sigue corriendo el panel viejo — pasó con los gráficos: el asistente
   // los generaba y el panel de la pestaña, que no sabía dibujarlos, mostraba el texto
   // crudo. Un panel viejo que no se anuncia se diagnostica como si el bot fallara.
-  var PANEL_VER = '040c2f9876';
+  var PANEL_VER = '92fd4f8dbc';
+  // Una respuesta guardada por una versión anterior puede conservar exactamente el
+  // error que ya se corrigió. Al cambiar la huella se descarta solo ese historial
+  // local; dentro de la misma versión la conversación sigue sobreviviendo al F5.
+  try{
+    if(localStorage.oetChatPanelVer !== PANEL_VER){
+      delete localStorage.oetChatHist;
+      localStorage.oetChatPanelVer = PANEL_VER;
+    }
+  }catch(e){}
 
   var css = document.createElement('style');
   css.textContent = `
@@ -11343,7 +11355,7 @@ switchTab('fin'); // Start on Financiero
   var log = box.querySelector('#oq-log'), espera = box.querySelector('#oq-espera'),
       txt = box.querySelector('#oq-txt'), env = box.querySelector('#oq-env'),
       est = box.querySelector('#oq-est'), sug = box.querySelector('.oq-sug');
-  var sesion = null, ocupado = false, reloj = null;
+  var sesion = null, turnos = 0, ocupado = false, reloj = null;
 
   // ── Markdown mínimo. Se escribe a mano en vez de traer una librería porque el
   //    tablero es un archivo suelto sin red de terceros. Cubre lo que el analista
@@ -11436,7 +11448,8 @@ switchTab('fin'); // Start on Financiero
   function guardar(){
     try{
       var ms = [].map.call(log.querySelectorAll('.oq-m'), function(n){ return n.outerHTML; });
-      localStorage.oetChatHist = JSON.stringify({sesion: sesion, html: ms.join(''), t: Date.now()});
+      localStorage.oetChatHist = JSON.stringify({sesion: sesion, turnos: turnos,
+        html: ms.join(''), t: Date.now()});
     }catch(e){}
   }
   function restaurar(){
@@ -11447,6 +11460,7 @@ switchTab('fin'); // Start on Financiero
       cont.innerHTML = h.html;
       [].slice.call(cont.children).forEach(function(n){ log.insertBefore(n, espera); });
       sesion = h.sesion || null;
+      turnos = Number(h.turnos || 0);
       log.scrollTop = log.scrollHeight;
       return true;
     }catch(e){ return false; }
@@ -11481,9 +11495,15 @@ switchTab('fin'); // Start on Financiero
     // una pregunta de fondo puede tardar más. Se lanza una tarea y se pregunta por
     // ella cada dos segundos, así ningún límite de proxy mata una respuesta ya lista.
     var base = cfg.url.replace(/\/$/,''), cab = {'X-OET-Key': cfg.k};
+    function codigoCliente(prefijo){
+      return 'OET-' + prefijo + '-' + Date.now().toString(36).toUpperCase();
+    }
     function fallo(r){
       return r.json().catch(function(){return {};}).then(function(j){
-        throw new Error(j.detail || ('HTTP ' + r.status)); });
+        var e = new Error('Servicio no disponible en este momento');
+        e.codigo = j.codigo || ('OET-HTTP-' + r.status);
+        throw e;
+      });
     }
     function sondear(tid){
       return new Promise(function(ok, mal){
@@ -11502,7 +11522,10 @@ switchTab('fin'); // Start on Financiero
               seguidos = 0;
               if(t.estado === 'en_curso') return;
               clearInterval(tic);
-              t.estado === 'listo' ? ok(t) : mal(new Error(t.detalle || 'falló la consulta'));
+              if(t.estado === 'listo') return ok(t);
+              var e = new Error('Servicio no disponible en este momento');
+              e.codigo = t.codigo || codigoCliente('RESP');
+              mal(e);
             })
             .catch(function(e){
               if(++seguidos < TOLERA) return;
@@ -11511,6 +11534,9 @@ switchTab('fin'); // Start on Financiero
         }, 2000);
       });
     }
+    // Una sesión indefinida vuelve a enviar cientos de miles de tokens. Seis turnos
+    // conservan preguntas de seguimiento y después comienzan contexto limpio.
+    if(turnos >= 6){ sesion = null; turnos = 0; }
     fetch(base + '/api/pregunta', {
       method: 'POST',
       headers: {'Content-Type':'application/json', 'X-OET-Key': cfg.k},
@@ -11528,10 +11554,11 @@ switchTab('fin'); // Start on Financiero
       return sondear(d.tarea);
     }).then(function(d){
       sesion = d.sesion || sesion;
+      turnos += 1;
       burbuja('oq-ia', md(d.respuesta));
     }).catch(function(e){
-      burbuja('oq-m oq-err', enlinea('No pude responder: ' + e.message +
-        '. Si el Mac Mini está apagado o el túnel caído, el chat no responde.'));
+      var codigo = e && e.codigo ? e.codigo : codigoCliente('RED');
+      burbuja('oq-m oq-err', enlinea('Servicio no disponible en este momento. Código: ' + codigo));
     }).finally(function(){
       ocupado = false; env.disabled = false; esperar(false); txt.focus();
       guardar();
@@ -11543,6 +11570,7 @@ switchTab('fin'); // Start on Financiero
   function bienvenida(){
     log.querySelectorAll('.oq-m').forEach(function(n){ n.remove(); });
     sesion = null;
+    turnos = 0;
     try{ delete localStorage.oetChatHist; }catch(e){}
     burbuja('oq-ia', md('Pregúntame cualquier cifra o evento de OET. Respondo con el ' +
       'libro oficial conciliado del cierre vigente, y si un dato no existe te lo digo ' +
@@ -11585,9 +11613,16 @@ switchTab('fin'); // Start on Financiero
       if(d.panel && PANEL_VER.indexOf('_') === -1 && d.panel !== PANEL_VER){
         est.textContent = 'panel desactualizado';
         est.style.color = '#ffcf6b';
-        burbuja('oq-m oq-err', 'Esta pestaña tiene una versión vieja del panel, así que ' +
-          'puede mostrar mal los gráficos o los informes. <b>Recarga la página</b> ' +
-          '(Cmd+Shift+R) y vuelve a abrir el chat.');
+        var llave = 'oetPanelRecarga:' + d.panel;
+        if(!sessionStorage.getItem(llave)){
+          sessionStorage.setItem(llave, '1');
+          var u = new URL(location.href);
+          u.searchParams.set('v', d.panel);
+          location.replace(u.toString());
+          return;
+        }
+        burbuja('oq-m oq-err', 'Esta pestaña conserva una versión anterior. Recarga la ' +
+          'página una vez y vuelve a abrir el chat.');
       }
     })
     .catch(function(){ est.textContent = 'sin conexión'; });
