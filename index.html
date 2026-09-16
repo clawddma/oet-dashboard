@@ -1511,7 +1511,7 @@ const D = [
   {p:'Mar-26',f:'2026-03',y:2026,m:3,ing:1622729.33,cost:1117130.15,ub:505599.19,mbp:31.2,ga:631743.3,go:407597.02,da:73206.06,uo:-126144.11,mop:-7.8,oInc:16814.8,oGas:40506.05,un:-149835.36,mnp:-9.2,ebitda:-76629.3,mep:-4.7},
   {p:'Abr-26',f:'2026-04',y:2026,m:4,ing:1476758.25,cost:922756.79,ub:554001.46,mbp:37.5,ga:511262.73,go:284454.79,da:73562.29,uo:42738.73,mop:2.9,oInc:21290.8,oGas:42971.54,un:21057.99,mnp:1.4,ebitda:94620.29,mep:6.4},
   {p:'May-26',f:'2026-05',y:2026,m:5,ing:1564868.07,cost:969009.49,ub:595858.58,mbp:38.1,ga:544606.09,go:299583.02,da:73831.51,uo:51252.49,mop:3.3,oInc:26607.8,oGas:26909.22,un:50951.07,mnp:3.3,ebitda:124782.58,mep:8},
-  {p:'Jun-26',f:'2026-06',y:2026,m:6,ing:1552740.36,cost:921579.32,ub:631161.05,mbp:40.6,ga:491570.09,go:257200.22,da:74099.31,uo:139590.96,mop:9,oInc:19719.93,oGas:45944.13,un:75586.91,mnp:4.9,ebitda:187466.07,mep:12.1},{p:'Jul-26',f:'2026-07',y:2026,m:7,ing:1672431.07,cost:1071645.7,ub:600785.37,mbp:35.9,ga:511129.98,go:278201.09,da:74411.56,uo:89655.38,mop:5.4,oInc:21384.56,oGas:39578.1,un:64092.6,mnp:3.8,ebitda:145873.4,mep:8.7}
+  {p:'Jun-26',f:'2026-06',y:2026,m:6,ing:1552740.36,cost:921579.32,ub:631161.05,mbp:40.6,ga:491570.09,go:257200.22,da:74099.31,uo:139590.96,mop:9,oInc:19719.93,oGas:45944.13,un:75586.91,mnp:4.9,ebitda:187466.07,mep:12.1},{p:'Jul-26',f:'2026-07',y:2026,m:7,ing:1672431.07,cost:1071645.7,ub:600785.37,mbp:35.9,ga:512218.64,go:278201.09,da:74411.56,uo:88566.73,mop:5.3,oInc:21384.56,oGas:39578.1,un:63003.94,mnp:3.8,ebitda:144784.74,mep:8.7},{p:'Ago-26',f:'2026-08',y:2026,m:8,ing:1428826.63,cost:963896.82,ub:464929.81,mbp:32.5,ga:544706.15,go:302084.17,da:74774.53,uo:-79776.34,mop:-5.6,oInc:14211.5,oGas:43726.14,un:-109290.98,mnp:-7.6,ebitda:-34516.45,mep:-2.4}
 ];
 
 // ════════════════════════════════════════
@@ -1859,6 +1859,15 @@ const EPS = {
 /*REPORTES:INI*/
 const REPORTES_ESTRATEGICOS = [
   {
+    periodo:'Agosto 2026',
+    titulo:'Agosto exige recuperar volumen y margen',
+    archivo:'Informe_Agosto_2026.html',
+    paginas:10,
+    fecha:'Agosto 2026',
+    resumen:'Ingreso de $1.429M y resultado de -$109M en el mes. El año acumula -$20,5M tras 8 meses. Incluye el ajuste que este cierre le hizo a julio.',
+    temas:['El mes', 'El año hasta aquí', 'De dónde salió el resultado', 'La plata', 'Del cierre anterior', 'El ingreso', 'El costo directo', 'El gasto de estructura', 'Terceros y caja'],
+  },
+  {
     periodo:'Julio 2026',
     titulo:'Julio marca el mayor volumen del año',
     archivo:'Informe_Julio_2026.html',
@@ -1922,18 +1931,26 @@ const REPORTES_ESTRATEGICOS = [
     temas:['El mes', 'El año hasta aquí', 'De dónde salió el resultado', 'La plata', 'El ingreso', 'El costo directo', 'El gasto de estructura', 'Terceros y caja'],
   },
   {
-    periodo:'Julio 2026 · Acumulado del año',
-    titulo:'Cierre de julio y del año en curso',
-    archivo:'Reporte_Junta_OET_Julio_2026.html',
+    periodo:'Agosto 2026 · Acumulado del año',
+    titulo:'Cierre de agosto y del año en curso',
+    archivo:'Reporte_Junta_OET_Agosto_2026.html',
     paginas:12,
-    fecha:'Julio 2026',
-    resumen:'Informe ampliado del cierre acumulado Ene–Jul 2026: el mes, el año corrido, la ampliación de quirófanos, la capacidad instalada, un capítulo sobre el costo con terceros reconstruido proveedor por proveedor, y caja y balance.',
+    fecha:'Agosto 2026',
+    resumen:'Informe ampliado del cierre acumulado Ene–Ago 2026: el mes, el año corrido, la ampliación de quirófanos, la capacidad instalada, un capítulo sobre el costo con terceros reconstruido proveedor por proveedor, y caja y balance.',
     temas:['El mes','El año acumulado','El diagnóstico','La ampliación','Capacidad instalada','Costo con terceros','Caja y balance','Recomendaciones'],
   },
 ];
 /*REPORTES:FIN*/
 
 const COMENTARIOS_MENSUALES = [
+  {
+    periodo:'Ago-26',
+    archivo:'EEFF-OET-2026-08-Agosto.xlsx',
+    archivo_periodo:'Ago-26 · Acumulado Ene–Ago 2026',
+    archivo_fecha:'Agosto 2026',
+    archivo_autora:'Libro construido internamente por Mesa de Estrategia y conciliado contra el ERI, el ESF y el libro mayor del cliente',
+    comentarios:[]
+  },
   {
     periodo:'Jul-26',
     archivo:'EEFF-OET-2026-07-Julio.xlsx',
@@ -2238,7 +2255,8 @@ const BSS = {
     {periodo:'Abr-26', f:'2026-04', y:2026, m:4,  cash:-45707, cxc:2458000, actCorr:2981000, actTotal:13419000, deudaBco:684000, cxpProv:323000, pasCorr:5151000, pasNoCorr:2115000, pasTotal:7266000,  patrimonio:6153000},
     {periodo:'May-26', f:'2026-05', y:2026, m:5,  cash:905064, cxc:1647000, actCorr:3121000, actTotal:13511000, deudaBco:643000, cxpProv:327000, pasCorr:5289000, pasNoCorr:2036000, pasTotal:7326000,  patrimonio:6185000},
     {periodo:'Jun-26', f:'2026-06', y:2026, m:6, cash:-167597, cxc:2841000, actCorr:3242000, actTotal:13618000, deudaBco:604000, cxpProv:349000, pasCorr:5397000, pasNoCorr:1961000, pasTotal:7358000, patrimonio:6260000},
-  {periodo:'Jul-26', f:'2026-07', y:2026, m:7, cash:-4215, cxc:2774000, actCorr:3338000, actTotal:13657000, deudaBco:569000, cxpProv:391000, pasCorr:5377000, pasNoCorr:1953000, pasTotal:7330000, patrimonio:6327000},
+  {periodo:'Jul-26', f:'2026-07', y:2026, m:7, cash:-4214.55, cxc:2773691.69, inventario:568990.21, actCorr:3338467.35, ppe:10046735.54, actTotal:13657067.35, deudaBco:568874.98, deudaBcoLP:162517.85, provee:3063504.79, proveeLP:1710110.69, cxpProv:390870.47, impuestos:394074.69, benefEmp:271878.72, anticipos:687793.81, pasCorr:5376997.46, pasNoCorr:1952832.1, pasTotal:7329829.56, patrimonio:6327237.79},
+    {periodo:'Ago-26', f:'2026-08', y:2026, m:8, cash:44689.17, cxc:2592294.61, inventario:568990.21, actCorr:3205973.99, ppe:10073358.01, actTotal:13538882.22, deudaBco:533006.13, deudaBcoLP:159882.99, provee:3213006.33, proveeLP:1474824.14, cxpProv:401784.83, impuestos:394074.69, benefEmp:242378.23, anticipos:822863.16, pasCorr:5607113.37, pasNoCorr:1714910.7, pasTotal:7322024.07, patrimonio:6216858.15},
   ],
   // Compatibilidad: arrays paralelos derivados (NO editar — se generan automáticamente)
   get labels()    {return this.snapshots.map(s=>s.periodo);},
@@ -2779,7 +2797,7 @@ Chart.register({
 // hora de sincronización: es la fecha de la ÚLTIMA FACTURA registrada, que es lo único
 // que permite leer bien la evolución de un mes todavía abierto. Un mes al 27 y el mismo
 // mes al 15 cuentan historias distintas con el mismo número.
-const CORTE = {"fecha": "2026-09-12", "anio": 2026, "mes": 9, "dia": 12, "dias_mes": 30, "texto": "12 de septiembre", "mes_nombre": "Septiembre", "abierto": true, "cerrado_hasta": "2026-07", "cobertura": 40};
+const CORTE = {"fecha": "2026-09-12", "anio": 2026, "mes": 9, "dia": 12, "dias_mes": 30, "texto": "12 de septiembre", "mes_nombre": "Septiembre", "abierto": true, "cerrado_hasta": "2026-08", "cobertura": 40};
 
 // Reconoce si una etiqueta del eje X es el mes en curso. Tolera los formatos que usan
 // los distintos gráficos —'Jul', 'Jul-26', 'Julio'— y descarta el mismo mes de otro año:
